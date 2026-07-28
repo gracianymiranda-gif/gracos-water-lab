@@ -116,7 +116,7 @@ const PRESETS = {
   }
 };
 
-// Source Water Presets (Updated with 'My Water' and 'Custom')
+// Source Water Presets
 const SOURCE_PRESETS = {
   "my_water": { ca: 50, mg: 13, na: 17, so4: 42, cl: 27, hco3: 173 },
   "custom": { ca: 60, mg: 8, na: 20, so4: 50, cl: 35, hco3: 110 },
@@ -133,7 +133,7 @@ const SALTS = {
   epsom:  { name: "Epsom Salt", formula: "MgSO₄·7H₂O", mg: 26.1, so4: 103.0, ca: 0, na: 0, cl: 0, hco3: 0, penalty: 1.2 },
   baking: { name: "Baking Soda", formula: "NaHCO₃", na: 72.3, hco3: 191.9, ca: 0, mg: 0, so4: 0, cl: 0, penalty: 4.0 },
   mgcl2:  { name: "Magnesium Chloride", formula: "MgCl₂·6H₂O", mg: 31.6, cl: 92.3, ca: 0, na: 0, so4: 0, hco3: 0, penalty: 2.0 },
-  salt:   { name: "Pickling Salt", formula: "NaCl", na: 103.9, cl: 160.3, ca: 0, mg: 0, so4: 0, hco3: 0, penalty: 2.5 },
+  salt:   { name: "Pickling Salt", formula: "NaCl", na: 103.9, cl: 160.3, ca: 0, na: 0, so4: 0, hco3: 0, penalty: 2.5 },
   lime:   { name: "Slaked Lime", formula: "Ca(OH)₂", ca: 143.0, hco3: 435.0, mg: 0, na: 0, so4: 0, cl: 0, penalty: 5.0 }
 };
 
@@ -166,7 +166,9 @@ let state = {
 
 // Init on DOM Load
 document.addEventListener("DOMContentLoaded", () => {
+  loadSavedCustomProfiles();
   setupEventListeners();
+  populateSourcePresets();
   populatePresets();
   updateSourceInputs();
   renderGrainBill();
@@ -188,6 +190,9 @@ function setupEventListeners() {
     }
   });
 
+  // Save Source Water Profile Button
+  document.getElementById("saveSourceProfileBtn")?.addEventListener("click", saveCustomSourceProfile);
+
   // Source Water Inputs
   ["ca", "mg", "na", "so4", "cl", "hco3"].forEach(ion => {
     document.getElementById(`src_${ion}`)?.addEventListener("input", (e) => {
@@ -198,6 +203,9 @@ function setupEventListeners() {
       calculateAll();
     });
   });
+
+  // Save Target Water Profile Button
+  document.getElementById("saveTargetProfileBtn")?.addEventListener("click", saveCustomTargetProfile);
 
   // Custom Target Ion Inputs Listener
   ["ca", "mg", "na", "so4", "cl", "hco3"].forEach(ion => {
@@ -263,7 +271,6 @@ function setupEventListeners() {
   document.getElementById("openSheetBtn")?.addEventListener("click", openBrewSheet);
   document.getElementById("closeSheetBtn")?.addEventListener("click", closeBrewSheet);
 
-  // BeerXML Import/Export
   document.getElementById("saveBeerXmlBtn")?.addEventListener("click", saveBeerXml);
   document.getElementById("loadBeerXmlInput")?.addEventListener("change", loadBeerXml);
 }
@@ -277,10 +284,49 @@ function setUnit(u) {
   calculateAll();
 }
 
+function populateSourcePresets() {
+  const sel = document.getElementById("sourcePreset");
+  if (!sel) return;
+  sel.innerHTML = `
+    <option value="my_water">★ My Water (Tap Profile)</option>
+    <option value="custom">★ Custom Source Water (User Defined)</option>
+    <option value="moderate">Moderate Tap Water (Baseline)</option>
+    <option value="ro">RO / Distilled Water (0 ppm)</option>
+    <option value="soft">Soft Tap Water</option>
+    <option value="hard">Hard Alkaline Tap Water</option>
+  `;
+
+  // Append saved custom source profiles
+  const saved = JSON.parse(localStorage.getItem("gracos_saved_source_profiles") || "[]");
+  saved.forEach((p, i) => {
+    const key = `user_src_${i}`;
+    SOURCE_PRESETS[key] = { ca: p.ca, mg: p.mg, na: p.na, so4: p.so4, cl: p.cl, hco3: p.hco3 };
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = `💾 ${p.name}`;
+    sel.appendChild(opt);
+  });
+
+  sel.value = state.sourcePresetKey;
+}
+
 function populatePresets() {
   const sel = document.getElementById("targetPreset");
   if (!sel) return;
   sel.innerHTML = "";
+
+  // Append saved custom target profiles first
+  const savedTarget = JSON.parse(localStorage.getItem("gracos_saved_target_profiles") || "[]");
+  savedTarget.forEach((p, i) => {
+    const key = `user_tgt_${i}`;
+    PRESETS[key] = {
+      name: p.name,
+      book: "User Saved",
+      ions: { ca: p.ca, mg: p.mg, na: p.na, so4: p.so4, cl: p.cl, hco3: p.hco3 },
+      ph: p.ph || 5.30,
+      note: "Saved custom target profile."
+    };
+  });
 
   Object.keys(PRESETS).forEach(k => {
     const opt = document.createElement("option");
@@ -291,6 +337,61 @@ function populatePresets() {
   });
   sel.value = state.targetKey;
   updateTargetInputs();
+}
+
+function saveCustomSourceProfile() {
+  const name = prompt("Enter a name for your Source Water Profile (e.g. My Clermont Well Water):");
+  if (!name || !name.trim()) return;
+
+  const profile = {
+    name: name.trim(),
+    ca: state.sourceIons.ca,
+    mg: state.sourceIons.mg,
+    na: state.sourceIons.na,
+    so4: state.sourceIons.so4,
+    cl: state.sourceIons.cl,
+    hco3: state.sourceIons.hco3
+  };
+
+  const saved = JSON.parse(localStorage.getItem("gracos_saved_source_profiles") || "[]");
+  saved.push(profile);
+  localStorage.setItem("gracos_saved_source_profiles", JSON.stringify(saved));
+
+  const key = `user_src_${saved.length - 1}`;
+  SOURCE_PRESETS[key] = { ca: profile.ca, mg: profile.mg, na: profile.na, so4: profile.so4, cl: profile.cl, hco3: profile.hco3 };
+  state.sourcePresetKey = key;
+
+  populateSourcePresets();
+  alert(`Saved source water profile "${profile.name}" to browser memory!`);
+}
+
+function saveCustomTargetProfile() {
+  const name = prompt("Enter a name for your Target Water Profile (e.g. My House IPA Target):");
+  if (!name || !name.trim()) return;
+
+  const currentIons = PRESETS[state.targetKey] ? PRESETS[state.targetKey].ions : state.sourceIons;
+
+  const profile = {
+    name: name.trim(),
+    ca: currentIons.ca,
+    mg: currentIons.mg,
+    na: currentIons.na,
+    so4: currentIons.so4,
+    cl: currentIons.cl,
+    hco3: currentIons.hco3,
+    ph: state.targetMashPh
+  };
+
+  const saved = JSON.parse(localStorage.getItem("gracos_saved_target_profiles") || "[]");
+  saved.push(profile);
+  localStorage.setItem("gracos_saved_target_profiles", JSON.stringify(saved));
+
+  populatePresets();
+  alert(`Saved target water profile "${profile.name}" to browser memory!`);
+}
+
+function loadSavedCustomProfiles() {
+  // Loaded dynamically in populateSourcePresets & populatePresets
 }
 
 function updateSourceInputs() {
@@ -758,7 +859,6 @@ function closeBrewSheet() {
   if (overlay) overlay.hidden = true;
 }
 
-// Save Recipe as BeerXML (.xml)
 function saveBeerXml() {
   const targetName = PRESETS[state.targetKey] ? PRESETS[state.targetKey].name : state.targetKey;
   
@@ -768,11 +868,9 @@ function saveBeerXml() {
   xml += ` <TYPE>All Grain</TYPE>\n`;
   xml += ` <BREWER>Graco's Brewing</BREWER>\n`;
   
-  // Batch size in liters
   const batchL = state.unit === "us" ? (state.mashVol + state.spargeVol) * 3.78541 : state.mashVol + state.spargeVol;
   xml += ` <BATCH_SIZE>${batchL.toFixed(4)}</BATCH_SIZE>\n`;
   
-  // Fermentables
   xml += ` <FERMENTABLES>\n`;
   state.grains.forEach(g => {
     const weightKg = state.unit === "us" ? g.weight * 0.453592 : g.weight;
@@ -786,7 +884,6 @@ function saveBeerXml() {
   });
   xml += ` </FERMENTABLES>\n`;
 
-  // Source Water Profile
   xml += ` <WATERS>\n`;
   xml += `  <WATER>\n`;
   xml += `   <NAME>Source Water (${state.sourcePresetKey})</NAME>\n`;
@@ -801,7 +898,6 @@ function saveBeerXml() {
   xml += `  </WATER>\n`;
   xml += ` </WATERS>\n`;
 
-  // Mash pH
   xml += ` <MASH>\n`;
   xml += `  <NAME>Water Lab Mash Profile</NAME>\n`;
   xml += `  <VERSION>1</VERSION>\n`;
@@ -831,7 +927,6 @@ function escapeXml(unsafe) {
   });
 }
 
-// Load Recipe from BeerXML (.xml / .beerxml)
 function loadBeerXml(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -848,13 +943,11 @@ function loadBeerXml(e) {
       return;
     }
 
-    // 1. Recipe Name
     const nameNode = recipeNode.querySelector("NAME");
     if (nameNode && nameNode.textContent) {
       state.recipeName = nameNode.textContent.trim();
     }
 
-    // 2. Source Water Profile from <WATERS><WATER>
     const waterNode = recipeNode.querySelector("WATERS WATER");
     if (waterNode) {
       state.sourceIons = {
@@ -870,7 +963,6 @@ function loadBeerXml(e) {
       updateSourceInputs();
     }
 
-    // 3. Fermentables / Grain Bill
     const fermentables = recipeNode.querySelectorAll("FERMENTABLES FERMENTABLE");
     if (fermentables && fermentables.length > 0) {
       state.grains = [];
@@ -880,10 +972,8 @@ function loadBeerXml(e) {
         const amtKg = parseFloat(f.querySelector("AMOUNT")?.textContent) || 0;
         const colorSrm = parseFloat(f.querySelector("COLOR")?.textContent) || 2.0;
 
-        // Weight conversion
         const weight = state.unit === "us" ? Math.round(amtKg * 2.20462 * 10) / 10 : Math.round(amtKg * 10) / 10;
 
-        // Type determination
         let gtype = "base";
         if (ftypeStr.includes("acid") || fname.toLowerCase().includes("acid")) {
           gtype = "acid";
@@ -905,7 +995,6 @@ function loadBeerXml(e) {
       renderGrainBill();
     }
 
-    // 4. Target Mash pH
     const mashPhNode = recipeNode.querySelector("MASH PH");
     if (mashPhNode && mashPhNode.textContent) {
       const targetPh = parseFloat(mashPhNode.textContent);
@@ -915,7 +1004,6 @@ function loadBeerXml(e) {
       }
     }
 
-    // 5. Batch Size / Mash Volume
     const batchSizeNode = recipeNode.querySelector("BATCH_SIZE");
     if (batchSizeNode && batchSizeNode.textContent) {
       const batchL = parseFloat(batchSizeNode.textContent);

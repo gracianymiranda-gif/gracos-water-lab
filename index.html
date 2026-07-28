@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Graco's Water Lab · Brew-Day Water Chemistry Solver</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
   <div class="wrap">
@@ -47,14 +47,7 @@
           <div class="body">
             <div class="field" style="margin-top:0;">
               <label>START FROM PRESET</label>
-              <select id="sourcePreset">
-                <option value="my_water">★ My Water (Tap Profile)</option>
-                <option value="custom">★ Custom Source Water (User Defined)</option>
-                <option value="moderate">Moderate Tap Water (Baseline)</option>
-                <option value="ro">RO / Distilled Water (0 ppm)</option>
-                <option value="soft">Soft Tap Water</option>
-                <option value="hard">Hard Alkaline Tap Water</option>
-              </select>
+              <select id="sourcePreset"></select>
             </div>
 
             <div class="field">
@@ -85,6 +78,10 @@
                   <input type="number" id="src_hco3" value="173">
                 </div>
               </div>
+            </div>
+
+            <div class="field">
+              <button id="saveSourceProfileBtn" class="addrow" style="border-style:solid; margin-bottom:12px;">💾 SAVE THIS SOURCE PROFILE TO BROWSER</button>
             </div>
 
             <div class="field">
@@ -142,6 +139,10 @@
                   <input type="number" id="tgt_hco3" readonly>
                 </div>
               </div>
+            </div>
+
+            <div class="field">
+              <button id="saveTargetProfileBtn" class="addrow" style="border-style:solid; margin-top:8px;">💾 SAVE THIS TARGET PROFILE TO BROWSER</button>
             </div>
           </div>
         </div>
@@ -427,6 +428,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
