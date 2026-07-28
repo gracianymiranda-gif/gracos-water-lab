@@ -1,118 +1,118 @@
 // Graco's Water Lab - Application Logic & Calculation Engine
 
-// Book-backed Preset Target Profiles + User Profiles & Custom Option
+// Book-backed Preset Target Profiles with Specific Target Mash pH Values
 const PRESETS = {
   "custom": {
     name: "★ Custom Target Profile (User Defined)",
     book: "User Custom",
     ions: { ca: 100, mg: 10, na: 15, so4: 100, cl: 100, hco3: 50 },
-    ph: 5.30,
+    ph: 5.25,
     note: "Editable custom profile — type any target ion PPM values into the fields below."
-  },
-  "fat_head_ipa": {
-    name: "Fat Head IPA",
-    book: "Commercial Benchmark",
-    ions: { ca: 162, mg: 8.5, na: 21, so4: 285, cl: 23.5, hco3: 104 },
-    ph: 5.25,
-    note: "High sulfate (285 ppm) & calcium (162 ppm) for Fat Head Head Hunter style aggressive West Coast hop crispness."
-  },
-  "fidens_neipa": {
-    name: "IPA #1 NEIPA Fidens",
-    book: "Pro Recipe Benchmark",
-    ions: { ca: 124, mg: 3, na: 10, so4: 75, cl: 125, hco3: 0 },
-    ph: 5.30,
-    note: "Fidens NEIPA profile: Elevated chloride (125 ppm) to sulfate (75 ppm) ratio for soft mouthfeel and hop aroma."
-  },
-  "julius_ipa": {
-    name: "IPA #2 Julius",
-    book: "Tree House Benchmark",
-    ions: { ca: 15, mg: 26, na: 78, so4: 140, cl: 120, hco3: 0 },
-    ph: 5.30,
-    note: "Julius style profile: Balanced sulfate (140 ppm) and chloride (120 ppm) with magnesium & sodium depth."
-  },
-  "all_stars_west_coast": {
-    name: "IPA #3 Homebrew All Stars book (West Coast IPA)",
-    book: "Homebrew All Stars",
-    ions: { ca: 110, mg: 18, na: 17, so4: 352, cl: 50, hco3: 0 },
-    ph: 5.25,
-    note: "Extreme West Coast IPA sulfate level (352 ppm) for dry, sharp hop bite and quick finish."
-  },
-  "gold_nhc_2024": {
-    name: "IPA gold NHC 2024",
-    book: "NHC 2024 Gold Medal",
-    ions: { ca: 83, mg: 8, na: 13, so4: 155, cl: 67, hco3: 2 },
-    ph: 5.28,
-    note: "2024 NHC Gold Medal IPA profile: 2.3:1 SO4:Cl ratio for clean hop brightness and balanced malt."
-  },
-  "trillium_apa": {
-    name: "NE APA #1/Trillium",
-    book: "Trillium Benchmark",
-    ions: { ca: 97, mg: 5, na: 15, so4: 61, cl: 128, hco3: 0 },
-    ph: 5.30,
-    note: "Trillium NE Pale Ale profile: 2.1:1 Chloride-to-Sulfate ratio for soft mouthfeel and juicy hop expression."
-  },
-  "juicy_bits": {
-    name: "Juicy Bits water profile",
-    book: "WeldWerks Benchmark",
-    ions: { ca: 125, mg: 8, na: 21, so4: 75, cl: 175, hco3: 104 },
-    ph: 5.30,
-    note: "WeldWerks Juicy Bits profile: 2.33:1 Cl:SO4 ratio (175 ppm Cl) for massive pillowy hazy IPA mouthfeel."
-  },
-  "dark_lager_perplexity": {
-    name: "Dark lager perplexity",
-    book: "Perplexity Benchmark",
-    ions: { ca: 57, mg: 4, na: 55, so4: 45, cl: 67, hco3: 165 },
-    ph: 5.40,
-    note: "High bicarbonate (165 ppm) buffer for dark roasted malts with balanced sodium and chloride."
-  },
-  "light_and_hoppy": {
-    name: "Light & Hoppy",
-    book: "General Benchmark",
-    ions: { ca: 75, mg: 5, na: 10, so4: 150, cl: 50, hco3: 0 },
-    ph: 5.30,
-    note: "3:1 Sulfate-to-Chloride ratio for pale hoppy lagers and session IPAs."
-  },
-  "pale_lager_perplexity": {
-    name: "Pale lager perplexity",
-    book: "Perplexity Benchmark",
-    ions: { ca: 55, mg: 3, na: 12, so4: 62, cl: 65, hco3: 23 },
-    ph: 5.35,
-    note: "Clean, balanced, low-mineral profile for crisp pale lagers and Pilsners."
   },
   "janish_hazy_neipa": {
     name: "Janish Juicy Hazy IPA / NEIPA",
     book: "The New IPA (Scott Janish)",
     ions: { ca: 125, mg: 10, na: 15, so4: 75, cl: 175, hco3: 40 },
-    ph: 5.30,
-    note: "High Chloride-to-Sulfate ratio (2.3:1) for pillowy mouthfeel, hop oil biotransformation, and haze stability."
+    ph: 5.25,
+    note: "Scott Janish (The New IPA): Target 5.25 mash pH. Lower mash pH compensates for the +0.15–0.25 pH rise caused by heavy dry hopping, preventing harsh polyphenolic astringency."
   },
   "janish_west_coast": {
     name: "Janish Crisp West Coast IPA",
     book: "The New IPA (Scott Janish)",
     ions: { ca: 110, mg: 12, na: 15, so4: 250, cl: 60, hco3: 35 },
+    ph: 5.20,
+    note: "Scott Janish (The New IPA): Target 5.20 mash pH for maximum beta-amylase attenuation, clean sharp hop bitterness, and quick, crisp finish."
+  },
+  "fat_head_ipa": {
+    name: "Fat Head IPA",
+    book: "Commercial IPA Benchmark",
+    ions: { ca: 162, mg: 8.5, na: 21, so4: 285, cl: 23.5, hco3: 104 },
+    ph: 5.20,
+    note: "Scott Janish / West Coast IPA Model: Target 5.20 mash pH with high sulfate (285 ppm) for aggressive, sharp hop crispness."
+  },
+  "fidens_neipa": {
+    name: "IPA #1 NEIPA Fidens",
+    book: "Pro NEIPA Benchmark",
+    ions: { ca: 124, mg: 3, na: 10, so4: 75, cl: 125, hco3: 0 },
     ph: 5.25,
-    note: "High Sulfate-to-Chloride ratio (4.1:1) for dry, assertive hop bitterness and quick finish."
+    note: "Scott Janish NEIPA Model: Target 5.25 mash pH with elevated chloride (125 ppm) for soft mouthfeel and hop oil expression."
+  },
+  "julius_ipa": {
+    name: "IPA #2 Julius",
+    book: "Tree House Benchmark",
+    ions: { ca: 15, mg: 26, na: 78, so4: 140, cl: 120, hco3: 0 },
+    ph: 5.25,
+    note: "Scott Janish Model: Target 5.25 mash pH. Balanced sulfate/chloride ratio for rounded mouthfeel and juicy aromatics."
+  },
+  "all_stars_west_coast": {
+    name: "IPA #3 Homebrew All Stars (West Coast IPA)",
+    book: "Homebrew All Stars",
+    ions: { ca: 110, mg: 18, na: 17, so4: 352, cl: 50, hco3: 0 },
+    ph: 5.20,
+    note: "Scott Janish West Coast Model: Target 5.20 mash pH. Extreme sulfate (352 ppm) for intense dry hop bite."
+  },
+  "gold_nhc_2024": {
+    name: "IPA gold NHC 2024",
+    book: "NHC 2024 Gold Medal",
+    ions: { ca: 83, mg: 8, na: 13, so4: 155, cl: 67, hco3: 2 },
+    ph: 5.25,
+    note: "NHC Gold Medal Model: Target 5.25 mash pH for clean hop brightness and balanced malt body."
+  },
+  "trillium_apa": {
+    name: "NE APA #1/Trillium",
+    book: "Trillium Benchmark",
+    ions: { ca: 97, mg: 5, na: 15, so4: 61, cl: 128, hco3: 0 },
+    ph: 5.28,
+    note: "Scott Janish NEIPA Model: Target 5.28 mash pH for smooth mouthfeel and juicy hop expression."
+  },
+  "juicy_bits": {
+    name: "Juicy Bits water profile",
+    book: "WeldWerks Benchmark",
+    ions: { ca: 125, mg: 8, na: 21, so4: 75, cl: 175, hco3: 104 },
+    ph: 5.25,
+    note: "Scott Janish NEIPA Model: Target 5.25 mash pH. High chloride (175 ppm) for pillowy soft hazy IPA texture."
   },
   "noonan_pilsen_soft": {
     name: "Bohemian / Pilsen Ultra-Soft",
     book: "Lager Brewing (Greg Noonan)",
     ions: { ca: 7, mg: 2, na: 4, so4: 6, cl: 6, hco3: 14 },
     ph: 5.25,
-    note: "Ultra-soft water profile matching Pilsen, Czechia. Enhances subtle Saaz hop aroma and soft pale malt."
+    note: "Greg Noonan (Lager Brewing): Target 5.25 mash pH for pale lagers. Essential for enzymatic conversion, crisp maltiness, and delicate Saaz hop balance."
+  },
+  "pale_lager_perplexity": {
+    name: "Pale lager perplexity",
+    book: "Lager Brewing (Greg Noonan)",
+    ions: { ca: 55, mg: 3, na: 12, so4: 62, cl: 65, hco3: 23 },
+    ph: 5.25,
+    note: "Greg Noonan (Lager Brewing): Target 5.25 mash pH for crisp, clean attenuation and bright pale lager clarity."
+  },
+  "light_and_hoppy": {
+    name: "Light & Hoppy",
+    book: "Lager / Session IPA Benchmark",
+    ions: { ca: 75, mg: 5, na: 10, so4: 150, cl: 50, hco3: 0 },
+    ph: 5.25,
+    note: "Greg Noonan / Scott Janish Model: Target 5.25 mash pH for hoppy session ales and crisp hoppy lagers."
+  },
+  "dark_lager_perplexity": {
+    name: "Dark lager perplexity",
+    book: "Lager Brewing & Water (Noonan & Palmer)",
+    ions: { ca: 57, mg: 4, na: 55, so4: 45, cl: 67, hco3: 165 },
+    ph: 5.40,
+    note: "Greg Noonan & John Palmer: Target 5.40 mash pH for dark lagers. Higher bicarbonate buffers roasted malts, preventing sour acrid roast flavors."
   },
   "daniels_burton": {
     name: "Burton-on-Trent Historic Pale Ale",
     book: "Designing Great Beers (Ray Daniels)",
     ions: { ca: 275, mg: 40, na: 25, so4: 610, cl: 35, hco3: 270 },
     ph: 5.30,
-    note: "Extreme historic sulfate level (610 ppm) famous for traditional Burton Pale Ales and IPA hop bite."
+    note: "Ray Daniels (Designing Great Beers): Target 5.30 mash pH. High calcium reacts with malt phosphate to lower mash pH despite high bicarbonate."
   },
   "palmer_yellow_balanced": {
     name: "Palmer Balanced Yellow Ale",
     book: "Water (John Palmer)",
     ions: { ca: 50, mg: 10, na: 15, so4: 80, cl: 60, hco3: 40 },
-    ph: 5.40,
-    note: "Standard baseline profile for Blonde Ales, Pale Ales, and Saison."
+    ph: 5.35,
+    note: "John Palmer (Water): Target 5.35 mash pH. Standard baseline for balanced pale and amber ales."
   }
 };
 
@@ -148,7 +148,7 @@ let state = {
   mashVol: 4.0,
   spargeVol: 3.5,
   noSparge: false,
-  targetMashPh: 5.30,
+  targetMashPh: 5.25,
   targetSpargePh: 5.60,
   grains: [
     { name: "Maris Otter Base Malt", weight: 9.0, color: 3.5, type: "base" },
@@ -227,10 +227,10 @@ function setupEventListeners() {
     const key = e.target.value;
     if (PRESETS[key]) {
       state.targetKey = key;
-      if (key !== "custom") {
-        state.targetMashPh = PRESETS[key].ph;
-        document.getElementById("targetMashPh").value = PRESETS[key].ph;
-      }
+      state.targetMashPh = PRESETS[key].ph;
+      const phInput = document.getElementById("targetMashPh");
+      if (phInput) phInput.value = PRESETS[key].ph;
+      
       updateTargetInputs();
       calculateAll();
     }
@@ -250,7 +250,7 @@ function setupEventListeners() {
     calculateAll();
   });
   document.getElementById("targetMashPh")?.addEventListener("input", (e) => {
-    state.targetMashPh = parseFloat(e.target.value) || 5.3;
+    state.targetMashPh = parseFloat(e.target.value) || 5.25;
     calculateAll();
   });
   document.getElementById("acidType")?.addEventListener("change", (e) => {
@@ -296,7 +296,6 @@ function populateSourcePresets() {
     <option value="hard">Hard Alkaline Tap Water</option>
   `;
 
-  // Append saved custom source profiles
   const saved = JSON.parse(localStorage.getItem("gracos_saved_source_profiles") || "[]");
   saved.forEach((p, i) => {
     const key = `user_src_${i}`;
@@ -315,7 +314,6 @@ function populatePresets() {
   if (!sel) return;
   sel.innerHTML = "";
 
-  // Append saved custom target profiles first
   const savedTarget = JSON.parse(localStorage.getItem("gracos_saved_target_profiles") || "[]");
   savedTarget.forEach((p, i) => {
     const key = `user_tgt_${i}`;
@@ -323,7 +321,7 @@ function populatePresets() {
       name: p.name,
       book: "User Saved",
       ions: { ca: p.ca, mg: p.mg, na: p.na, so4: p.so4, cl: p.cl, hco3: p.hco3 },
-      ph: p.ph || 5.30,
+      ph: p.ph || 5.25,
       note: "Saved custom target profile."
     };
   });
@@ -332,7 +330,7 @@ function populatePresets() {
     const opt = document.createElement("option");
     opt.value = k;
     const author = PRESETS[k].book.split(' ')[0];
-    opt.textContent = `[${author}] ${PRESETS[k].name}`;
+    opt.textContent = `[${author}] ${PRESETS[k].name} (Target ${PRESETS[k].ph} pH)`;
     sel.appendChild(opt);
   });
   sel.value = state.targetKey;
@@ -366,7 +364,7 @@ function saveCustomSourceProfile() {
 }
 
 function saveCustomTargetProfile() {
-  const name = prompt("Enter a name for your Target Water Profile (e.g. My House IPA Target):");
+  const name = prompt("Enter a name for your Target Water Profile (e.g. My Secret DIPA Target):");
   if (!name || !name.trim()) return;
 
   const currentIons = PRESETS[state.targetKey] ? PRESETS[state.targetKey].ions : state.sourceIons;
@@ -391,7 +389,6 @@ function saveCustomTargetProfile() {
 }
 
 function loadSavedCustomProfiles() {
-  // Loaded dynamically in populateSourcePresets & populatePresets
 }
 
 function updateSourceInputs() {
@@ -433,7 +430,9 @@ function updateTargetInputs() {
   });
 
   const noteEl = document.getElementById("bookTargetNote");
-  if (noteEl) noteEl.innerHTML = `<b>Ref: ${p.book}</b> — ${p.note}`;
+  if (noteEl) {
+    noteEl.innerHTML = `<b>Ref: ${p.book}</b> (Target <b>${p.ph} pH</b>) — ${p.note}`;
+  }
 }
 
 function renderGrainBill() {
