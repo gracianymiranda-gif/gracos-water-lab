@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Graco's Water Lab · Brew-Day Water Chemistry Solver</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="wrap">
+    <!-- Header Masthead -->
+    <header class="top">
+      <div class="brand">
+        <img class="badge" src="assets/logo_metal.png" alt="Graco's Brewing Badge Logo">
+        <div class="idwrap">
+          <h1 class="club">GRACO'S <b>BREWING</b></h1>
+          <div class="motto">Clermont, FL • Craft Beer Artisans • Independent</div>
+          <div class="lab-tag">
+            WATER LAB <span>Palmer · Janish · Noonan · Daniels · White Edition</span>
+          </div>
+        </div>
+      </div>
+      <div class="masthead-meta">
+        <div class="edition">EST. <b>OCT. 2015</b></div>
+        <div class="top-btns">
+          <div class="units">
+            <button id="btn-us" aria-pressed="true">US (GAL/LB)</button>
+            <button id="btn-metric" aria-pressed="false">METRIC (L/KG)</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <div class="grid">
+      <!-- Left Column: Inputs -->
+      <div class="col-left">
+        <!-- Source Water Card -->
+        <div class="card">
+          <h2>
+            <span>1. SOURCE WATER PROFILE</span>
+            <span class="badge-tag">PPM</span>
+          </h2>
+          <div class="body">
+            <div class="field" style="margin-top:0;">
+              <label>START FROM PRESET</label>
+              <select id="sourcePreset">
+                <option value="moderate">Moderate Tap Water (Baseline)</option>
+                <option value="ro">RO / Distilled Water (0 ppm)</option>
+                <option value="soft">Soft Tap Water</option>
+                <option value="hard">Hard Alkaline Tap Water</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>WATER ION CONCENTRATIONS (PPM)</label>
+              <div class="ions">
+                <div class="ion">
+                  <label>Ca <b>CALCIUM</b></label>
+                  <input type="number" id="src_ca" value="60">
+                </div>
+                <div class="ion">
+                  <label>Mg <b>MAGNESIUM</b></label>
+                  <input type="number" id="src_mg" value="8">
+                </div>
+                <div class="ion">
+                  <label>Na <b>SODIUM</b></label>
+                  <input type="number" id="src_na" value="20">
+                </div>
+                <div class="ion">
+                  <label>SO₄ <b>SULFATE</b></label>
+                  <input type="number" id="src_so4" value="50">
+                </div>
+                <div class="ion">
+                  <label>Cl <b>CHLORIDE</b></label>
+                  <input type="number" id="src_cl" value="35">
+                </div>
+                <div class="ion">
+                  <label>HCO₃ <b>BICARB</b></label>
+                  <input type="number" id="src_hco3" value="110">
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>
+                <span>DILUTE WITH RO / DISTILLED</span>
+                <b id="roVal" style="color:var(--copper-bright)">0%</b>
+              </label>
+              <input type="range" id="roSlider" min="0" max="100" value="0">
+            </div>
+          </div>
+        </div>
+
+        <!-- Target Profile Card -->
+        <div class="card">
+          <h2>
+            <span>2. TARGET WATER PROFILE</span>
+            <span class="badge-tag">REFERENCE BOOKS</span>
+          </h2>
+          <div class="body">
+            <div class="field" style="margin-top:0;">
+              <label>
+                <span>BEER STYLE / TARGET PROFILE</span>
+                <span class="book-tag">PALMER · JANISH · NOONAN · DANIELS</span>
+              </label>
+              <select id="targetPreset"></select>
+            </div>
+
+            <div id="bookTargetNote" class="note"></div>
+
+            <div class="field">
+              <label>TARGET ION CONCENTRATIONS (PPM)</label>
+              <div class="ions">
+                <div class="ion">
+                  <label>Ca <b>CALCIUM</b></label>
+                  <input type="number" id="tgt_ca" readonly>
+                </div>
+                <div class="ion">
+                  <label>Mg <b>MAGNESIUM</b></label>
+                  <input type="number" id="tgt_mg" readonly>
+                </div>
+                <div class="ion">
+                  <label>Na <b>SODIUM</b></label>
+                  <input type="number" id="tgt_na" readonly>
+                </div>
+                <div class="ion">
+                  <label>SO₄ <b>SULFATE</b></label>
+                  <input type="number" id="tgt_so4" readonly>
+                </div>
+                <div class="ion">
+                  <label>Cl <b>CHLORIDE</b></label>
+                  <input type="number" id="tgt_cl" readonly>
+                </div>
+                <div class="ion">
+                  <label>HCO₃ <b>BICARB</b></label>
+                  <input type="number" id="tgt_hco3" readonly>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grain Bill Builder Card -->
+        <div class="card">
+          <h2>
+            <span>3. GRAIN BILL & MALT COLOR</span>
+            <span class="badge-tag">MASH PH MODEL</span>
+          </h2>
+          <div class="body">
+            <div class="grainhead">
+              <span>MALT NAME</span>
+              <span>WT (<b id="grainUnitlbl">LB</b>)</span>
+              <span>°L</span>
+              <span>TYPE</span>
+              <span></span>
+            </div>
+            <div id="grainList"></div>
+            <button id="addGrainBtn" class="addrow">+ ADD MALT TO BILL</button>
+          </div>
+        </div>
+
+        <!-- Water Split & Volumes Card -->
+        <div class="card">
+          <h2>
+            <span>4. WATER VOLUMES & TARGET PH</span>
+          </h2>
+          <div class="body">
+            <div class="vol-grid">
+              <div class="ion">
+                <label>MASH VOL (<b id="volUnitlbl">GAL</b>)</label>
+                <input type="number" id="mashVol" step="0.5" value="4.0">
+              </div>
+              <div class="ion" id="spargeVolGroup">
+                <label>SPARGE VOL</label>
+                <input type="number" id="spargeVol" step="0.5" value="3.5">
+              </div>
+            </div>
+
+            <div class="field">
+              <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                <input type="checkbox" id="noSparge">
+                <span style="font-size:12px; color:var(--ink);">FULL VOLUME / NO SPARGE (BIAB)</span>
+              </label>
+            </div>
+
+            <div class="vol-grid" style="margin-top:12px;">
+              <div class="ion">
+                <label>TARGET MASH PH</label>
+                <input type="number" id="targetMashPh" step="0.05" value="5.30">
+              </div>
+              <div class="ion">
+                <label>ACID TYPE</label>
+                <select id="acidType">
+                  <option value="lactic88">Lactic Acid (88%)</option>
+                  <option value="phos85">Phosphoric Acid (85%)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Salts on Shelf Card -->
+        <div class="card">
+          <h2>
+            <span>5. SALTS ON SHELF</span>
+            <span class="badge-tag">MINERALS</span>
+          </h2>
+          <div class="body">
+            <div class="salts">
+              <label class="salt">
+                <input type="checkbox" value="gypsum" checked>
+                <span class="nm">Gypsum <span class="fm">CaSO₄·2H₂O</span></span>
+                <span class="tags"><span class="tag ca">Ca</span><span class="tag so4">SO₄</span></span>
+              </label>
+              <label class="salt">
+                <input type="checkbox" value="cacl2" checked>
+                <span class="nm">Calcium Chloride <span class="fm">CaCl₂·2H₂O</span></span>
+                <span class="tags"><span class="tag ca">Ca</span><span class="tag cl">Cl</span></span>
+              </label>
+              <label class="salt">
+                <input type="checkbox" value="epsom" checked>
+                <span class="nm">Epsom Salt <span class="fm">MgSO₄·7H₂O</span></span>
+                <span class="tags"><span class="tag mg">Mg</span><span class="tag so4">SO₄</span></span>
+              </label>
+              <label class="salt">
+                <input type="checkbox" value="baking" checked>
+                <span class="nm">Baking Soda <span class="fm">NaHCO₃</span></span>
+                <span class="tags"><span class="tag na">Na</span><span class="tag hco3">HCO₃</span></span>
+              </label>
+              <label class="salt">
+                <input type="checkbox" value="mgcl2">
+                <span class="nm">Magnesium Chloride <span class="fm">MgCl₂·6H₂O</span></span>
+                <span class="tags"><span class="tag mg">Mg</span><span class="tag cl">Cl</span></span>
+              </label>
+              <label class="salt">
+                <input type="checkbox" value="salt">
+                <span class="nm">Pickling Salt <span class="fm">NaCl</span></span>
+                <span class="tags"><span class="tag na">Na</span><span class="tag cl">Cl</span></span>
+              </label>
+              <label class="salt">
+                <input type="checkbox" value="lime">
+                <span class="nm">Slaked Lime <span class="fm">Ca(OH)₂</span></span>
+                <span class="tags"><span class="tag ca">Ca</span><span class="tag hco3">HCO₃</span></span>
+              </label>
+            </div>
+
+            <button id="calcBtn" class="calc-btn">CALCULATE ADDITIONS</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Outputs -->
+      <div class="col-right">
+        <!-- Sulfate to Chloride Ratio Card -->
+        <div class="card">
+          <h2>
+            <span>SULFATE : CHLORIDE RATIO</span>
+            <span class="badge-tag">SCOTT JANISH MODEL</span>
+          </h2>
+          <div class="body">
+            <div class="ratio-banner">
+              <div>
+                <div class="hint">SO₄ : Cl RATIO</div>
+                <div id="so4clRatio" class="ratio-num">--</div>
+              </div>
+              <div id="ratioDesc" class="ratio-desc">--</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Yeast Mineral Health Card -->
+        <div class="card" style="margin-top:18px;">
+          <h2>
+            <span>YEAST MINERAL HEALTH DIAGNOSTIC</span>
+            <span class="badge-tag">WHITE & ZAINASHEFF</span>
+          </h2>
+          <div class="body">
+            <div id="yeastHealthNote" class="note" style="margin-top:0; border-left-color:var(--copper-bright);"></div>
+          </div>
+        </div>
+
+        <!-- Mash pH Card -->
+        <div class="card" style="margin-top:18px;">
+          <h2>
+            <span>PREDICTED MASH PH</span>
+            <span class="badge-tag">JOHN PALMER RA MODEL</span>
+          </h2>
+          <div class="body">
+            <div class="phbox">
+              <div class="phdial">
+                <div id="phVal" class="phnum">--</div>
+                <div class="phlbl">ESTIMATED PH</div>
+              </div>
+              <div>
+                <div class="phscale">
+                  <div id="phMark" class="phmark"></div>
+                  <span class="lo">4.80</span>
+                  <span class="hi">6.20</span>
+                </div>
+                <div class="hint">Optimal Mash Range: <b>5.20 – 5.60 pH</b> (measured at room temperature)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wort Profile & Target Comparison Table Card -->
+        <div class="card" style="margin-top:18px;">
+          <h2>
+            <span>FINAL WORT ION PROFILE</span>
+            <span class="badge-tag">TARGET ALIGNMENT</span>
+          </h2>
+          <div class="body">
+            <table class="cmp">
+              <thead>
+                <tr>
+                  <th>ION</th>
+                  <th style="text-align:right;">RESULT</th>
+                  <th style="text-align:right;">TARGET</th>
+                  <th>ALIGNMENT</th>
+                  <th style="text-align:right;">DELTA</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="nm">Calcium <small>Ca²⁺</small></td>
+                  <td id="res_ca" class="num">--</td>
+                  <td id="tgt_val_ca" class="num tgt">--</td>
+                  <td class="barcell"><div class="track"><div id="fill_ca" class="fill"></div></div></td>
+                  <td id="diff_ca" class="delta">--</td>
+                </tr>
+                <tr>
+                  <td class="nm">Magnesium <small>Mg²⁺</small></td>
+                  <td id="res_mg" class="num">--</td>
+                  <td id="tgt_val_mg" class="num tgt">--</td>
+                  <td class="barcell"><div class="track"><div id="fill_mg" class="fill"></div></div></td>
+                  <td id="diff_mg" class="delta">--</td>
+                </tr>
+                <tr>
+                  <td class="nm">Sodium <small>Na⁺</small></td>
+                  <td id="res_na" class="num">--</td>
+                  <td id="tgt_val_na" class="num tgt">--</td>
+                  <td class="barcell"><div class="track"><div id="fill_na" class="fill"></div></div></td>
+                  <td id="diff_na" class="delta">--</td>
+                </tr>
+                <tr>
+                  <td class="nm">Sulfate <small>SO₄²⁻</small></td>
+                  <td id="res_so4" class="num">--</td>
+                  <td id="tgt_val_so4" class="num tgt">--</td>
+                  <td class="barcell"><div class="track"><div id="fill_so4" class="fill"></div></div></td>
+                  <td id="diff_so4" class="delta">--</td>
+                </tr>
+                <tr>
+                  <td class="nm">Chloride <small>Cl⁻</small></td>
+                  <td id="res_cl" class="num">--</td>
+                  <td id="tgt_val_cl" class="num tgt">--</td>
+                  <td class="barcell"><div class="track"><div id="fill_cl" class="fill"></div></div></td>
+                  <td id="diff_cl" class="delta">--</td>
+                </tr>
+                <tr>
+                  <td class="nm">Bicarbonate <small>HCO₃⁻</small></td>
+                  <td id="res_hco3" class="num">--</td>
+                  <td id="tgt_val_hco3" class="num tgt">--</td>
+                  <td class="barcell"><div class="track"><div id="fill_hco3" class="fill"></div></div></td>
+                  <td id="diff_hco3" class="delta">--</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Vessel Additions Card -->
+        <div class="card" style="margin-top:18px;">
+          <h2>
+            <span>RECOMMENDED DOSAGES PER VESSEL</span>
+          </h2>
+          <div class="body">
+            <div class="hint" style="margin-bottom:8px;">MASH TUN ADDITIONS</div>
+            <div id="mashDoses" class="doses"></div>
+
+            <div id="spargeDosesCard" style="margin-top:16px;">
+              <div class="hint" style="margin-bottom:8px;">SPARGE TANK ADDITIONS</div>
+              <div id="spargeDoses" class="doses"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recipe Save & Brew Sheet Card -->
+        <div class="card" style="margin-top:18px;">
+          <h2>
+            <span>SAVE RECIPE & BREW DAY</span>
+          </h2>
+          <div class="body">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button id="saveCsvBtn" class="btn gold" style="flex:1;">SAVE RECIPE (.CSV)</button>
+              <label class="btn" style="flex:1; text-align:center;">
+                LOAD RECIPE (.CSV)
+                <input type="file" id="loadCsvInput" accept=".csv" style="display:none;">
+              </label>
+            </div>
+            <button id="openSheetBtn" class="btn sheetbtn">OPEN BREW-DAY CHECKLIST SHEET</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <span class="fmotto">GRACO'S BREWING · CLERMONT, FL · CRAFT BEER ARTISANS</span>
+      Reference Books: <i>Water</i> (Palmer & Kaminski), <i>The New IPA</i> (Janish), <i>Lager Brewing</i> (Noonan), <i>Designing Great Beers</i> (Daniels), <i>Yeast</i> (White & Zainasheff).
+    </footer>
+  </div>
+
+  <!-- Brew Day Checklist Modal Overlay -->
+  <div id="sheetOverlay" class="modal-overlay" hidden>
+    <div class="sheet">
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:12px;">
+        <button class="btn gold" onclick="window.print()">PRINT SHEET</button>
+        <button id="closeSheetBtn" class="btn">CLOSE</button>
+      </div>
+      <div id="sheetContent"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
