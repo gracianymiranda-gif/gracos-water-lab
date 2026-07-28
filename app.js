@@ -1,7 +1,88 @@
 // Graco's Water Lab - Application Logic & Calculation Engine
 
-// Book-backed Preset Target Profiles (Expanded with Palmer, Janish, Noonan, Daniels, Mosher, White & Zainasheff)
+// Book-backed Preset Target Profiles + User Profiles & Custom Option
 const PRESETS = {
+  // Custom Profile Option
+  "custom": {
+    name: "★ Custom Target Profile (User Defined)",
+    book: "User Custom",
+    ions: { ca: 100, mg: 10, na: 15, so4: 100, cl: 100, hco3: 50 },
+    ph: 5.30,
+    note: "Editable custom profile — type any target ion PPM values into the fields below."
+  },
+
+  // User Provided Profiles from Image
+  "fat_head_ipa": {
+    name: "Fat Head IPA",
+    book: "Commercial Benchmark",
+    ions: { ca: 162, mg: 8.5, na: 21, so4: 285, cl: 23.5, hco3: 104 },
+    ph: 5.25,
+    note: "High sulfate (285 ppm) & calcium (162 ppm) for Fat Head Head Hunter style aggressive West Coast hop crispness."
+  },
+  "fidens_neipa": {
+    name: "IPA #1 NEIPA Fidens",
+    book: "Pro Recipe Benchmark",
+    ions: { ca: 124, mg: 3, na: 10, so4: 75, cl: 125, hco3: 0 },
+    ph: 5.30,
+    note: "Fidens NEIPA profile: Elevated chloride (125 ppm) to sulfate (75 ppm) ratio for soft mouthfeel and hop aroma."
+  },
+  "julius_ipa": {
+    name: "IPA #2 Julius",
+    book: "Tree House Benchmark",
+    ions: { ca: 15, mg: 26, na: 78, so4: 140, cl: 120, hco3: 0 },
+    ph: 5.30,
+    note: "Julius style profile: Balanced sulfate (140 ppm) and chloride (120 ppm) with magnesium & sodium depth."
+  },
+  "all_stars_west_coast": {
+    name: "IPA #3 Homebrew All Stars book (West Coast IPA)",
+    book: "Homebrew All Stars",
+    ions: { ca: 110, mg: 18, na: 17, so4: 352, cl: 50, hco3: 0 },
+    ph: 5.25,
+    note: "Extreme West Coast IPA sulfate level (352 ppm) for dry, sharp hop bite and quick finish."
+  },
+  "gold_nhc_2024": {
+    name: "IPA gold NHC 2024",
+    book: "NHC 2024 Gold Medal",
+    ions: { ca: 83, mg: 8, na: 13, so4: 155, cl: 67, hco3: 2 },
+    ph: 5.28,
+    note: "2024 NHC Gold Medal IPA profile: 2.3:1 SO4:Cl ratio for clean hop brightness and balanced malt."
+  },
+  "trillium_apa": {
+    name: "NE APA #1/Trillium",
+    book: "Trillium Benchmark",
+    ions: { ca: 97, mg: 5, na: 15, so4: 61, cl: 128, hco3: 0 },
+    ph: 5.30,
+    note: "Trillium NE Pale Ale profile: 2.1:1 Chloride-to-Sulfate ratio for soft mouthfeel and juicy hop expression."
+  },
+  "juicy_bits": {
+    name: "Juicy Bits water profile",
+    book: "WeldWerks Benchmark",
+    ions: { ca: 125, mg: 8, na: 21, so4: 75, cl: 175, hco3: 104 },
+    ph: 5.30,
+    note: "WeldWerks Juicy Bits profile: 2.33:1 Cl:SO4 ratio (175 ppm Cl) for massive pillowy hazy IPA mouthfeel."
+  },
+  "dark_lager_perplexity": {
+    name: "Dark lager perplexity",
+    book: "Perplexity Benchmark",
+    ions: { ca: 57, mg: 4, na: 55, so4: 45, cl: 67, hco3: 165 },
+    ph: 5.40,
+    note: "High bicarbonate (165 ppm) buffer for dark roasted malts with balanced sodium and chloride."
+  },
+  "light_and_hoppy": {
+    name: "Light & Hoppy",
+    book: "General Benchmark",
+    ions: { ca: 75, mg: 5, na: 10, so4: 150, cl: 50, hco3: 0 },
+    ph: 5.30,
+    note: "3:1 Sulfate-to-Chloride ratio for pale hoppy lagers and session IPAs."
+  },
+  "pale_lager_perplexity": {
+    name: "Pale lager perplexity",
+    book: "Perplexity Benchmark",
+    ions: { ca: 55, mg: 3, na: 12, so4: 62, cl: 65, hco3: 23 },
+    ph: 5.35,
+    note: "Clean, balanced, low-mineral profile for crisp pale lagers and Pilsners."
+  },
+
   // Scott Janish - The New IPA
   "janish_hazy_neipa": {
     name: "Janish Juicy Hazy IPA / NEIPA",
@@ -181,6 +262,16 @@ function setupEventListeners() {
     });
   });
 
+  // Custom Target Ion Editable Inputs Listener
+  ["ca", "mg", "na", "so4", "cl", "hco3"].forEach(ion => {
+    document.getElementById(`tgt_${ion}`)?.addEventListener("input", (e) => {
+      if (state.targetKey === "custom") {
+        PRESETS.custom.ions[ion] = parseFloat(e.target.value) || 0;
+        calculateAll();
+      }
+    });
+  });
+
   document.getElementById("roSlider")?.addEventListener("input", (e) => {
     state.roRatio = parseFloat(e.target.value) || 0;
     document.getElementById("roVal").textContent = `${state.roRatio}%`;
@@ -191,8 +282,10 @@ function setupEventListeners() {
     const key = e.target.value;
     if (PRESETS[key]) {
       state.targetKey = key;
-      state.targetMashPh = PRESETS[key].ph;
-      document.getElementById("targetMashPh").value = PRESETS[key].ph;
+      if (key !== "custom") {
+        state.targetMashPh = PRESETS[key].ph;
+        document.getElementById("targetMashPh").value = PRESETS[key].ph;
+      }
       updateTargetInputs();
       calculateAll();
     }
@@ -272,10 +365,24 @@ function updateSourceInputs() {
 function updateTargetInputs() {
   const p = PRESETS[state.targetKey];
   if (!p) return;
+
+  const isCustom = state.targetKey === "custom";
+
   ["ca", "mg", "na", "so4", "cl", "hco3"].forEach(ion => {
     const el = document.getElementById(`tgt_${ion}`);
-    if (el) el.value = p.ions[ion];
+    if (el) {
+      el.value = p.ions[ion];
+      el.readOnly = !isCustom;
+      if (isCustom) {
+        el.style.backgroundColor = "var(--copper-soft)";
+        el.style.borderColor = "var(--copper)";
+      } else {
+        el.style.backgroundColor = "var(--bg)";
+        el.style.borderColor = "var(--line-2)";
+      }
+    }
   });
+
   const noteEl = document.getElementById("bookTargetNote");
   if (noteEl) noteEl.innerHTML = `<b>Ref: ${p.book}</b> — ${p.note}`;
 }
@@ -549,7 +656,6 @@ function renderOutputs(combinedPpm, targetObj, mashPpm, estPh, mashAcid, spargeA
   }
 }
 
-// Yeast Health Callouts based on Chris White & Jamil Zainasheff (Yeast)
 function renderYeastHealthNotes(ppm) {
   const container = document.getElementById("yeastHealthNote");
   if (!container) return;
