@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Graco's Water Lab · Brew-Day Water Chemistry Solver</title>
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
   <div class="wrap">
@@ -48,6 +48,8 @@
             <div class="field" style="margin-top:0;">
               <label>START FROM PRESET</label>
               <select id="sourcePreset">
+                <option value="my_water">★ My Water (Tap Profile)</option>
+                <option value="custom">★ Custom Source Water (User Defined)</option>
                 <option value="moderate">Moderate Tap Water (Baseline)</option>
                 <option value="ro">RO / Distilled Water (0 ppm)</option>
                 <option value="soft">Soft Tap Water</option>
@@ -60,27 +62,27 @@
               <div class="ions">
                 <div class="ion">
                   <label>Ca <b>CALCIUM</b></label>
-                  <input type="number" id="src_ca" value="60">
+                  <input type="number" id="src_ca" value="50">
                 </div>
                 <div class="ion">
                   <label>Mg <b>MAGNESIUM</b></label>
-                  <input type="number" id="src_mg" value="8">
+                  <input type="number" id="src_mg" value="13">
                 </div>
                 <div class="ion">
                   <label>Na <b>SODIUM</b></label>
-                  <input type="number" id="src_na" value="20">
+                  <input type="number" id="src_na" value="17">
                 </div>
                 <div class="ion">
                   <label>SO₄ <b>SULFATE</b></label>
-                  <input type="number" id="src_so4" value="50">
+                  <input type="number" id="src_so4" value="42">
                 </div>
                 <div class="ion">
                   <label>Cl <b>CHLORIDE</b></label>
-                  <input type="number" id="src_cl" value="35">
+                  <input type="number" id="src_cl" value="27">
                 </div>
                 <div class="ion">
                   <label>HCO₃ <b>BICARB</b></label>
-                  <input type="number" id="src_hco3" value="110">
+                  <input type="number" id="src_hco3" value="173">
                 </div>
               </div>
             </div>
@@ -388,17 +390,17 @@
           </div>
         </div>
 
-        <!-- Recipe Save & Brew Sheet Card -->
+        <!-- Recipe Save & Brew Sheet Card (BeerXML Format) -->
         <div class="card" style="margin-top:18px;">
           <h2>
-            <span>SAVE RECIPE & BREW DAY</span>
+            <span>BEERXML RECIPE I/O & BREW DAY</span>
           </h2>
           <div class="body">
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <button id="saveCsvBtn" class="btn gold" style="flex:1;">SAVE RECIPE (.CSV)</button>
+              <button id="saveBeerXmlBtn" class="btn gold" style="flex:1;">SAVE BEERXML (.XML)</button>
               <label class="btn" style="flex:1; text-align:center;">
-                LOAD RECIPE (.CSV)
-                <input type="file" id="loadCsvInput" accept=".csv" style="display:none;">
+                LOAD BEERXML (.XML)
+                <input type="file" id="loadBeerXmlInput" accept=".xml,.beerxml" style="display:none;">
               </label>
             </div>
             <button id="openSheetBtn" class="btn sheetbtn">OPEN BREW-DAY CHECKLIST SHEET</button>
@@ -425,6 +427,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

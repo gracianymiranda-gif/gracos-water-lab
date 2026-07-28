@@ -2,7 +2,6 @@
 
 // Book-backed Preset Target Profiles + User Profiles & Custom Option
 const PRESETS = {
-  // Custom Profile Option
   "custom": {
     name: "★ Custom Target Profile (User Defined)",
     book: "User Custom",
@@ -10,8 +9,6 @@ const PRESETS = {
     ph: 5.30,
     note: "Editable custom profile — type any target ion PPM values into the fields below."
   },
-
-  // User Provided Profiles from Image
   "fat_head_ipa": {
     name: "Fat Head IPA",
     book: "Commercial Benchmark",
@@ -82,21 +79,12 @@ const PRESETS = {
     ph: 5.35,
     note: "Clean, balanced, low-mineral profile for crisp pale lagers and Pilsners."
   },
-
-  // Scott Janish - The New IPA
   "janish_hazy_neipa": {
     name: "Janish Juicy Hazy IPA / NEIPA",
     book: "The New IPA (Scott Janish)",
     ions: { ca: 125, mg: 10, na: 15, so4: 75, cl: 175, hco3: 40 },
     ph: 5.30,
     note: "High Chloride-to-Sulfate ratio (2.3:1) for pillowy mouthfeel, hop oil biotransformation, and haze stability."
-  },
-  "janish_juicy_double": {
-    name: "Janish Imperial Hazy DIPA",
-    book: "The New IPA (Scott Janish)",
-    ions: { ca: 140, mg: 10, na: 20, so4: 90, cl: 200, hco3: 45 },
-    ph: 5.28,
-    note: "Elevated Calcium (140 ppm) and Chloride (200 ppm) to support high-gravity dry hop rates without harshness."
   },
   "janish_west_coast": {
     name: "Janish Crisp West Coast IPA",
@@ -105,8 +93,6 @@ const PRESETS = {
     ph: 5.25,
     note: "High Sulfate-to-Chloride ratio (4.1:1) for dry, assertive hop bitterness and quick finish."
   },
-
-  // Greg Noonan & Lager Books
   "noonan_pilsen_soft": {
     name: "Bohemian / Pilsen Ultra-Soft",
     book: "Lager Brewing (Greg Noonan)",
@@ -114,29 +100,6 @@ const PRESETS = {
     ph: 5.25,
     note: "Ultra-soft water profile matching Pilsen, Czechia. Enhances subtle Saaz hop aroma and soft pale malt."
   },
-  "noonan_german_pils": {
-    name: "German Pilsner Crisp",
-    book: "Lager Brewing (Greg Noonan)",
-    ions: { ca: 60, mg: 8, na: 10, so4: 120, cl: 40, hco3: 30 },
-    ph: 5.30,
-    note: "Higher sulfate level (120 ppm) to accentuate noble hop bitterness and snappy attenuation."
-  },
-  "noonan_munich_helles": {
-    name: "Munich Helles / Vienna Lager",
-    book: "Lager Brewing (Greg Noonan)",
-    ions: { ca: 50, mg: 8, na: 10, so4: 30, cl: 55, hco3: 50 },
-    ph: 5.35,
-    note: "Balanced, low-sulfate profile designed for rich bready malt character and round lager finish."
-  },
-  "noonan_dark_lager": {
-    name: "Munich Dunkel / Doppelbock",
-    book: "Lager Brewing (Greg Noonan)",
-    ions: { ca: 80, mg: 15, na: 20, so4: 40, cl: 40, hco3: 140 },
-    ph: 5.40,
-    note: "Higher bicarbonate (140 ppm) to balance dark roast malts and maintain mash pH above 5.2."
-  },
-
-  // Ray Daniels & Randy Mosher - Historic Brewing Profiles
   "daniels_burton": {
     name: "Burton-on-Trent Historic Pale Ale",
     book: "Designing Great Beers (Ray Daniels)",
@@ -144,57 +107,22 @@ const PRESETS = {
     ph: 5.30,
     note: "Extreme historic sulfate level (610 ppm) famous for traditional Burton Pale Ales and IPA hop bite."
   },
-  "daniels_dublin": {
-    name: "Dublin Dry Irish Stout",
-    book: "Designing Great Beers (Ray Daniels)",
-    ions: { ca: 120, mg: 10, na: 12, so4: 55, cl: 20, hco3: 320 },
-    ph: 5.45,
-    note: "High bicarbonate (320 ppm) buffer to balance heavy roasted barley acids in classic Irish Dry Stouts."
-  },
-  "daniels_london": {
-    name: "London English Porter / Mild",
-    book: "Designing Great Beers (Ray Daniels)",
-    ions: { ca: 90, mg: 5, na: 15, so4: 40, cl: 50, hco3: 180 },
-    ph: 5.40,
-    note: "Moderate chloride and high bicarbonate matching historic Thames water for full malt body in Porters."
-  },
-  "daniels_dortmund": {
-    name: "Dortmunder Export Lager",
-    book: "Designing Great Beers (Ray Daniels)",
-    ions: { ca: 220, mg: 40, na: 60, so4: 330, cl: 130, hco3: 220 },
-    ph: 5.35,
-    note: "High-mineral lager water profile giving Dortmunder Export its characteristic firm, minerally finish."
-  },
-
-  // John Palmer - Water
   "palmer_yellow_balanced": {
     name: "Palmer Balanced Yellow Ale",
     book: "Water (John Palmer)",
     ions: { ca: 50, mg: 10, na: 15, so4: 80, cl: 60, hco3: 40 },
     ph: 5.40,
     note: "Standard baseline profile for Blonde Ales, Pale Ales, and Saison."
-  },
-  "palmer_malty_amber": {
-    name: "Palmer Malty Amber / Brown",
-    book: "Water (John Palmer)",
-    ions: { ca: 75, mg: 15, na: 25, so4: 50, cl: 100, hco3: 90 },
-    ph: 5.40,
-    note: "Chloride-forward amber profile for caramel sweetness and body."
-  },
-  "palmer_dark_stout": {
-    name: "Palmer Imperial Stout / Porter",
-    book: "Water (John Palmer)",
-    ions: { ca: 100, mg: 20, na: 35, so4: 60, cl: 60, hco3: 160 },
-    ph: 5.45,
-    note: "High alkalinity buffer to neutralize heavy dark chocolate and black patent roast acids."
   }
 };
 
-// Source Water Presets
+// Source Water Presets (Updated with 'My Water' and 'Custom')
 const SOURCE_PRESETS = {
+  "my_water": { ca: 50, mg: 13, na: 17, so4: 42, cl: 27, hco3: 173 },
+  "custom": { ca: 60, mg: 8, na: 20, so4: 50, cl: 35, hco3: 110 },
+  "moderate": { ca: 60, mg: 8, na: 20, so4: 50, cl: 35, hco3: 110 },
   "ro": { ca: 0, mg: 0, na: 0, so4: 0, cl: 0, hco3: 0 },
   "soft": { ca: 20, mg: 4, na: 8, so4: 15, cl: 12, hco3: 45 },
-  "moderate": { ca: 60, mg: 8, na: 20, so4: 50, cl: 35, hco3: 110 },
   "hard": { ca: 110, mg: 25, na: 45, so4: 140, cl: 80, hco3: 240 }
 };
 
@@ -212,7 +140,9 @@ const SALTS = {
 // Application State
 let state = {
   unit: "us",
-  sourceIons: { ca: 60, mg: 8, na: 20, so4: 50, cl: 35, hco3: 110 },
+  recipeName: "Graco's Homebrew Batch",
+  sourcePresetKey: "my_water",
+  sourceIons: { ca: 50, mg: 13, na: 17, so4: 42, cl: 27, hco3: 173 },
   roRatio: 0,
   targetKey: "janish_hazy_neipa",
   mashVol: 4.0,
@@ -238,6 +168,7 @@ let state = {
 document.addEventListener("DOMContentLoaded", () => {
   setupEventListeners();
   populatePresets();
+  updateSourceInputs();
   renderGrainBill();
   calculateAll();
 });
@@ -246,8 +177,10 @@ function setupEventListeners() {
   document.getElementById("btn-us")?.addEventListener("click", () => setUnit("us"));
   document.getElementById("btn-metric")?.addEventListener("click", () => setUnit("metric"));
 
+  // Source Preset Dropdown
   document.getElementById("sourcePreset")?.addEventListener("change", (e) => {
     const key = e.target.value;
+    state.sourcePresetKey = key;
     if (SOURCE_PRESETS[key]) {
       state.sourceIons = { ...SOURCE_PRESETS[key] };
       updateSourceInputs();
@@ -255,14 +188,18 @@ function setupEventListeners() {
     }
   });
 
+  // Source Water Inputs
   ["ca", "mg", "na", "so4", "cl", "hco3"].forEach(ion => {
     document.getElementById(`src_${ion}`)?.addEventListener("input", (e) => {
       state.sourceIons[ion] = parseFloat(e.target.value) || 0;
+      if (state.sourcePresetKey === "custom") {
+        SOURCE_PRESETS.custom[ion] = state.sourceIons[ion];
+      }
       calculateAll();
     });
   });
 
-  // Custom Target Ion Editable Inputs Listener
+  // Custom Target Ion Inputs Listener
   ["ca", "mg", "na", "so4", "cl", "hco3"].forEach(ion => {
     document.getElementById(`tgt_${ion}`)?.addEventListener("input", (e) => {
       if (state.targetKey === "custom") {
@@ -326,8 +263,9 @@ function setupEventListeners() {
   document.getElementById("openSheetBtn")?.addEventListener("click", openBrewSheet);
   document.getElementById("closeSheetBtn")?.addEventListener("click", closeBrewSheet);
 
-  document.getElementById("saveCsvBtn")?.addEventListener("click", saveRecipeCsv);
-  document.getElementById("loadCsvInput")?.addEventListener("change", loadRecipeCsv);
+  // BeerXML Import/Export
+  document.getElementById("saveBeerXmlBtn")?.addEventListener("click", saveBeerXml);
+  document.getElementById("loadBeerXmlInput")?.addEventListener("change", loadBeerXml);
 }
 
 function setUnit(u) {
@@ -356,9 +294,19 @@ function populatePresets() {
 }
 
 function updateSourceInputs() {
+  const isCustom = state.sourcePresetKey === "custom";
   ["ca", "mg", "na", "so4", "cl", "hco3"].forEach(ion => {
     const el = document.getElementById(`src_${ion}`);
-    if (el) el.value = state.sourceIons[ion];
+    if (el) {
+      el.value = state.sourceIons[ion];
+      if (isCustom) {
+        el.style.backgroundColor = "var(--copper-soft)";
+        el.style.borderColor = "var(--copper)";
+      } else {
+        el.style.backgroundColor = "var(--bg)";
+        el.style.borderColor = "var(--line-2)";
+      }
+    }
   });
 }
 
@@ -605,7 +553,6 @@ function calculateAll() {
 }
 
 function renderOutputs(combinedPpm, targetObj, mashPpm, estPh, mashAcid, spargeAcid, mashDosages, spargeDosages) {
-  // SO4 : Cl Ratio
   const ratio = combinedPpm.cl > 0 ? (combinedPpm.so4 / combinedPpm.cl).toFixed(2) : "N/A";
   document.getElementById("so4clRatio").textContent = ratio;
 
@@ -617,10 +564,8 @@ function renderOutputs(combinedPpm, targetObj, mashPpm, estPh, mashAcid, spargeA
 
   document.getElementById("ratioDesc").innerHTML = ratioDesc;
 
-  // Yeast Mineral Health Checks (White & Zainasheff - Yeast)
   renderYeastHealthNotes(combinedPpm);
 
-  // Ion Comparison Table
   ["ca", "mg", "na", "so4", "cl", "hco3"].forEach(ion => {
     const val = Math.round(combinedPpm[ion]);
     const tgt = targetObj[ion];
@@ -639,7 +584,6 @@ function renderOutputs(combinedPpm, targetObj, mashPpm, estPh, mashAcid, spargeA
     }
   });
 
-  // pH Gauge
   document.getElementById("phVal").textContent = estPh.toFixed(2);
   const markEl = document.getElementById("phMark");
   if (markEl) {
@@ -647,7 +591,6 @@ function renderOutputs(combinedPpm, targetObj, mashPpm, estPh, mashAcid, spargeA
     markEl.style.left = `${pct}%`;
   }
 
-  // Doses Breakdown
   renderDoseCard("mashDoses", mashDosages, mashAcid, "Mash Tun");
   if (!state.noSparge) {
     renderDoseCard("spargeDoses", spargeDosages, spargeAcid, "Sparge Tank");
@@ -717,7 +660,6 @@ function renderDoseCard(elementId, dosages, acidMl, label) {
   }
 }
 
-// Brew Day Printable Checklist Overlay
 function openBrewSheet() {
   const overlay = document.getElementById("sheetOverlay");
   const content = document.getElementById("sheetContent");
@@ -730,7 +672,7 @@ function openBrewSheet() {
       <img class="sh-logo" src="assets/logo_metal.png" alt="Graco's Brewing Logo">
       <div>
         <h3 class="sh-title">Graco's Water Lab · Brew Day Sheet</h3>
-        <div class="sh-meta">Target: <b>${targetName}</b> | Date: ${new Date().toLocaleDateString()}</div>
+        <div class="sh-meta">Recipe: <b>${state.recipeName}</b> | Target: <b>${targetName}</b> | Date: ${new Date().toLocaleDateString()}</div>
       </div>
     </div>
 
@@ -816,57 +758,179 @@ function closeBrewSheet() {
   if (overlay) overlay.hidden = true;
 }
 
-// Save Recipe CSV
-function saveRecipeCsv() {
-  const lines = [
-    ["Parameter", "Value"],
-    ["Recipe Target", PRESETS[state.targetKey] ? PRESETS[state.targetKey].name : state.targetKey],
-    ["Unit System", state.unit],
-    ["Mash Volume", state.mashVol],
-    ["Sparge Volume", state.noSparge ? 0 : state.spargeVol],
-    ["Target Mash pH", state.targetMashPh],
-    ["RO Dilution Pct", state.roRatio],
-    ["Source Ca", state.sourceIons.ca],
-    ["Source Mg", state.sourceIons.mg],
-    ["Source Na", state.sourceIons.na],
-    ["Source SO4", state.sourceIons.so4],
-    ["Source Cl", state.sourceIons.cl],
-    ["Source HCO3", state.sourceIons.hco3]
-  ];
+// Save Recipe as BeerXML (.xml)
+function saveBeerXml() {
+  const targetName = PRESETS[state.targetKey] ? PRESETS[state.targetKey].name : state.targetKey;
+  
+  let xml = `<?xml version="1.0" encoding="ISO-8859-1"?>\n<RECIPES>\n<RECIPE>\n`;
+  xml += ` <NAME>${escapeXml(state.recipeName)}</NAME>\n`;
+  xml += ` <VERSION>1</VERSION>\n`;
+  xml += ` <TYPE>All Grain</TYPE>\n`;
+  xml += ` <BREWER>Graco's Brewing</BREWER>\n`;
+  
+  // Batch size in liters
+  const batchL = state.unit === "us" ? (state.mashVol + state.spargeVol) * 3.78541 : state.mashVol + state.spargeVol;
+  xml += ` <BATCH_SIZE>${batchL.toFixed(4)}</BATCH_SIZE>\n`;
+  
+  // Fermentables
+  xml += ` <FERMENTABLES>\n`;
+  state.grains.forEach(g => {
+    const weightKg = state.unit === "us" ? g.weight * 0.453592 : g.weight;
+    xml += `  <FERMENTABLE>\n`;
+    xml += `   <NAME>${escapeXml(g.name)}</NAME>\n`;
+    xml += `   <VERSION>1</VERSION>\n`;
+    xml += `   <TYPE>${g.type === 'acid' ? 'Acid' : 'Grain'}</TYPE>\n`;
+    xml += `   <AMOUNT>${weightKg.toFixed(4)}</AMOUNT>\n`;
+    xml += `   <COLOR>${g.color.toFixed(1)}</COLOR>\n`;
+    xml += `  </FERMENTABLE>\n`;
+  });
+  xml += ` </FERMENTABLES>\n`;
 
-  const csvContent = "data:text/csv;charset=utf-8," + lines.map(e => e.join(",")).join("\n");
-  const encodedUri = encodeURI(csvContent);
+  // Source Water Profile
+  xml += ` <WATERS>\n`;
+  xml += `  <WATER>\n`;
+  xml += `   <NAME>Source Water (${state.sourcePresetKey})</NAME>\n`;
+  xml += `   <VERSION>1</VERSION>\n`;
+  xml += `   <AMOUNT>${batchL.toFixed(4)}</AMOUNT>\n`;
+  xml += `   <CALCIUM>${state.sourceIons.ca}</CALCIUM>\n`;
+  xml += `   <MAGNESIUM>${state.sourceIons.mg}</MAGNESIUM>\n`;
+  xml += `   <SODIUM>${state.sourceIons.na}</SODIUM>\n`;
+  xml += `   <SULFATE>${state.sourceIons.so4}</SULFATE>\n`;
+  xml += `   <CHLORIDE>${state.sourceIons.cl}</CHLORIDE>\n`;
+  xml += `   <BICARBONATE>${state.sourceIons.hco3}</BICARBONATE>\n`;
+  xml += `  </WATER>\n`;
+  xml += ` </WATERS>\n`;
+
+  // Mash pH
+  xml += ` <MASH>\n`;
+  xml += `  <NAME>Water Lab Mash Profile</NAME>\n`;
+  xml += `  <VERSION>1</VERSION>\n`;
+  xml += `  <PH>${state.targetMashPh}</PH>\n`;
+  xml += ` </MASH>\n`;
+
+  xml += `</RECIPE>\n</RECIPES>\n`;
+
+  const blob = new Blob([xml], { type: "application/xml" });
   const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `Graco_Water_Lab_Recipe_${Date.now()}.csv`);
+  link.href = URL.createObjectURL(blob);
+  link.download = `${state.recipeName.replace(/[^a-z0-9]/gi, '_')}_WaterLab.xml`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 }
 
-// Load Recipe CSV
-function loadRecipeCsv(e) {
+function escapeXml(unsafe) {
+  return (unsafe || '').replace(/[<>&'"]/g, function (c) {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '\'': return '&apos;';
+      case '"': return '&quot;';
+    }
+  });
+}
+
+// Load Recipe from BeerXML (.xml / .beerxml)
+function loadBeerXml(e) {
   const file = e.target.files[0];
   if (!file) return;
+
   const reader = new FileReader();
   reader.onload = function(evt) {
-    const text = evt.target.result;
-    const lines = text.split("\n");
-    lines.forEach(line => {
-      const parts = line.split(",");
-      if (parts.length >= 2) {
-        const key = parts[0].trim();
-        const val = parts[1].trim();
-        if (key === "Mash Volume") state.mashVol = parseFloat(val) || 4.0;
-        if (key === "Sparge Volume") state.spargeVol = parseFloat(val) || 3.5;
-        if (key === "RO Dilution Pct") state.roRatio = parseFloat(val) || 0;
+    const xmlText = evt.target.result;
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+
+    const recipeNode = xmlDoc.querySelector("RECIPE");
+    if (!recipeNode) {
+      alert("Invalid BeerXML file. Could not find <RECIPE> tag.");
+      return;
+    }
+
+    // 1. Recipe Name
+    const nameNode = recipeNode.querySelector("NAME");
+    if (nameNode && nameNode.textContent) {
+      state.recipeName = nameNode.textContent.trim();
+    }
+
+    // 2. Source Water Profile from <WATERS><WATER>
+    const waterNode = recipeNode.querySelector("WATERS WATER");
+    if (waterNode) {
+      state.sourceIons = {
+        ca: parseFloat(waterNode.querySelector("CALCIUM")?.textContent) || 0,
+        mg: parseFloat(waterNode.querySelector("MAGNESIUM")?.textContent) || 0,
+        na: parseFloat(waterNode.querySelector("SODIUM")?.textContent) || 0,
+        so4: parseFloat(waterNode.querySelector("SULFATE")?.textContent) || 0,
+        cl: parseFloat(waterNode.querySelector("CHLORIDE")?.textContent) || 0,
+        hco3: parseFloat(waterNode.querySelector("BICARBONATE")?.textContent) || 0
+      };
+      state.sourcePresetKey = "custom";
+      document.getElementById("sourcePreset").value = "custom";
+      updateSourceInputs();
+    }
+
+    // 3. Fermentables / Grain Bill
+    const fermentables = recipeNode.querySelectorAll("FERMENTABLES FERMENTABLE");
+    if (fermentables && fermentables.length > 0) {
+      state.grains = [];
+      fermentables.forEach(f => {
+        const fname = f.querySelector("NAME")?.textContent || "Malt";
+        const ftypeStr = (f.querySelector("TYPE")?.textContent || "").toLowerCase();
+        const amtKg = parseFloat(f.querySelector("AMOUNT")?.textContent) || 0;
+        const colorSrm = parseFloat(f.querySelector("COLOR")?.textContent) || 2.0;
+
+        // Weight conversion
+        const weight = state.unit === "us" ? Math.round(amtKg * 2.20462 * 10) / 10 : Math.round(amtKg * 10) / 10;
+
+        // Type determination
+        let gtype = "base";
+        if (ftypeStr.includes("acid") || fname.toLowerCase().includes("acid")) {
+          gtype = "acid";
+        } else if (colorSrm > 100) {
+          gtype = "roast";
+        } else if (colorSrm > 15) {
+          gtype = "crystal";
+        }
+
+        if (weight > 0) {
+          state.grains.push({
+            name: fname,
+            weight: weight,
+            color: colorSrm,
+            type: gtype
+          });
+        }
+      });
+      renderGrainBill();
+    }
+
+    // 4. Target Mash pH
+    const mashPhNode = recipeNode.querySelector("MASH PH");
+    if (mashPhNode && mashPhNode.textContent) {
+      const targetPh = parseFloat(mashPhNode.textContent);
+      if (targetPh > 4.5 && targetPh < 6.5) {
+        state.targetMashPh = targetPh;
+        document.getElementById("targetMashPh").value = targetPh;
       }
-    });
-    document.getElementById("mashVol").value = state.mashVol;
-    document.getElementById("spargeVol").value = state.spargeVol;
-    document.getElementById("roSlider").value = state.roRatio;
-    document.getElementById("roVal").textContent = `${state.roRatio}%`;
+    }
+
+    // 5. Batch Size / Mash Volume
+    const batchSizeNode = recipeNode.querySelector("BATCH_SIZE");
+    if (batchSizeNode && batchSizeNode.textContent) {
+      const batchL = parseFloat(batchSizeNode.textContent);
+      if (batchL > 0) {
+        const totalGal = batchL * 0.264172;
+        state.mashVol = Math.round(totalGal * 0.55 * 10) / 10;
+        state.spargeVol = Math.round(totalGal * 0.45 * 10) / 10;
+        document.getElementById("mashVol").value = state.mashVol;
+        document.getElementById("spargeVol").value = state.spargeVol;
+      }
+    }
+
     calculateAll();
+    alert(`Loaded BeerXML Recipe: ${state.recipeName}`);
   };
+
   reader.readAsText(file);
 }
