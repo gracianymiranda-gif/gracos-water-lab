@@ -137,6 +137,117 @@ const SALTS = {
   lime:   { name: "Slaked Lime", formula: "Ca(OH)₂", ca: 143.0, hco3: 435.0, mg: 0, na: 0, so4: 0, cl: 0, penalty: 5.0 }
 };
 
+// Malt Database reference based on "Malt: Discovering Malt" by John Mallett
+const MALT_DATABASE = [
+  {
+    category: "Standard Processed Base Malts",
+    malts: [
+      { name: "Pilsner Malt", color: 1.6, type: "base", desc: "Very pale, clean, sweet maltiness (Mallett Ch 9)" },
+      { name: "2-Row Pale Malt", color: 1.8, type: "base", desc: "Versatile North American base malt (Mallett Ch 9)" },
+      { name: "6-Row Pale Malt", color: 1.8, type: "base", desc: "High diastatic power for adjunct mashing (Mallett Ch 9)" },
+      { name: "Pale Ale Malt", color: 3.5, type: "base", desc: "Rich golden hue, biscuit & nutty notes (Mallett Ch 9)" },
+      { name: "Maris Otter Heritage Base", color: 3.5, type: "base", desc: "Classic English heirloom pale ale malt (Mallett Ch 9, 12)" },
+      { name: "Golden Promise Heritage Base", color: 3.0, type: "base", desc: "Scottish heirloom pale base malt (Mallett Ch 9, 12)" },
+      { name: "Vienna Malt", color: 4.0, type: "base", desc: "Rich orange color, grainy-sweet malty flavor (Mallett Ch 9)" },
+      { name: "Munich Light (10L)", color: 10.0, type: "base", desc: "Deep golden color, rich bread crust aroma (Mallett Ch 9)" },
+      { name: "Munich Dark (20L)", color: 20.0, type: "base", desc: "Dark amber color, intense maltiness (Mallett Ch 9)" }
+    ]
+  },
+  {
+    category: "High-Dried & Kilned Specialty Malts",
+    malts: [
+      { name: "Melanoidin / Aromatic Malt", color: 25.0, type: "base", desc: "Honey sweetness & melanoidin aroma (Mallett Ch 6, 9)" },
+      { name: "Biscuit Malt", color: 25.0, type: "crystal", desc: "Warm baked bread and biscuit aroma (Mallett Ch 6)" },
+      { name: "Victory Malt", color: 28.0, type: "crystal", desc: "Nutty and toasted biscuit flavors (Mallett Ch 6)" },
+      { name: "Amber Malt", color: 35.0, type: "crystal", desc: "Dry toasted, light coffee flavor (Mallett Ch 6)" },
+      { name: "Brown Malt", color: 65.0, type: "crystal", desc: "Rich dark toast and chocolate notes (Mallett Ch 6)" }
+    ]
+  },
+  {
+    category: "Caramel & Crystal Malts (Drum Stewed/Roasted)",
+    malts: [
+      { name: "Carapils / Dextrin Malt", color: 1.5, type: "crystal", desc: "Enhances body & head retention (Mallett Ch 6)" },
+      { name: "Caramel / Crystal 10L", color: 10.0, type: "crystal", desc: "Mild honey & light caramel sweetness (Mallett Ch 6, 9)" },
+      { name: "Caramel / Crystal 20L", color: 20.0, type: "crystal", desc: "Subtle caramel sweetness & golden hue (Mallett Ch 6, 9)" },
+      { name: "Caramel / Crystal 40L", color: 40.0, type: "crystal", desc: "Rich caramel & toasted sweet flavors (Mallett Ch 6, 9)" },
+      { name: "Caramel / Crystal 60L", color: 60.0, type: "crystal", desc: "Classic reddish amber color & full caramel (Mallett Ch 6, 9)" },
+      { name: "Caramel / Crystal 80L", color: 80.0, type: "crystal", desc: "Deep red color, dark caramel & plum (Mallett Ch 6, 9)" },
+      { name: "Caramel / Crystal 120L", color: 120.0, type: "crystal", desc: "Dark copper color, raisin & dark sugar (Mallett Ch 6, 9)" },
+      { name: "Special B (Dark Crystal)", color: 150.0, type: "crystal", desc: "Heavy dark fruit, raisin & caramel (Mallett Ch 6)" }
+    ]
+  },
+  {
+    category: "Roasted Malts & Grains (Drum Roasted)",
+    malts: [
+      { name: "Pale Chocolate Malt", color: 200.0, type: "roast", desc: "Smooth nutty roast and light coffee (Mallett Ch 6, 9)" },
+      { name: "Chocolate Malt", color: 350.0, type: "roast", desc: "Rich dark chocolate & espresso notes (Mallett Ch 6, 9)" },
+      { name: "Black Patent / Black Malt", color: 500.0, type: "roast", desc: "Sharp roasted bitterness & deep color (Mallett Ch 6, 9)" },
+      { name: "Roasted Barley (Unmalted)", color: 450.0, type: "roast", desc: "Dry coffee roast aroma, stout staple (Mallett Ch 6, 9)" },
+      { name: "Carafa Special (De-husked Roast)", color: 400.0, type: "roast", desc: "Smooth roast character without harsh husks (Mallett Ch 6)" }
+    ]
+  },
+  {
+    category: "Alternate Grains & Flaked Adjuncts",
+    malts: [
+      { name: "Malted Wheat", color: 2.0, type: "base", desc: "Foam retention, crisp creamy mouthfeel (Mallett Ch 6, 9)" },
+      { name: "Dark Wheat Malt", color: 9.0, type: "base", desc: "Malty wheat flavor with amber hue (Mallett Ch 6)" },
+      { name: "Malted Rye", color: 3.5, type: "base", desc: "Spicy, dry & complex mouthfeel (Mallett Ch 6, 9)" },
+      { name: "Malted Oats", color: 2.5, type: "base", desc: "Silky texture & smooth body (Mallett Ch 6, 9)" },
+      { name: "Flaked Barley", color: 1.5, type: "base", desc: "Grainy flavor, enhances body & foam (Mallett Ch 6)" },
+      { name: "Flaked Oats", color: 1.0, type: "base", desc: "Smooth velvet mouthfeel (Mallett Ch 6)" },
+      { name: "Flaked Wheat", color: 1.5, type: "base", desc: "Crisp haze & head retention (Mallett Ch 6)" },
+      { name: "Smoked / Peated Malt", color: 3.0, type: "base", desc: "Wood or peat smoke aromatics (Mallett Ch 6)" }
+    ]
+  },
+  {
+    category: "Process & Acid Malts",
+    malts: [
+      { name: "Acidulated / Acid Malt", color: 3.0, type: "acid", desc: "Contains ~1-2% organic lactic acid for mash pH control (Mallett Ch 6, 9)" }
+    ]
+  }
+];
+
+function initMaltMenu() {
+  const selectEl = document.getElementById("maltMenuSelect");
+  const datalistEl = document.getElementById("maltBookDatalist");
+  if (!selectEl) return;
+
+  selectEl.innerHTML = `<option value="">-- Select Malt from John Mallett's Book --</option>`;
+  if (datalistEl) datalistEl.innerHTML = "";
+
+  MALT_DATABASE.forEach(group => {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group.category;
+
+    group.malts.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m.name;
+      opt.textContent = `${m.name} (${m.color}°L)`;
+      optgroup.appendChild(opt);
+
+      if (datalistEl) {
+        const dOpt = document.createElement("option");
+        dOpt.value = m.name;
+        dOpt.textContent = `${m.color}°L - ${m.desc}`;
+        datalistEl.appendChild(dOpt);
+      }
+    });
+
+    selectEl.appendChild(optgroup);
+  });
+}
+
+function findMaltByName(name) {
+  if (!name) return null;
+  const search = name.trim().toLowerCase();
+  for (const cat of MALT_DATABASE) {
+    for (const m of cat.malts) {
+      if (m.name.toLowerCase() === search) return m;
+    }
+  }
+  return null;
+}
+
 // Application State
 let state = {
   unit: "us",
@@ -151,7 +262,7 @@ let state = {
   targetMashPh: 5.25,
   targetSpargePh: 5.60,
   grains: [
-    { name: "Maris Otter Base Malt", weight: 9.0, color: 3.5, type: "base" },
+    { name: "Maris Otter Heritage Base", weight: 9.0, color: 3.5, type: "base" },
     { name: "Caramel / Crystal 60L", weight: 1.0, color: 60.0, type: "crystal" }
   ],
   activeSalts: ["gypsum", "cacl2", "epsom", "baking"],
@@ -167,6 +278,7 @@ let state = {
 // Init on DOM Load
 document.addEventListener("DOMContentLoaded", () => {
   loadSavedCustomProfiles();
+  initMaltMenu();
   setupEventListeners();
   populateSourcePresets();
   populatePresets();
@@ -258,8 +370,21 @@ function setupEventListeners() {
     calculateAll();
   });
 
+  document.getElementById("addMaltFromMenuBtn")?.addEventListener("click", () => {
+    const selectEl = document.getElementById("maltMenuSelect");
+    const mName = selectEl ? selectEl.value : "";
+    const mMatch = findMaltByName(mName);
+    if (mMatch) {
+      state.grains.push({ name: mMatch.name, weight: 1.0, color: mMatch.color, type: mMatch.type });
+      renderGrainBill();
+      calculateAll();
+    } else {
+      alert("Please select a malt from the book menu dropdown.");
+    }
+  });
+
   document.getElementById("addGrainBtn")?.addEventListener("click", () => {
-    state.grains.push({ name: "2-Row Base Malt", weight: 1.0, color: 2.0, type: "base" });
+    state.grains.push({ name: "2-Row Pale Malt", weight: 1.0, color: 1.8, type: "base" });
     renderGrainBill();
     calculateAll();
   });
@@ -444,10 +569,10 @@ function renderGrainBill() {
     const div = document.createElement("div");
     div.className = "grainrow";
     div.innerHTML = `
-      <input type="text" value="${g.name}" placeholder="Malt Name" onchange="updateGrain(${idx}, 'name', this.value)">
-      <input type="number" step="0.1" value="${g.weight}" onchange="updateGrain(${idx}, 'weight', parseFloat(this.value)||0)">
-      <input type="number" step="0.1" value="${g.color}" onchange="updateGrain(${idx}, 'color', parseFloat(this.value)||0)">
-      <select onchange="updateGrain(${idx}, 'type', this.value)">
+      <input type="text" list="maltBookDatalist" value="${escapeXml(g.name)}" placeholder="Malt Name" oninput="onMaltNameInput(${idx}, this.value)" onchange="updateGrain(${idx}, 'name', this.value)">
+      <input type="number" id="grain_weight_${idx}" step="0.1" value="${g.weight}" onchange="updateGrain(${idx}, 'weight', parseFloat(this.value)||0)">
+      <input type="number" id="grain_color_${idx}" step="0.1" value="${g.color}" onchange="updateGrain(${idx}, 'color', parseFloat(this.value)||0)">
+      <select id="grain_type_${idx}" onchange="updateGrain(${idx}, 'type', this.value)">
         <option value="base" ${g.type==='base'?'selected':''}>Base</option>
         <option value="crystal" ${g.type==='crystal'?'selected':''}>Crystal</option>
         <option value="roast" ${g.type==='roast'?'selected':''}>Roast</option>
@@ -458,6 +583,23 @@ function renderGrainBill() {
     container.appendChild(div);
   });
 }
+
+window.onMaltNameInput = function(idx, val) {
+  if (state.grains[idx]) {
+    state.grains[idx].name = val;
+    const match = findMaltByName(val);
+    if (match) {
+      state.grains[idx].color = match.color;
+      state.grains[idx].type = match.type;
+      
+      const colorInput = document.getElementById(`grain_color_${idx}`);
+      const typeSelect = document.getElementById(`grain_type_${idx}`);
+      if (colorInput) colorInput.value = match.color;
+      if (typeSelect) typeSelect.value = match.type;
+    }
+    calculateAll();
+  }
+};
 
 window.updateGrain = function(idx, field, val) {
   if (state.grains[idx]) {

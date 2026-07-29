@@ -151,7 +151,7 @@
         <div class="card">
           <h2>
             <span>3. GRAIN BILL & MALT COLOR</span>
-            <span class="badge-tag">MASH PH MODEL</span>
+            <span class="badge-tag">MALLETT MALT MODEL</span>
           </h2>
           <div class="body">
             <div class="grainhead">
@@ -162,7 +162,15 @@
               <span></span>
             </div>
             <div id="grainList"></div>
-            <button id="addGrainBtn" class="addrow">+ ADD MALT TO BILL</button>
+            <div class="malt-menu-controls">
+              <select id="maltMenuSelect" class="malt-select-dropdown">
+                <!-- Dynamically populated from MALT_DATABASE -->
+              </select>
+              <button id="addMaltFromMenuBtn" class="addrow-secondary">+ ADD SELECTED MALT</button>
+            </div>
+            <button id="addGrainBtn" class="addrow">+ ADD BLANK MALT ROW</button>
+            <div class="malt-book-ref">📖 Malt reference database based on <i>Malt: Discovering Malt</i> by John Mallett</div>
+            <datalist id="maltBookDatalist"></datalist>
           </div>
         </div>
 

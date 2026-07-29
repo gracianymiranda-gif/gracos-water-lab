@@ -414,6 +414,72 @@ input:focus, select:focus {
   background: var(--copper-soft);
 }
 
+.malt-menu-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+.malt-select-dropdown {
+  flex: 1;
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  padding: 8px 10px;
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.malt-select-dropdown:focus {
+  border-color: var(--copper);
+}
+
+.malt-select-dropdown optgroup {
+  background: var(--surface);
+  color: var(--copper-bright);
+  font-weight: 700;
+}
+
+.malt-select-dropdown option {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.addrow-secondary {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--water);
+  background: var(--water-soft);
+  border: 1px solid rgba(95, 168, 191, 0.4);
+  border-radius: var(--r);
+  padding: 8px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.addrow-secondary:hover {
+  border-color: var(--water);
+  background: rgba(95, 168, 191, 0.2);
+}
+
+.malt-book-ref {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 8px;
+  text-align: right;
+  opacity: 0.85;
+}
+
 /* Salts checklist */
 .salts {
   display: flex;
