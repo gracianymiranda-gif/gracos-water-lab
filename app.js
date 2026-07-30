@@ -3,18 +3,18 @@
 // Book-backed Preset Target Profiles with Specific Target Mash pH Values
 const PRESETS = {
   "custom": {
-    name: "★ Custom Target Profile (User Defined)",
+    name: "\u2605 Custom Target Profile (User Defined)",
     book: "User Custom",
     ions: { ca: 100, mg: 10, na: 15, so4: 100, cl: 100, hco3: 50 },
     ph: 5.25,
-    note: "Editable custom profile — type any target ion PPM values into the fields below."
+    note: "Editable custom profile \u2014 type any target ion PPM values into the fields below."
   },
   "janish_hazy_neipa": {
     name: "Janish Juicy Hazy IPA / NEIPA",
     book: "The New IPA (Scott Janish)",
     ions: { ca: 125, mg: 10, na: 15, so4: 75, cl: 175, hco3: 40 },
     ph: 5.25,
-    note: "Scott Janish (The New IPA): Target 5.25 mash pH. Lower mash pH compensates for the +0.15–0.25 pH rise caused by heavy dry hopping, preventing harsh polyphenolic astringency."
+    note: "Scott Janish (The New IPA): Target 5.25 mash pH. Lower mash pH compensates for the +0.15\u20130.25 pH rise caused by heavy dry hopping, preventing harsh polyphenolic astringency."
   },
   "janish_west_coast": {
     name: "Janish Crisp West Coast IPA",
@@ -127,14 +127,19 @@ const SOURCE_PRESETS = {
 };
 
 // Salt Contributions in PPM per Gram per US Gallon
+// FIX 1 (CRITICAL): "salt" (Pickling Salt / NaCl) previously declared "na" twice
+// (103.9 then 0), which silently zeroed sodium due to duplicate object keys.
+// The duplicate "na: 0" has been removed below.
+// FIX 3 (HIGH): gypsum and cacl2 penalty values reduced from 1.0 to 0.15 so the
+// optimizer can dose these common, food-safe salts more freely to hit target ppm.
 const SALTS = {
-  gypsum: { name: "Gypsum", formula: "CaSO₄·2H₂O", ca: 61.5, so4: 147.4, mg: 0, na: 0, cl: 0, hco3: 0, penalty: 1.0 },
-  cacl2:  { name: "Calcium Chloride", formula: "CaCl₂·2H₂O", ca: 72.0, cl: 127.4, mg: 0, na: 0, so4: 0, hco3: 0, penalty: 1.0 },
-  epsom:  { name: "Epsom Salt", formula: "MgSO₄·7H₂O", mg: 26.1, so4: 103.0, ca: 0, na: 0, cl: 0, hco3: 0, penalty: 1.2 },
-  baking: { name: "Baking Soda", formula: "NaHCO₃", na: 72.3, hco3: 191.9, ca: 0, mg: 0, so4: 0, cl: 0, penalty: 4.0 },
-  mgcl2:  { name: "Magnesium Chloride", formula: "MgCl₂·6H₂O", mg: 31.6, cl: 92.3, ca: 0, na: 0, so4: 0, hco3: 0, penalty: 2.0 },
-  salt:   { name: "Pickling Salt", formula: "NaCl", na: 103.9, cl: 160.3, ca: 0, na: 0, so4: 0, hco3: 0, penalty: 2.5 },
-  lime:   { name: "Slaked Lime", formula: "Ca(OH)₂", ca: 143.0, hco3: 435.0, mg: 0, na: 0, so4: 0, cl: 0, penalty: 5.0 }
+  gypsum: { name: "Gypsum", formula: "CaSO\u2084\u00b72H\u2082O", ca: 61.5, so4: 147.4, mg: 0, na: 0, cl: 0, hco3: 0, penalty: 0.15 },
+  cacl2:  { name: "Calcium Chloride", formula: "CaCl\u2082\u00b72H\u2082O", ca: 72.0, cl: 127.4, mg: 0, na: 0, so4: 0, hco3: 0, penalty: 0.15 },
+  epsom:  { name: "Epsom Salt", formula: "MgSO\u2084\u00b77H\u2082O", mg: 26.1, so4: 103.0, ca: 0, na: 0, cl: 0, hco3: 0, penalty: 0.3 },
+  baking: { name: "Baking Soda", formula: "NaHCO\u2083", na: 72.3, hco3: 191.9, ca: 0, mg: 0, so4: 0, cl: 0, penalty: 4.0 },
+  mgcl2:  { name: "Magnesium Chloride", formula: "MgCl\u2082\u00b76H\u2082O", mg: 31.6, cl: 92.3, ca: 0, na: 0, so4: 0, hco3: 0, penalty: 2.0 },
+  salt:   { name: "Pickling Salt", formula: "NaCl", na: 103.9, cl: 160.3, ca: 0, mg: 0, so4: 0, hco3: 0, penalty: 2.5 },
+  lime:   { name: "Slaked Lime", formula: "Ca(OH)\u2082", ca: 143.0, hco3: 435.0, mg: 0, na: 0, so4: 0, cl: 0, penalty: 5.0 }
 };
 
 // Malt Database reference based on "Malt: Discovering Malt" by John Mallett
@@ -222,13 +227,13 @@ function initMaltMenu() {
     group.malts.forEach(m => {
       const opt = document.createElement("option");
       opt.value = m.name;
-      opt.textContent = `${m.name} (${m.color}°L)`;
+      opt.textContent = `${m.name} (${m.color}\u00b0L)`;
       optgroup.appendChild(opt);
 
       if (datalistEl) {
         const dOpt = document.createElement("option");
         dOpt.value = m.name;
-        dOpt.textContent = `${m.color}°L - ${m.desc}`;
+        dOpt.textContent = `${m.color}\u00b0L - ${m.desc}`;
         datalistEl.appendChild(dOpt);
       }
     });
@@ -342,7 +347,7 @@ function setupEventListeners() {
       state.targetMashPh = PRESETS[key].ph;
       const phInput = document.getElementById("targetMashPh");
       if (phInput) phInput.value = PRESETS[key].ph;
-      
+
       updateTargetInputs();
       calculateAll();
     }
@@ -413,8 +418,8 @@ function populateSourcePresets() {
   const sel = document.getElementById("sourcePreset");
   if (!sel) return;
   sel.innerHTML = `
-    <option value="my_water">★ My Water (Tap Profile)</option>
-    <option value="custom">★ Custom Source Water (User Defined)</option>
+    <option value="my_water">\u2605 My Water (Tap Profile)</option>
+    <option value="custom">\u2605 Custom Source Water (User Defined)</option>
     <option value="moderate">Moderate Tap Water (Baseline)</option>
     <option value="ro">RO / Distilled Water (0 ppm)</option>
     <option value="soft">Soft Tap Water</option>
@@ -427,7 +432,7 @@ function populateSourcePresets() {
     SOURCE_PRESETS[key] = { ca: p.ca, mg: p.mg, na: p.na, so4: p.so4, cl: p.cl, hco3: p.hco3 };
     const opt = document.createElement("option");
     opt.value = key;
-    opt.textContent = `💾 ${p.name}`;
+    opt.textContent = `\ud83d\udcbe ${p.name}`;
     sel.appendChild(opt);
   });
 
@@ -556,7 +561,7 @@ function updateTargetInputs() {
 
   const noteEl = document.getElementById("bookTargetNote");
   if (noteEl) {
-    noteEl.innerHTML = `<b>Ref: ${p.book}</b> (Target <b>${p.ph} pH</b>) — ${p.note}`;
+    noteEl.innerHTML = `<b>Ref: ${p.book}</b> (Target <b>${p.ph} pH</b>) \u2014 ${p.note}`;
   }
 }
 
@@ -578,7 +583,7 @@ function renderGrainBill() {
         <option value="roast" ${g.type==='roast'?'selected':''}>Roast</option>
         <option value="acid" ${g.type==='acid'?'selected':''}>Acid</option>
       </select>
-      <button class="del" onclick="removeGrain(${idx})">×</button>
+      <button class="del" onclick="removeGrain(${idx})">\u00d7</button>
     `;
     container.appendChild(div);
   });
@@ -591,7 +596,7 @@ window.onMaltNameInput = function(idx, val) {
     if (match) {
       state.grains[idx].color = match.color;
       state.grains[idx].type = match.type;
-      
+
       const colorInput = document.getElementById(`grain_color_${idx}`);
       const typeSelect = document.getElementById(`grain_type_${idx}`);
       if (colorInput) colorInput.value = match.color;
@@ -691,8 +696,12 @@ function calcError(dosages, effSource, targetIons, volGal) {
   err += Math.pow(res.cl - targetIons.cl, 2) * 1.5;
   err += Math.pow(res.hco3 - targetIons.hco3, 2) * 1.0;
 
+  // FIX 3 (HIGH): overall penalty multiplier reduced from 5.0 to 1.0. Combined with the
+  // lowered gypsum/cacl2 penalty values above, common salts can now dose more freely to
+  // hit target ppm, while baking soda, magnesium chloride, pickling salt, and slaked lime
+  // remain comparatively discouraged via their higher individual penalty values.
   Object.keys(dosages).forEach(k => {
-    if (SALTS[k]) err += dosages[k] * SALTS[k].penalty * 5.0;
+    if (SALTS[k]) err += dosages[k] * SALTS[k].penalty * 1.0;
   });
 
   return err;
@@ -717,6 +726,9 @@ function computeResultingPpm(dosages, effSource, volGal) {
   return res;
 }
 
+// AWARENESS ONLY: heuristic mash pH model (Bru'n Water-style rule-of-thumb based on grist
+// color, residual alkalinity, and acid malt %), not a full ionic buffering model \u2014
+// verify actual mash pH with a calibrated pH meter before finalizing a recipe.
 function estimateMashPh(ppm, grains, mashVolGal) {
   let totalWeightLb = 0;
   let weightedColor = 0;
@@ -766,6 +778,13 @@ function calcAcidMl(currentPh, targetPh, mashVolGal, alkPpm) {
   }
 }
 
+// FIX 4 (MEDIUM) bonus helper: estimate current sparge water pH from source alkalinity
+// instead of assuming a flat 5.90 for every source water profile.
+function estimateSpargePh(sourceHco3) {
+  const alk = sourceHco3 * 0.82;
+  return Math.round((5.60 + alk * 0.0018) * 100) / 100;
+}
+
 // Main Calculation Loop
 function calculateAll() {
   const effSource = getEffectiveSource();
@@ -782,11 +801,22 @@ function calculateAll() {
 
   const mashPpm = computeResultingPpm(mashDosages, effSource, mashGal);
   const totalGal = mashGal + spargeGal;
-  const combinedPpm = computeResultingPpm(mashDosages, effSource, totalGal > 0 ? totalGal : 1);
+
+  // FIX 2 (HIGH): merge mash + sparge dosages before computing the combined/displayed
+  // profile, so sparge salt additions are reflected in the resulting water report instead
+  // of being silently dropped.
+  const mergedDosages = {};
+  Object.keys(mashDosages).forEach(k => { mergedDosages[k] = (mergedDosages[k] || 0) + mashDosages[k]; });
+  Object.keys(spargeDosages).forEach(k => { mergedDosages[k] = (mergedDosages[k] || 0) + spargeDosages[k]; });
+  const combinedPpm = computeResultingPpm(mergedDosages, effSource, totalGal > 0 ? totalGal : 1);
 
   const estPh = estimateMashPh(mashPpm, state.grains, mashGal);
   const mashAcid = calcAcidMl(estPh, state.targetMashPh, mashGal, mashPpm.hco3);
-  const spargeAcid = state.noSparge ? 0 : calcAcidMl(5.90, 5.50, spargeGal, effSource.hco3);
+
+  // FIX 4 (MEDIUM): use state.targetSpargePh instead of the hardcoded 5.50, and estimate
+  // the current sparge pH from source water alkalinity instead of a flat 5.90.
+  const currentSpargePh = estimateSpargePh(effSource.hco3);
+  const spargeAcid = state.noSparge ? 0 : calcAcidMl(currentSpargePh, state.targetSpargePh, spargeGal, effSource.hco3);
 
   state.dosages.mashAcidMl = mashAcid;
   state.dosages.spargeAcidMl = spargeAcid;
@@ -799,10 +829,10 @@ function renderOutputs(combinedPpm, targetObj, mashPpm, estPh, mashAcid, spargeA
   document.getElementById("so4clRatio").textContent = ratio;
 
   let ratioDesc = "";
-  if (ratio > 2.5) ratioDesc = "<b>Very Dry & Crisp</b> — High sulfate accentuates hop bitterness & crisp finish (Scott Janish & Ray Daniels Burton profile).";
-  else if (ratio >= 1.5) ratioDesc = "<b>Slightly Dry / Balanced</b> — Suitable for Pale Ales and German Pilsners.";
-  else if (ratio >= 0.8) ratioDesc = "<b>Balanced Malt & Hops</b> — Ideal baseline for lagers and amber ales.";
-  else ratioDesc = "<b>Very Soft & Full</b> — High chloride enhances pillowy mouthfeel, juicy hop oils, and haze (Scott Janish NEIPA profile).";
+  if (ratio > 2.5) ratioDesc = "<b>Very Dry & Crisp</b> \u2014 High sulfate accentuates hop bitterness & crisp finish (Scott Janish & Ray Daniels Burton profile).";
+  else if (ratio >= 1.5) ratioDesc = "<b>Slightly Dry / Balanced</b> \u2014 Suitable for Pale Ales and German Pilsners.";
+  else if (ratio >= 0.8) ratioDesc = "<b>Balanced Malt & Hops</b> \u2014 Ideal baseline for lagers and amber ales.";
+  else ratioDesc = "<b>Very Soft & Full</b> \u2014 High chloride enhances pillowy mouthfeel, juicy hop oils, and haze (Scott Janish NEIPA profile).";
 
   document.getElementById("ratioDesc").innerHTML = ratioDesc;
 
@@ -847,19 +877,19 @@ function renderYeastHealthNotes(ppm) {
 
   let notes = [];
   if (ppm.ca < 50) {
-    notes.push("⚠️ <b>Low Calcium (&lt; 50 ppm)</b>: <i>Yeast (White & Zainasheff)</i> recommends at least 50 ppm Ca²⁺ for yeast cell wall integrity, mash enzyme protection, and clean flocculation.");
+    notes.push("\u26a0\ufe0f <b>Low Calcium (&lt; 50 ppm)</b>: <i>Yeast (White & Zainasheff)</i> recommends at least 50 ppm Ca\u00b2\u207a for yeast cell wall integrity, mash enzyme protection, and clean flocculation.");
   } else {
-    notes.push("✅ <b>Calcium (&gt; 50 ppm)</b>: Adequate Ca²⁺ for yeast flocculation & mash alpha-amylase stability.");
+    notes.push("\u2705 <b>Calcium (&gt; 50 ppm)</b>: Adequate Ca\u00b2\u207a for yeast flocculation & mash alpha-amylase stability.");
   }
 
   if (ppm.mg < 10) {
-    notes.push("⚠️ <b>Low Magnesium (&lt; 10 ppm)</b>: Mg²⁺ acts as an essential enzyme co-factor during yeast metabolism. Consider Epsom salt addition.");
+    notes.push("\u26a0\ufe0f <b>Low Magnesium (&lt; 10 ppm)</b>: Mg\u00b2\u207a acts as an essential enzyme co-factor during yeast metabolism. Consider Epsom salt addition.");
   } else if (ppm.mg > 35) {
-    notes.push("⚠️ <b>High Magnesium (&gt; 35 ppm)</b>: Mg²⁺ above 30 ppm can impart sour or astringent metallic bitterness.");
+    notes.push("\u26a0\ufe0f <b>High Magnesium (&gt; 35 ppm)</b>: Mg\u00b2\u207a above 30 ppm can impart sour or astringent metallic bitterness.");
   }
 
   if (ppm.na > 150) {
-    notes.push("⚠️ <b>High Sodium (&gt; 150 ppm)</b>: Elevated Na⁺ can taste harsh or overly salty when combined with high sulfate.");
+    notes.push("\u26a0\ufe0f <b>High Sodium (&gt; 150 ppm)</b>: Elevated Na\u207a can taste harsh or overly salty when combined with high sulfate.");
   }
 
   container.innerHTML = notes.join("<br>");
@@ -879,7 +909,7 @@ function renderDoseCard(elementId, dosages, acidMl, label) {
       div.className = "dose";
       div.innerHTML = `
         <div class="dn">${SALTS[k].name} (${SALTS[k].formula})</div>
-        <div class="dg">${amt} <span>${state.unit === 'us' ? 'g' : 'g'}</span></div>
+        <div class="dg">${amt} <span>g</span></div>
       `;
       container.appendChild(div);
     }
@@ -913,8 +943,8 @@ function openBrewSheet() {
     <div class="sheet-head">
       <img class="sh-logo" src="assets/logo_metal.png" alt="Graco's Brewing Logo">
       <div>
-        <h3 class="sh-title">Graco's Water Lab · Brew Day Sheet</h3>
-        <div class="sh-meta">Recipe: <b>${state.recipeName}</b> | Target: <b>${targetName}</b> | Date: ${new Date().toLocaleDateString()}</div>
+        <h3 class="sh-title">Graco's Water Lab \u00b7 Brew Day Sheet</h3>
+        <div class="sh-meta">Recipe: <b>${escapeXml(state.recipeName)}</b> | Target: <b>${targetName}</b> | Date: ${new Date().toLocaleDateString()}</div>
       </div>
     </div>
 
@@ -1002,16 +1032,16 @@ function closeBrewSheet() {
 
 function saveBeerXml() {
   const targetName = PRESETS[state.targetKey] ? PRESETS[state.targetKey].name : state.targetKey;
-  
+
   let xml = `<?xml version="1.0" encoding="ISO-8859-1"?>\n<RECIPES>\n<RECIPE>\n`;
   xml += ` <NAME>${escapeXml(state.recipeName)}</NAME>\n`;
   xml += ` <VERSION>1</VERSION>\n`;
   xml += ` <TYPE>All Grain</TYPE>\n`;
   xml += ` <BREWER>Graco's Brewing</BREWER>\n`;
-  
+
   const batchL = state.unit === "us" ? (state.mashVol + state.spargeVol) * 3.78541 : state.mashVol + state.spargeVol;
   xml += ` <BATCH_SIZE>${batchL.toFixed(4)}</BATCH_SIZE>\n`;
-  
+
   xml += ` <FERMENTABLES>\n`;
   state.grains.forEach(g => {
     const weightKg = state.unit === "us" ? g.weight * 0.453592 : g.weight;
@@ -1062,7 +1092,7 @@ function escapeXml(unsafe) {
       case '<': return '&lt;';
       case '>': return '&gt;';
       case '&': return '&amp;';
-      case '\'': return '&apos;';
+      case '\\'': return '&apos;';
       case '"': return '&quot;';
     }
   });
