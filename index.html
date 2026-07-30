@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Graco's Water Lab · Brew-Day Water Chemistry Solver</title>
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
   <div class="wrap">
@@ -50,9 +50,6 @@
               <select id="sourcePreset"></select>
             </div>
 
-            <!-- Ion Balance Warning -->
-            <div id="ionBalanceWarning" class="warning-banner" style="display:none;"></div>
-
             <div class="field">
               <label>WATER ION CONCENTRATIONS (PPM)</label>
               <div class="ions">
@@ -94,16 +91,6 @@
               </label>
               <input type="range" id="roSlider" min="0" max="100" value="0">
             </div>
-
-            <!-- Unit Converter (optional helper for non-standard water reports) -->
-            <details id="unitConverter">
-              <summary>🔄 Convert non-standard water report units</summary>
-              <label>Ca as CaCO₃ (ppm): <input type="number" id="convCaCO3Ca" placeholder="0"></label>
-              <label>Mg as CaCO₃ (ppm): <input type="number" id="convCaCO3Mg" placeholder="0"></label>
-              <label>HCO₃ as CaCO₃ (ppm): <input type="number" id="convCaCO3Hco3" placeholder="0"></label>
-              <label>SO₄ as SO₄-S (ppm): <input type="number" id="convSO4S" placeholder="0"></label>
-              <div id="conversionResults"></div>
-            </details>
           </div>
         </div>
 
@@ -190,30 +177,17 @@
         <!-- Water Split & Volumes Card -->
         <div class="card">
           <h2>
-            <span>4. BATCH SIZE, WATER VOLUMES & TARGET PH</span>
+            <span>4. WATER VOLUMES & TARGET PH</span>
           </h2>
           <div class="body">
-            <!-- NEW: Batch Size Slider (default 6 gallons) -->
-            <div class="field" style="margin-top:0;">
-              <label>
-                <span>TOTAL BATCH SIZE</span>
-                <b id="batchVolLbl" style="color:var(--copper-bright)">6.0 GAL</b>
-              </label>
-              <input type="range" id="batchVolSlider" min="1" max="15" step="0.5" value="6">
-              <div class="field" style="margin-top:8px;">
-                <input type="number" id="batchVolNumber" step="0.5" value="6.0" style="width:100px;">
-                <span class="hint" style="margin-left:8px;">Mash / Kettle water below scale automatically, or edit them directly.</span>
-              </div>
-            </div>
-
-            <div class="vol-grid" style="margin-top:14px;">
+            <div class="vol-grid">
               <div class="ion">
                 <label>MASH VOL (<b id="volUnitlbl">GAL</b>)</label>
                 <input type="number" id="mashVol" step="0.5" value="4.0">
               </div>
               <div class="ion" id="spargeVolGroup">
-                <label>KETTLE ADDITION VOL</label>
-                <input type="number" id="spargeVol" step="0.5" value="2.0">
+                <label>SPARGE VOL</label>
+                <input type="number" id="spargeVol" step="0.5" value="3.5">
               </div>
             </div>
 
@@ -223,9 +197,6 @@
                 <span style="font-size:12px; color:var(--ink);">FULL VOLUME / NO SPARGE (BIAB)</span>
               </label>
             </div>
-
-            <!-- Kettle / Sparge Alkalinity Warning -->
-            <div id="kettleAlkalinityWarning" class="warning-banner" style="display:none;"></div>
 
             <div class="vol-grid" style="margin-top:12px;">
               <div class="ion">
@@ -309,8 +280,6 @@
               </div>
               <div id="ratioDesc" class="ratio-desc">--</div>
             </div>
-            <!-- TDS Estimate Badge -->
-            <div id="tdsEstimate" class="tds-badge"></div>
           </div>
         </div>
 
@@ -424,7 +393,7 @@
             <div id="mashDoses" class="doses"></div>
 
             <div id="spargeDosesCard" style="margin-top:16px;">
-              <div class="hint" style="margin-bottom:8px;">BOIL KETTLE ADDITIONS</div>
+              <div class="hint" style="margin-bottom:8px;">SPARGE TANK ADDITIONS</div>
               <div id="spargeDoses" class="doses"></div>
             </div>
           </div>
@@ -467,6 +436,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
