@@ -128,8 +128,7 @@ const SOURCE_PRESETS = {
 
 // Salt Contributions in PPM per Gram per US Gallon
 // FIX 1 (CRITICAL): "salt" (Pickling Salt / NaCl) previously declared "na" twice
-// (103.9 then 0), which silently zeroed sodium due to duplicate object keys.
-// The duplicate "na: 0" has been removed below.
+// (103.9 then 0), which silently zeroed sodium due to duplicate object keys. Fixed.
 // FIX 3 (HIGH): gypsum and cacl2 penalty values reduced from 1.0 to 0.15 so the
 // optimizer can dose these common, food-safe salts more freely to hit target ppm.
 const SALTS = {
@@ -867,7 +866,8 @@ function renderOutputs(combinedPpm, targetObj, mashPpm, estPh, mashAcid, spargeA
   if (!state.noSparge) {
     renderDoseCard("spargeDoses", spargeDosages, spargeAcid, "Sparge Tank");
   } else {
-    document.getElementById("spargeDosesCard").style.display = "none";
+    const spargeCard = document.getElementById("spargeDosesCard");
+    if (spargeCard) spargeCard.style.display = "none";
   }
 }
 
@@ -1008,13 +1008,15 @@ function openBrewSheet() {
 
     if (state.dosages.spargeAcidMl > 0) {
       const acidName = state.acidType === "lactic88" ? "Lactic Acid 88%" : "Phosphoric Acid 85%";
+      // Brew-sheet text now reflects the configurable state.targetSpargePh instead of a
+      // hardcoded 5.80, keeping the printout consistent with the acid calculation.
       html += `
         <label class="check-item">
           <input type="checkbox">
           <div class="amt">${state.dosages.spargeAcidMl} <span>mL</span></div>
           <div class="txt">
             ${acidName}
-            <small>Acidify sparge water to pH &lt; 5.80</small>
+            <small>Acidify sparge water to pH ${state.targetSpargePh}</small>
           </div>
         </label>
       `;
@@ -1086,13 +1088,16 @@ function saveBeerXml() {
   document.body.removeChild(link);
 }
 
+// FIX (CRITICAL): the apostrophe case previously read case '\\'': which was a malformed
+// escape and a hard syntax error that stopped the entire file from parsing. Restored to
+// the correct single-quote escape below.
 function escapeXml(unsafe) {
   return (unsafe || '').replace(/[<>&'"]/g, function (c) {
     switch (c) {
       case '<': return '&lt;';
       case '>': return '&gt;';
       case '&': return '&amp;';
-      case '\\'': return '&apos;';
+      case '\'': return '&apos;';
       case '"': return '&quot;';
     }
   });
@@ -1130,7 +1135,8 @@ function loadBeerXml(e) {
         hco3: parseFloat(waterNode.querySelector("BICARBONATE")?.textContent) || 0
       };
       state.sourcePresetKey = "custom";
-      document.getElementById("sourcePreset").value = "custom";
+      const srcSel = document.getElementById("sourcePreset");
+      if (srcSel) srcSel.value = "custom";
       updateSourceInputs();
     }
 
@@ -1171,7 +1177,8 @@ function loadBeerXml(e) {
       const targetPh = parseFloat(mashPhNode.textContent);
       if (targetPh > 4.5 && targetPh < 6.5) {
         state.targetMashPh = targetPh;
-        document.getElementById("targetMashPh").value = targetPh;
+        const phInput = document.getElementById("targetMashPh");
+        if (phInput) phInput.value = targetPh;
       }
     }
 
@@ -1182,8 +1189,10 @@ function loadBeerXml(e) {
         const totalGal = batchL * 0.264172;
         state.mashVol = Math.round(totalGal * 0.55 * 10) / 10;
         state.spargeVol = Math.round(totalGal * 0.45 * 10) / 10;
-        document.getElementById("mashVol").value = state.mashVol;
-        document.getElementById("spargeVol").value = state.spargeVol;
+        const mv = document.getElementById("mashVol");
+        const sv = document.getElementById("spargeVol");
+        if (mv) mv.value = state.mashVol;
+        if (sv) sv.value = state.spargeVol;
       }
     }
 
