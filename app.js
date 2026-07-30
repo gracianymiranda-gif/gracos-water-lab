@@ -303,6 +303,33 @@ function setupEventListeners() {
 
   document.getElementById("saveSourceProfileBtn")?.addEventListener("click", saveCustomSourceProfile);
 
+  const updateSourceFromConv = () => {
+    const caInput = document.getElementById("convCaCO3Ca");
+    const mgInput = document.getElementById("convCaCO3Mg");
+    const hco3Input = document.getElementById("convCaCO3Hco3");
+    const so4sInput = document.getElementById("convSO4S");
+    
+    if (caInput && caInput.value) document.getElementById("src_ca").value = (parseFloat(caInput.value) * 0.401).toFixed(1);
+    if (mgInput && mgInput.value) document.getElementById("src_mg").value = (parseFloat(mgInput.value) * 0.243).toFixed(1);
+    if (hco3Input && hco3Input.value) document.getElementById("src_hco3").value = (parseFloat(hco3Input.value) * 1.22).toFixed(1);
+    if (so4sInput && so4sInput.value) document.getElementById("src_so4").value = (parseFloat(so4sInput.value) * 3.0).toFixed(1);
+    
+    ["ca", "mg", "na", "so4", "cl", "hco3"].forEach(ion => {
+      const el = document.getElementById(`src_${ion}`);
+      if (el) {
+        state.sourceIons[ion] = parseFloat(el.value) || 0;
+        if (state.sourcePresetKey === "custom") {
+          SOURCE_PRESETS.custom[ion] = state.sourceIons[ion];
+        }
+      }
+    });
+    calculateAll();
+  };
+
+  ["convCaCO3Ca", "convCaCO3Mg", "convCaCO3Hco3", "convSO4S"].forEach(id => {
+    document.getElementById(id)?.addEventListener("input", updateSourceFromConv);
+  });
+
   ["ca", "mg", "na", "so4", "cl", "hco3"].forEach(ion => {
     document.getElementById(`src_${ion}`)?.addEventListener("input", (e) => {
       state.sourceIons[ion] = parseFloat(e.target.value) || 0;
@@ -819,6 +846,21 @@ function calcSpargeAcidCarbonate(alkPpmCaCO3, startPh, targetPh, volGal) {
 // Main Calculation Loop
 function calculateAll() {
   const effSource = getEffectiveSource();
+  
+  // Ion Balance Check
+  const cations = (effSource.ca / 20.039) + (effSource.mg / 12.152) + (effSource.na / 22.99);
+  const anions = (effSource.so4 / 48.03) + (effSource.cl / 35.45) + (effSource.hco3 / 61.016);
+  const diff = Math.abs(cations - anions);
+  const ionBanner = document.getElementById("ionBalanceWarning");
+  if (ionBanner) {
+    if (diff > 0.5) {
+      ionBanner.style.display = "block";
+      ionBanner.innerHTML = `⚠️ <b>Ion Balance Warning</b>: Cations (${cations.toFixed(1)} meq/L) and Anions (${anions.toFixed(1)} meq/L) differ by >0.5 meq/L. Check your water report for typos.`;
+    } else {
+      ionBanner.style.display = "none";
+    }
+  }
+
   const targetObj = PRESETS[state.targetKey] ? PRESETS[state.targetKey].ions : PRESETS["janish_hazy_neipa"].ions;
 
   const mashGal = state.unit === "metric" ? state.mashVol * 0.264172 : state.mashVol;
@@ -837,6 +879,11 @@ function calculateAll() {
   Object.keys(mashDosages).forEach(k => { mergedDosages[k] = (mergedDosages[k] || 0) + mashDosages[k]; });
   Object.keys(spargeDosages).forEach(k => { mergedDosages[k] = (mergedDosages[k] || 0) + spargeDosages[k]; });
   const combinedPpm = computeResultingPpm(mergedDosages, effSource, totalGal > 0 ? totalGal : 1);
+  const combinedTds = combinedPpm.ca + combinedPpm.mg + combinedPpm.na + combinedPpm.so4 + combinedPpm.cl + combinedPpm.hco3;
+  const tdsBadge = document.getElementById("tdsEstimate");
+  if (tdsBadge) {
+    tdsBadge.innerHTML = `ESTIMATED TDS: <b>${combinedTds.toFixed(0)} PPM</b>`;
+  }
 
   const estPh = estimateMashPh(mashPpm, state.grains, mashGal);
   const mashAcid = calcAcidMl(estPh, state.targetMashPh, mashGal, mashPpm.hco3);
@@ -847,6 +894,25 @@ function calculateAll() {
 
   state.dosages.mashAcidMl = mashAcid;
   state.dosages.spargeAcidMl = spargeAcid;
+
+  // Kettle Alkalinity Warning Check
+  const spargeAcidMeq = spargeAcid * (state.acidType === "lactic88" ? 11.6 : 15.2);
+  const spargeAlkMeq = (spargeAlkPpm / 50.04) * (spargeGal * 3.785);
+  let residualAlkMeq = spargeAlkMeq - spargeAcidMeq;
+  if (residualAlkMeq < 0) residualAlkMeq = 0;
+  const residualAlkPpm = spargeGal > 0 ? (residualAlkMeq / (spargeGal * 3.785)) * 50.04 : 0;
+  
+  const kettleBanner = document.getElementById("kettleAlkalinityWarning");
+  if (kettleBanner && !state.noSparge) {
+    if (residualAlkPpm > 25) {
+      kettleBanner.style.display = "block";
+      kettleBanner.innerHTML = `⚠️ <b>Sparge Alkalinity High</b>: Residual alkalinity is ${residualAlkPpm.toFixed(1)} ppm as CaCO₃. Bru'n Water recommends < 25 ppm to prevent tannin extraction. Consider a lower Target Sparge pH or more acid.`;
+    } else {
+      kettleBanner.style.display = "none";
+    }
+  } else if (kettleBanner) {
+    kettleBanner.style.display = "none";
+  }
 
   renderOutputs(combinedPpm, targetObj, mashPpm, estPh, mashAcid, spargeAcid, mashDosages, spargeDosages);
 }
@@ -1221,19 +1287,70 @@ function loadBeerXml(e) {
       }
     }
 
-    const batchSizeNode = recipeNode.querySelector("BATCH_SIZE");
-    if (batchSizeNode && batchSizeNode.textContent) {
-      const batchL = parseFloat(batchSizeNode.textContent);
-      if (batchL > 0) {
+    // Parse total water from ingredients
+    let totalWaterGal = 0;
+    const waterIngredients = recipeNode.querySelectorAll("INGREDIENTS INGREDIENT");
+    waterIngredients.forEach(ing => {
+      const type = ing.querySelector("TYPE")?.textContent || "";
+      if (type.toLowerCase() === "water") {
+        const displayAmt = ing.querySelector("DISPLAY_AMOUNT")?.textContent || "";
+        if (displayAmt.toLowerCase().includes("gal")) {
+          totalWaterGal += parseFloat(displayAmt) || 0;
+        } else if (displayAmt.toLowerCase().includes("qt")) {
+          totalWaterGal += (parseFloat(displayAmt) || 0) / 4.0;
+        } else {
+          const amtL = parseFloat(ing.querySelector("AMOUNT")?.textContent) || 0;
+          totalWaterGal += amtL * 0.264172;
+        }
+      }
+    });
+
+    // Parse mash water from MASH_STEPS
+    let totalMashWaterGal = 0;
+    const mashSteps = recipeNode.querySelectorAll("MASH MASH_STEPS MASH_STEP");
+    mashSteps.forEach(step => {
+      const type = step.querySelector("TYPE")?.textContent || "";
+      if (type.toLowerCase() === "infusion") {
+        const displayInfuse = step.querySelector("DISPLAY_INFUSE_AMT")?.textContent || "";
+        if (displayInfuse.toLowerCase().includes("qt")) {
+          totalMashWaterGal += (parseFloat(displayInfuse) || 0) / 4.0;
+        } else if (displayInfuse.toLowerCase().includes("gal")) {
+          totalMashWaterGal += parseFloat(displayInfuse) || 0;
+        } else {
+          const infuseL = parseFloat(step.querySelector("INFUSE_AMOUNT")?.textContent) || 0;
+          totalMashWaterGal += infuseL * 0.264172;
+        }
+      }
+    });
+
+    if (totalWaterGal > 0 && totalMashWaterGal > 0) {
+      state.mashVol = Math.round(totalMashWaterGal * 10) / 10;
+      state.spargeVol = Math.round((totalWaterGal - totalMashWaterGal) * 10) / 10;
+      if (state.spargeVol < 0) state.spargeVol = 0;
+    } else if (totalMashWaterGal > 0) {
+      state.mashVol = Math.round(totalMashWaterGal * 10) / 10;
+      const batchSizeNode = recipeNode.querySelector("BATCH_SIZE");
+      if (batchSizeNode && batchSizeNode.textContent) {
+        const batchL = parseFloat(batchSizeNode.textContent);
         const totalGal = batchL * 0.264172;
-        state.mashVol = Math.round(totalGal * 0.55 * 10) / 10;
         state.spargeVol = Math.round(totalGal * 0.45 * 10) / 10;
-        const mv = document.getElementById("mashVol");
-        const sv = document.getElementById("spargeVol");
-        if (mv) mv.value = state.mashVol;
-        if (sv) sv.value = state.spargeVol;
+      }
+    } else {
+      const batchSizeNode = recipeNode.querySelector("BATCH_SIZE");
+      if (batchSizeNode && batchSizeNode.textContent) {
+        const batchL = parseFloat(batchSizeNode.textContent);
+        if (batchL > 0) {
+          const totalGal = batchL * 0.264172;
+          state.mashVol = Math.round(totalGal * 0.55 * 10) / 10;
+          state.spargeVol = Math.round(totalGal * 0.45 * 10) / 10;
+        }
       }
     }
+
+    const mv = document.getElementById("mashVol");
+    const sv = document.getElementById("spargeVol");
+    if (mv) mv.value = state.mashVol;
+    if (sv) sv.value = state.spargeVol;
 
     calculateAll();
     alert(`Loaded BeerXML Recipe: ${state.recipeName}`);
