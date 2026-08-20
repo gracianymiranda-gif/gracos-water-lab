@@ -785,16 +785,41 @@ function estimateMashPh(ppm, grains, mashVolGal) {
   return Math.round(Math.min(6.0, Math.max(4.0, estPh)) * 100) / 100;
 }
 
-function calcAcidMl(currentPh, targetPh, mashVolGal, alkPpm) {
-  if (currentPh <= targetPh) return 0;
-  const phDiff = currentPh - targetPh;
-  const mEqReq = phDiff * 25.0 * mashVolGal;
+// ============================================================
+// Mash acid dosing, carbonate-equilibrium model adapted from
+// Bru'n Water 1.25 (Martin Brungard) -- same carbonic-acid model
+// used for the sparge acid calculation below (see
+// calcSpargeAcidCarbonate / carbonateFractions), applied here so
+// mash and sparge acid dosing are calculated consistently.
+//
+// Previously this function accepted an `alkPpm` parameter but
+// never used it, applying a flat 25 mEq/pH-unit/gallon constant
+// regardless of the water's actual bicarbonate buffering capacity.
+// That meant two waters with very different alkalinity would get
+// identical acid recommendations for the same pH gap. This version
+// actually uses the water's alkalinity (as CaCO3 ppm) to compute
+// the real proton demand needed to shift from currentPh to targetPh.
+// ============================================================
+function calcAcidMl(currentPh, targetPh, mashVolGal, alkPpmCaCO3) {
+  if (currentPh <= targetPh || mashVolGal <= 0 || alkPpmCaCO3 <= 0) return 0;
 
-  if (state.acidType === "lactic88") {
-    return Math.round((mEqReq / 11.6) * 10) / 10;
-  } else {
-    return Math.round((mEqReq / 15.2) * 10) / 10;
-  }
+  const o = carbonateFractions(currentPh);
+  const b = carbonateFractions(4.3);     // standard alkalinity endpoint
+  const c = carbonateFractions(targetPh);
+
+  const denom = (b.f1 - o.f1) + (o.f3 - b.f3);
+  if (denom === 0) return 0;
+
+  const Ct = (alkPpmCaCO3 / 50) / denom;                // mmol/L total carbonate
+  const meqPerL = Ct * ((c.f1 - o.f1) + (o.f3 - c.f3));  // proton demand current->target
+  if (meqPerL <= 0) return 0;
+
+  const volL = mashVolGal * 3.785;
+  const meqTotal = meqPerL * volL;
+
+  // Same acid strengths (mEq per mL) used for the sparge acid calc.
+  const meqPerMl = state.acidType === "lactic88" ? 11.6 : 15.2;
+  return Math.round((meqTotal / meqPerMl) * 10) / 10;
 }
 
 function estimateSpargePh(sourceHco3) {
@@ -855,7 +880,7 @@ function calculateAll() {
   if (ionBanner) {
     if (diff > 0.5) {
       ionBanner.style.display = "block";
-      ionBanner.innerHTML = `⚠️ <b>Ion Balance Warning</b>: Cations (${cations.toFixed(1)} meq/L) and Anions (${anions.toFixed(1)} meq/L) differ by >0.5 meq/L. Check your water report for typos.`;
+      ionBanner.innerHTML = `\u26a0\ufe0f <b>Ion Balance Warning</b>: Cations (${cations.toFixed(1)} meq/L) and Anions (${anions.toFixed(1)} meq/L) differ by >0.5 meq/L. Check your water report for typos.`;
     } else {
       ionBanner.style.display = "none";
     }
@@ -886,7 +911,7 @@ function calculateAll() {
   }
 
   const estPh = estimateMashPh(mashPpm, state.grains, mashGal);
-  const mashAcid = calcAcidMl(estPh, state.targetMashPh, mashGal, mashPpm.hco3);
+  const mashAcid = calcAcidMl(estPh, state.targetMashPh, mashGal, mashPpm.hco3 * 0.8202);
 
   const currentSpargePh = estimateSpargePh(effSource.hco3);
   const spargeAlkPpm = effSource.hco3 * 0.8202;
@@ -906,7 +931,7 @@ function calculateAll() {
   if (kettleBanner && !state.noSparge) {
     if (residualAlkPpm > 25) {
       kettleBanner.style.display = "block";
-      kettleBanner.innerHTML = `⚠️ <b>Sparge Alkalinity High</b>: Residual alkalinity is ${residualAlkPpm.toFixed(1)} ppm as CaCO₃. Bru'n Water recommends < 25 ppm to prevent tannin extraction. Consider a lower Target Sparge pH or more acid.`;
+      kettleBanner.innerHTML = `\u26a0\ufe0f <b>Sparge Alkalinity High</b>: Residual alkalinity is ${residualAlkPpm.toFixed(1)} ppm as CaCO\u2083. Bru'n Water recommends < 25 ppm to prevent tannin extraction. Consider a lower Target Sparge pH or more acid.`;
     } else {
       kettleBanner.style.display = "none";
     }
@@ -1202,7 +1227,7 @@ function escapeXml(unsafe) {
       case '<': return '&lt;';
       case '>': return '&gt;';
       case '&': return '&amp;';
-      case '\'': return '&apos;';
+      case '\\'': return '&apos;';
       case '"': return '&quot;';
     }
   });
