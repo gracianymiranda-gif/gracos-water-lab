@@ -118,7 +118,10 @@ const PRESETS = {
 
 // Source Water Presets
 const SOURCE_PRESETS = {
-  "my_water": { ca: 50, mg: 13, na: 17, so4: 42, cl: 27, hco3: 173 },
+  // Ward Labs 7/31/2025 (carbon-filtered Clermont tap, Lab ID 10623):
+  // pH 8.0, alkalinity 126 as CaCO3. NOTE: Ward reports sulfate as
+  // SO4-S -- multiply by 3 for ppm SO4 (6 x 3 = 18).
+  "my_water": { ca: 46, mg: 11, na: 15, so4: 18, cl: 24, hco3: 153 },
   "custom": { ca: 60, mg: 8, na: 20, so4: 50, cl: 35, hco3: 110 },
   "moderate": { ca: 60, mg: 8, na: 20, so4: 50, cl: 35, hco3: 110 },
   "ro": { ca: 0, mg: 0, na: 0, so4: 0, cl: 0, hco3: 0 },
@@ -253,7 +256,7 @@ let state = {
   unit: "us",
   recipeName: "Graco's Homebrew Batch",
   sourcePresetKey: "my_water",
-  sourceIons: { ca: 50, mg: 13, na: 17, so4: 42, cl: 27, hco3: 173 },
+  sourceIons: { ca: 46, mg: 11, na: 15, so4: 18, cl: 24, hco3: 153 },
   roRatio: 0,
   targetKey: "janish_hazy_neipa",
   mashVol: 4.0,
