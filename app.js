@@ -649,9 +649,34 @@ function getEffectiveSource() {
   };
 }
 
-function solveSalts(effSource, targetIons, volGal) {
-  const activeKeys = Array.from(document.querySelectorAll('.salt input[type=checkbox]:checked')).map(cb => cb.value);
+// Salts that ADD alkalinity. They are NEVER dosed by the ion-matching
+// optimizer: chasing a target HCO3 number with baking soda and then
+// neutralizing it again with lactic acid wastes both and adds sodium.
+// Instead, when the estimated mash pH falls BELOW target (dark grists
+// on soft water), the pH model doses them directly -- see
+// calcAlkalineSaltG. They are also never added to sparge/kettle water
+// (Bru'n Water: alkaline minerals counteract sparge acidification and
+// raise kettle wort pH).
+const ALKALINE_SALTS = ["baking", "lime"];
+
+// Grams of baking soda (or pickling lime) needed to RAISE the mash pH
+// from estPh up to targetPh, using the same linear Bru'n Water model
+// as the acid dose (1 mEq/L of base raises mash pH by +0.17).
+// NaHCO3: 84 mg/mEq. Ca(OH)2: 37 mg/mEq.
+function calcAlkalineSaltG(saltKey, estPh, targetPh, mashVolGal) {
+  if (estPh >= targetPh || mashVolGal <= 0) return 0;
+  const mashL = mashVolGal * 3.785;
+  const meq = (targetPh - estPh) / 0.17 * mashL;
+  const mgPerMeq = saltKey === "lime" ? 37 : 84;
+  return Math.round(meq * mgPerMeq / 100) / 10; // grams, 0.1 g steps
+}
+
+function solveSalts(effSource, targetIons, volGal, excludeKeys) {
+  let activeKeys = Array.from(document.querySelectorAll('.salt input[type=checkbox]:checked')).map(cb => cb.value);
   state.activeSalts = activeKeys;
+  if (excludeKeys && excludeKeys.length) {
+    activeKeys = activeKeys.filter(k => !excludeKeys.includes(k));
+  }
 
   let bestDosages = {};
   activeKeys.forEach(k => bestDosages[k] = 0);
@@ -920,8 +945,30 @@ function calculateAll() {
   const mashGal = state.unit === "metric" ? state.mashVol * 0.264172 : state.mashVol;
   const spargeGal = state.noSparge ? 0 : (state.unit === "metric" ? state.spargeVol * 0.264172 : state.spargeVol);
 
-  const mashDosages = solveSalts(effSource, targetObj, mashGal);
-  const spargeDosages = state.noSparge ? {} : solveSalts(effSource, targetObj, spargeGal);
+  // Flavor/hardness salts only -- alkaline salts are handled by the pH
+  // model below, never by profile matching (see ALKALINE_SALTS note).
+  let mashDosages = solveSalts(effSource, targetObj, mashGal, ALKALINE_SALTS);
+  const spargeDosages = state.noSparge ? {} : solveSalts(effSource, targetObj, spargeGal, ALKALINE_SALTS);
+
+  // Dark grists on soft water can land BELOW the target mash pH; dose
+  // baking soda (or lime, if that's the enabled salt) straight from the
+  // pH gap, exactly like the acid dose but in the other direction.
+  {
+    const tryPpm = computeResultingPpm(mashDosages, effSource, mashGal);
+    const tryPh = estimateMashPh(tryPpm, state.grains, mashGal);
+    if (tryPh < state.targetMashPh - 0.02) {
+      const alkKey = ALKALINE_SALTS.find(k => state.activeSalts.includes(k));
+      if (alkKey) {
+        const g = calcAlkalineSaltG(alkKey, tryPh, state.targetMashPh, mashGal);
+        if (g > 0) mashDosages[alkKey] = g;
+      }
+    }
+  }
+
+  // Drop sub-0.1 g noise doses -- not measurable on a homebrew scale.
+  [mashDosages, spargeDosages].forEach(d => {
+    Object.keys(d).forEach(k => { if (d[k] > 0 && d[k] < 0.1) d[k] = 0; });
+  });
 
   state.dosages.mash = mashDosages;
   state.dosages.sparge = spargeDosages;
@@ -1150,7 +1197,7 @@ function openBrewSheet() {
   if (!state.noSparge) {
     html += `
       <div class="vessel-h" style="margin-top:24px;">
-        SPARGE TANK ADDITIONS (${state.spargeVol} ${state.unit === 'us' ? 'GAL' : 'L'})
+        SPARGE / KETTLE ADDITIONS (${state.spargeVol} ${state.unit === 'us' ? 'GAL' : 'L'})
       </div>
     `;
 
@@ -1163,7 +1210,7 @@ function openBrewSheet() {
             <div class="amt">${amt} <span>g</span></div>
             <div class="txt">
               ${SALTS[k].name} (${SALTS[k].formula})
-              <small>Stir into hot sparge water</small>
+              <small>Stir into sparge water, or add directly to the boil kettle</small>
             </div>
           </label>
         `;
