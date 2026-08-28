@@ -42,7 +42,7 @@ The mash and sparge pH models used in this tool are **heuristic estimates**, not
 
 ## Contributing
 
-Issues and pull requests are welcome. Since there's no test suite yet, please describe how you validated any changes to the chemistry calculations (e.g. comparison against a known BeerXML recipe or reference profile).
+Issues and pull requests are welcome. For changes to the chemistry calculations, run `node tests/bw-calibration.test.mjs` and describe any additional validation (e.g. comparison against a known BeerXML recipe or reference profile).
 
 ## License
 

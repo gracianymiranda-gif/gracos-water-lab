@@ -189,13 +189,13 @@ const MALT_DATABASE = [
   {
     category: "Alternate Grains & Flaked Adjuncts",
     malts: [
-      { name: "Malted Wheat", color: 2.0, type: "base", desc: "Foam retention, crisp creamy mouthfeel (Mallett Ch 6, 9)" },
-      { name: "Dark Wheat Malt", color: 9.0, type: "base", desc: "Malty wheat flavor with amber hue (Mallett Ch 6)" },
+      { name: "Malted Wheat", color: 2.0, type: "wheat", desc: "Foam retention, crisp creamy mouthfeel (Mallett Ch 6, 9)" },
+      { name: "Dark Wheat Malt", color: 9.0, type: "wheat", desc: "Malty wheat flavor with amber hue (Mallett Ch 6)" },
       { name: "Malted Rye", color: 3.5, type: "base", desc: "Spicy, dry & complex mouthfeel (Mallett Ch 6, 9)" },
-      { name: "Malted Oats", color: 2.5, type: "base", desc: "Silky texture & smooth body (Mallett Ch 6, 9)" },
+      { name: "Malted Oats", color: 2.5, type: "wheat", desc: "Silky texture & smooth body (Mallett Ch 6, 9)" },
       { name: "Flaked Barley", color: 1.5, type: "base", desc: "Grainy flavor, enhances body & foam (Mallett Ch 6)" },
-      { name: "Flaked Oats", color: 1.0, type: "base", desc: "Smooth velvet mouthfeel (Mallett Ch 6)" },
-      { name: "Flaked Wheat", color: 1.5, type: "base", desc: "Crisp haze & head retention (Mallett Ch 6)" },
+      { name: "Flaked Oats", color: 1.0, type: "wheat", desc: "Smooth velvet mouthfeel (Mallett Ch 6)" },
+      { name: "Flaked Wheat", color: 1.5, type: "wheat", desc: "Crisp haze & head retention (Mallett Ch 6)" },
       { name: "Smoked / Peated Malt", color: 3.0, type: "base", desc: "Wood or peat smoke aromatics (Mallett Ch 6)" }
     ]
   },
@@ -596,6 +596,7 @@ function renderGrainBill() {
       <input type="number" id="grain_color_${idx}" step="0.1" value="${g.color}" onchange="updateGrain(${idx}, 'color', parseFloat(this.value)||0)">
       <select id="grain_type_${idx}" onchange="updateGrain(${idx}, 'type', this.value)">
         <option value="base" ${g.type==='base'?'selected':''}>Base</option>
+        <option value="wheat" ${g.type==='wheat'?'selected':''}>Wheat/Oat</option>
         <option value="crystal" ${g.type==='crystal'?'selected':''}>Crystal</option>
         <option value="roast" ${g.type==='roast'?'selected':''}>Roast</option>
         <option value="acid" ${g.type==='acid'?'selected':''}>Acid</option>
@@ -740,15 +741,21 @@ function computeResultingPpm(dosages, effSource, volGal) {
 }
 
 // ============================================================
-// Mash pH model adapted from Bru'n Water 1.25 (Martin Brungard).
-// Each grain contributes acidity (mEq) by TYPE + COLOR; that load
-// is neutralized by the water's Kolbach residual alkalinity.
-// Distilled-water mash sits at 5.76; each unit of net acidity per
-// liter shifts pH by -0.17.
+// Mash pH model matching Bru'n Water 5.5 (Martin Brungard),
+// reverse-calibrated against the licensed spreadsheet (Aug 2026).
+// Each grain contributes acidity (mEq/lb) by TYPE + COLOR:
+//   base:    0.28 * L          (zero-color base anchors at 5.76)
+//   wheat:   0.28 * L - 2.70   (wheat/oat is net basic - raises pH)
+//   crystal: 0.21 * L + 2.5
+//   roast:   38 flat           (color-independent)
+//   acid:    95                (acidulated malt lactic load)
+// That load is offset by the water's Kolbach residual alkalinity
+// (alk - Ca/3.5 - Mg/7 in mEq). Distilled-water mash sits at
+// 5.76; each mEq/L of net acidity shifts pH by -0.17.
 //
-// AWARENESS ONLY: still an estimate, not a full ionic buffering
-// model. Verify actual mash pH with a calibrated pH meter before
-// finalizing a recipe.
+// AWARENESS ONLY: still an estimate (+/- ~0.1 pH), not a full
+// ionic buffering model. Verify actual mash pH with a calibrated
+// pH meter before finalizing a recipe.
 // ============================================================
 function estimateMashPh(ppm, grains, mashVolGal) {
   let grainAcid_mEq = 0;
@@ -765,6 +772,8 @@ function estimateMashPh(ppm, grains, mashVolGal) {
       grainAcid_mEq += wLb * 38;               // roast: flat, color-independent
     } else if (g.type === "crystal") {
       grainAcid_mEq += wLb * (0.21 * L + 2.5); // crystal: color-scaled + base
+    } else if (g.type === "wheat") {
+      grainAcid_mEq += wLb * (0.28 * L - 2.70); // wheat/oat: net BASIC offset (raises pH) + color-scaled
     } else {
       grainAcid_mEq += wLb * (0.28 * L);       // base malt: color-scaled
     }
@@ -782,49 +791,69 @@ function estimateMashPh(ppm, grains, mashVolGal) {
   const netProton = (grainAcid_mEq - alk_mEq) / mashL;
   const estPh = 5.76 - 0.17 * netProton;
 
-  return Math.round(Math.min(6.0, Math.max(4.0, estPh)) * 100) / 100;
+  return Math.round(Math.min(6.1, Math.max(4.0, estPh)) * 100) / 100;
 }
 
 // ============================================================
-// Mash acid dosing, carbonate-equilibrium model adapted from
-// Bru'n Water 1.25 (Martin Brungard) -- same carbonic-acid model
-// used for the sparge acid calculation below (see
-// calcSpargeAcidCarbonate / carbonateFractions), applied here so
-// mash and sparge acid dosing are calculated consistently.
-//
-// Previously this function accepted an `alkPpm` parameter but
-// never used it, applying a flat 25 mEq/pH-unit/gallon constant
-// regardless of the water's actual bicarbonate buffering capacity.
-// That meant two waters with very different alkalinity would get
-// identical acid recommendations for the same pH gap. This version
-// actually uses the water's alkalinity (as CaCO3 ppm) to compute
-// the real proton demand needed to shift from currentPh to targetPh.
+// Effective acid strength (mEq per mL) at a given mash/water pH.
+// Computed from concentration, density and MW, corrected for the
+// fraction of the acid actually dissociated at that pH
+// (Henderson-Hasselbalch). Verified against Bru'n Water 5.5's
+// acid table (pKa values and solution densities match its
+// hidden "acidtable": lactic pK 3.86, phosphoric pK 2.12/7.20).
+//  - Lactic 88% w/w: 1.207 g/mL x 0.88 / 90.08 g/mol = 11.79 mmol/mL
+//  - Phosphoric 85% w/w: 1.685 g/mL x 0.85 / 98.0 g/mol = 14.61 mmol/mL
 // ============================================================
-function calcAcidMl(currentPh, targetPh, mashVolGal, alkPpmCaCO3) {
-  if (currentPh <= targetPh || mashVolGal <= 0 || alkPpmCaCO3 <= 0) return 0;
+function acidMeqPerMl(acidType, ph) {
+  if (acidType === "lactic88") {
+    const molarity = 1.207 * 0.88 / 90.08 * 1000;      // mmol per mL
+    return molarity / (1 + Math.pow(10, 3.86 - ph));   // ~11.46 at pH 5.4
+  }
+  // phosphoric 85%: protons from first two dissociations at mash pH
+  const molarity = 1.685 * 0.85 / 98.0 * 1000;         // mmol per mL
+  const n = 1 / (1 + Math.pow(10, 2.12 - ph)) + 1 / (1 + Math.pow(10, 7.20 - ph));
+  return molarity * n;                                  // ~14.84 at pH 5.4
+}
 
-  const o = carbonateFractions(currentPh);
-  const b = carbonateFractions(4.3);     // standard alkalinity endpoint
-  const c = carbonateFractions(targetPh);
+// ============================================================
+// Mash acid dosing -- linear proton-balance model matching
+// Bru'n Water 5.5 (reverse-calibrated against the licensed
+// spreadsheet across 70+ scenarios, Aug 2026).
+//
+// Bru'n Water's mash pH model is linear: each mEq/L of net acid
+// added to the mash water moves the estimated mash pH by
+// -0.17 pH (the same 0.17 slope used in estimateMashPh, which
+// already accounts for water alkalinity, Kolbach residual
+// alkalinity, and grain-bill acidity). So the acid needed to
+// close the gap between estimated and target pH is simply
+//   mEq = deltaPh / 0.17 per liter of mash water.
+//
+// The previous carbonate-equilibrium version returned ZERO acid
+// whenever water alkalinity was ~0 -- i.e. for every RO-based
+// profile (NEIPA, Fidens, Tree House...) -- even with the mash
+// sitting far above target. Grain chemistry, not water carbonate,
+// dominates mash acid demand; this model captures that.
+// ============================================================
+function calcMashAcidMl(currentPh, targetPh, mashVolGal) {
+  if (currentPh <= targetPh || mashVolGal <= 0) return 0;
 
-  const denom = (b.f1 - o.f1) + (o.f3 - b.f3);
-  if (denom === 0) return 0;
+  const mashL = mashVolGal * 3.785;
+  const meqTotal = (currentPh - targetPh) / 0.17 * mashL;
 
-  const Ct = (alkPpmCaCO3 / 50) / denom;                // mmol/L total carbonate
-  const meqPerL = Ct * ((c.f1 - o.f1) + (o.f3 - c.f3));  // proton demand current->target
-  if (meqPerL <= 0) return 0;
-
-  const volL = mashVolGal * 3.785;
-  const meqTotal = meqPerL * volL;
-
-  // Same acid strengths (mEq per mL) used for the sparge acid calc.
-  const meqPerMl = state.acidType === "lactic88" ? 11.6 : 15.2;
+  const meqPerMl = acidMeqPerMl(state.acidType, targetPh);
   return Math.round((meqTotal / meqPerMl) * 10) / 10;
 }
 
+// Estimated pH of the raw SOURCE water before acidification --
+// this is the starting point for the sparge acid titration, so it
+// must reflect the water itself (~7-8.3 for alkaline tap water),
+// NOT a mash-like pH. Natural waters open to the atmosphere trend
+// higher with alkalinity; Bru'n Water defaults to 8.3.
 function estimateSpargePh(sourceHco3) {
-  const alk = sourceHco3 * 0.82;
-  return Math.round((5.60 + alk * 0.0018) * 100) / 100;
+  const alk = sourceHco3 * 0.8202; // ppm as CaCO3
+  if (alk <= 1) return 7.0;        // RO / near-pure water
+  const ph = 7.0 + 0.55 * Math.log10(alk);
+  return Math.round(Math.min(8.3, ph) * 100) / 100;
 }
 
 // ============================================================
@@ -863,8 +892,8 @@ function calcSpargeAcidCarbonate(alkPpmCaCO3, startPh, targetPh, volGal) {
   const volL = volGal * 3.785;
   const meqTotal = meqPerL * volL;
 
-  // Same acid strengths (mEq per mL) used for the mash acid calc.
-  const meqPerMl = state.acidType === "lactic88" ? 11.6 : 15.2;
+  // Dissociation-corrected acid strength at the sparge target pH.
+  const meqPerMl = acidMeqPerMl(state.acidType, targetPh);
   return Math.round((meqTotal / meqPerMl) * 10) / 10;
 }
 
@@ -911,7 +940,7 @@ function calculateAll() {
   }
 
   const estPh = estimateMashPh(mashPpm, state.grains, mashGal);
-  const mashAcid = calcAcidMl(estPh, state.targetMashPh, mashGal, mashPpm.hco3 * 0.8202);
+  const mashAcid = calcMashAcidMl(estPh, state.targetMashPh, mashGal);
 
   const currentSpargePh = estimateSpargePh(effSource.hco3);
   const spargeAlkPpm = effSource.hco3 * 0.8202;
@@ -921,7 +950,7 @@ function calculateAll() {
   state.dosages.spargeAcidMl = spargeAcid;
 
   // Kettle Alkalinity Warning Check
-  const spargeAcidMeq = spargeAcid * (state.acidType === "lactic88" ? 11.6 : 15.2);
+  const spargeAcidMeq = spargeAcid * acidMeqPerMl(state.acidType, state.targetSpargePh);
   const spargeAlkMeq = (spargeAlkPpm / 50.04) * (spargeGal * 3.785);
   let residualAlkMeq = spargeAlkMeq - spargeAcidMeq;
   if (residualAlkMeq < 0) residualAlkMeq = 0;
@@ -1282,12 +1311,15 @@ function loadBeerXml(e) {
         const weight = state.unit === "us" ? Math.round(amtKg * 2.20462 * 10) / 10 : Math.round(amtKg * 10) / 10;
 
         let gtype = "base";
-        if (ftypeStr.includes("acid") || fname.toLowerCase().includes("acid")) {
+        const lname = fname.toLowerCase();
+        if (ftypeStr.includes("acid") || lname.includes("acid")) {
           gtype = "acid";
-        } else if (colorSrm > 100) {
-          gtype = "roast";
-        } else if (colorSrm > 15) {
-          gtype = "crystal";
+        } else if (lname.includes("roast") || lname.includes("chocolate") || lname.includes("carafa") || lname.includes("black") || colorSrm >= 160) {
+          gtype = "roast"; // true roasted grains: color-independent 38 mEq/lb
+        } else if (lname.includes("crystal") || lname.includes("caramel") || lname.includes("cara") || lname.includes("special b") || colorSrm > 15) {
+          gtype = "crystal"; // dark crystal (C120, Special B) stays crystal, not roast
+        } else if (lname.includes("wheat") || lname.includes("oat") || lname.includes("spelt")) {
+          gtype = "wheat"; // wheat/oat: net basic, raises mash pH (Bru'n Water class)
         }
 
         if (weight > 0) {
