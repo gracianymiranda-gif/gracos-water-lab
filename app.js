@@ -1253,7 +1253,10 @@ function saveBeerXml() {
   xml += ` <TYPE>All Grain</TYPE>\n`;
   xml += ` <BREWER>Graco's Brewing</BREWER>\n`;
 
-  const batchL = state.unit === "us" ? (state.mashVol + state.spargeVol) * 3.78541 : state.mashVol + state.spargeVol;
+  const mashGal = state.unit === "metric" ? state.mashVol * 0.264172 : state.mashVol;
+  const spargeGal = state.noSparge ? 0 : (state.unit === "metric" ? state.spargeVol * 0.264172 : state.spargeVol);
+  const mashL = mashGal * 3.78541;
+  const batchL = (mashGal + spargeGal) * 3.78541;
   xml += ` <BATCH_SIZE>${batchL.toFixed(4)}</BATCH_SIZE>\n`;
 
   xml += ` <FERMENTABLES>\n`;
@@ -1283,11 +1286,92 @@ function saveBeerXml() {
   xml += `  </WATER>\n`;
   xml += ` </WATERS>\n`;
 
+  // Salt & acid additions as BeerXML Water Agent miscs (readable by
+  // BeerSmith/Brewfather, and parsed back by loadBeerXml).
+  const acidName = state.acidType === "lactic88" ? "Lactic Acid 88%" : "Phosphoric Acid 85%";
+  const saltMisc = (name, grams, useLabel) => {
+    let m = `  <MISC>\n`;
+    m += `   <NAME>${escapeXml(name)} (${useLabel})</NAME>\n`;
+    m += `   <VERSION>1</VERSION>\n`;
+    m += `   <TYPE>Water Agent</TYPE>\n`;
+    m += `   <USE>Mash</USE>\n`;
+    m += `   <TIME>60</TIME>\n`;
+    m += `   <AMOUNT>${(grams / 1000).toFixed(6)}</AMOUNT>\n`;
+    m += `   <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>\n`;
+    m += `   <DISPLAY_AMOUNT>${grams.toFixed(1)} g</DISPLAY_AMOUNT>\n`;
+    m += `  </MISC>\n`;
+    return m;
+  };
+  const acidMisc = (ml, useLabel) => {
+    let m = `  <MISC>\n`;
+    m += `   <NAME>${escapeXml(acidName)} (${useLabel})</NAME>\n`;
+    m += `   <VERSION>1</VERSION>\n`;
+    m += `   <TYPE>Water Agent</TYPE>\n`;
+    m += `   <USE>Mash</USE>\n`;
+    m += `   <TIME>60</TIME>\n`;
+    m += `   <AMOUNT>${(ml / 1000).toFixed(6)}</AMOUNT>\n`;
+    m += `   <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>\n`;
+    m += `   <DISPLAY_AMOUNT>${ml} mL</DISPLAY_AMOUNT>\n`;
+    m += `  </MISC>\n`;
+    return m;
+  };
+
+  xml += ` <MISCS>\n`;
+  Object.keys(state.dosages.mash).forEach(k => {
+    const g = state.dosages.mash[k];
+    if (g > 0 && SALTS[k]) xml += saltMisc(SALTS[k].name, g, "Mash");
+  });
+  Object.keys(state.dosages.sparge).forEach(k => {
+    const g = state.dosages.sparge[k];
+    if (g > 0 && SALTS[k]) xml += saltMisc(SALTS[k].name, g, "Sparge");
+  });
+  if (state.dosages.mashAcidMl > 0) xml += acidMisc(state.dosages.mashAcidMl, "Mash");
+  if (!state.noSparge && state.dosages.spargeAcidMl > 0) xml += acidMisc(state.dosages.spargeAcidMl, "Sparge");
+  xml += ` </MISCS>\n`;
+
   xml += ` <MASH>\n`;
   xml += `  <NAME>Water Lab Mash Profile</NAME>\n`;
   xml += `  <VERSION>1</VERSION>\n`;
   xml += `  <PH>${state.targetMashPh}</PH>\n`;
+  xml += `  <MASH_STEPS>\n`;
+  xml += `   <MASH_STEP>\n`;
+  xml += `    <NAME>Mash In</NAME>\n`;
+  xml += `    <VERSION>1</VERSION>\n`;
+  xml += `    <TYPE>Infusion</TYPE>\n`;
+  xml += `    <INFUSE_AMOUNT>${mashL.toFixed(4)}</INFUSE_AMOUNT>\n`;
+  xml += `    <STEP_TEMP>66.7</STEP_TEMP>\n`;
+  xml += `    <STEP_TIME>60</STEP_TIME>\n`;
+  xml += `   </MASH_STEP>\n`;
+  xml += `  </MASH_STEPS>\n`;
   xml += ` </MASH>\n`;
+
+  // Human-readable summary of the water treatment for other apps.
+  let noteLines = [`Graco's Water Lab: target profile "${targetName}", RO dilution ${state.roRatio}%, acid ${acidName}.`];
+  const doseLine = (label, doses, acidMl) => {
+    const parts = Object.keys(doses)
+      .filter(k => doses[k] > 0 && SALTS[k])
+      .map(k => `${SALTS[k].name} ${doses[k].toFixed(1)} g`);
+    if (acidMl > 0) parts.push(`${acidName} ${acidMl} mL`);
+    return parts.length ? `${label}: ${parts.join(", ")}` : "";
+  };
+  const mashLine = doseLine("Mash additions", state.dosages.mash, state.dosages.mashAcidMl);
+  const spargeLine = state.noSparge ? "" : doseLine("Sparge additions", state.dosages.sparge, state.dosages.spargeAcidMl);
+  if (mashLine) noteLines.push(mashLine);
+  if (spargeLine) noteLines.push(spargeLine);
+  xml += ` <NOTES>${escapeXml(noteLines.join(" | "))}</NOTES>\n`;
+
+  // App-specific round-trip tags (ignored by other BeerXML apps).
+  xml += ` <GWL_TARGET_KEY>${escapeXml(state.targetKey)}</GWL_TARGET_KEY>\n`;
+  if (state.targetKey === "custom" && PRESETS.custom) {
+    const t = PRESETS.custom.ions;
+    xml += ` <GWL_TARGET_IONS>${t.ca},${t.mg},${t.na},${t.so4},${t.cl},${t.hco3}</GWL_TARGET_IONS>\n`;
+  }
+  xml += ` <GWL_RO_RATIO>${state.roRatio}</GWL_RO_RATIO>\n`;
+  xml += ` <GWL_ACID_TYPE>${escapeXml(state.acidType)}</GWL_ACID_TYPE>\n`;
+  xml += ` <GWL_NO_SPARGE>${state.noSparge ? "TRUE" : "FALSE"}</GWL_NO_SPARGE>\n`;
+  xml += ` <GWL_MASH_VOL_GAL>${mashGal.toFixed(4)}</GWL_MASH_VOL_GAL>\n`;
+  xml += ` <GWL_SPARGE_VOL_GAL>${spargeGal.toFixed(4)}</GWL_SPARGE_VOL_GAL>\n`;
+  xml += ` <GWL_TARGET_MASH_PH>${state.targetMashPh}</GWL_TARGET_MASH_PH>\n`;
 
   xml += `</RECIPE>\n</RECIPES>\n`;
 
@@ -1394,6 +1478,67 @@ function loadBeerXml(e) {
       }
     }
 
+    // Restore app-specific settings saved by saveBeerXml (GWL_* tags).
+    const gwlText = (tag) => recipeNode.querySelector(tag)?.textContent?.trim() || "";
+
+    const savedTargetKey = gwlText("GWL_TARGET_KEY");
+    if (savedTargetKey && PRESETS[savedTargetKey]) {
+      state.targetKey = savedTargetKey;
+      if (savedTargetKey === "custom") {
+        const ionsStr = gwlText("GWL_TARGET_IONS");
+        if (ionsStr) {
+          const vals = ionsStr.split(",").map(v => parseFloat(v) || 0);
+          if (vals.length === 6) {
+            PRESETS.custom.ions = { ca: vals[0], mg: vals[1], na: vals[2], so4: vals[3], cl: vals[4], hco3: vals[5] };
+          }
+        }
+      }
+      const tgtSel = document.getElementById("targetPreset");
+      if (tgtSel) tgtSel.value = savedTargetKey;
+      updateTargetInputs();
+    }
+
+    const savedRo = gwlText("GWL_RO_RATIO");
+    if (savedRo !== "") {
+      state.roRatio = parseFloat(savedRo) || 0;
+      const roSlider = document.getElementById("roSlider");
+      const roVal = document.getElementById("roVal");
+      if (roSlider) roSlider.value = state.roRatio;
+      if (roVal) roVal.textContent = `${state.roRatio}%`;
+    }
+
+    const savedAcid = gwlText("GWL_ACID_TYPE");
+    if (savedAcid) {
+      state.acidType = savedAcid;
+      const acidSel = document.getElementById("acidType");
+      if (acidSel) acidSel.value = savedAcid;
+    }
+
+    const savedNoSparge = gwlText("GWL_NO_SPARGE");
+    if (savedNoSparge) {
+      state.noSparge = savedNoSparge === "TRUE";
+      const nsChk = document.getElementById("noSparge");
+      if (nsChk) nsChk.checked = state.noSparge;
+      const svGroup = document.getElementById("spargeVolGroup");
+      if (svGroup) svGroup.style.display = state.noSparge ? "none" : "block";
+    }
+
+    const savedTargetPh = parseFloat(gwlText("GWL_TARGET_MASH_PH"));
+    if (savedTargetPh > 4.5 && savedTargetPh < 6.5) {
+      state.targetMashPh = savedTargetPh;
+      const phInput = document.getElementById("targetMashPh");
+      if (phInput) phInput.value = savedTargetPh;
+    }
+
+    const savedMashGal = parseFloat(gwlText("GWL_MASH_VOL_GAL"));
+    const savedSpargeGal = parseFloat(gwlText("GWL_SPARGE_VOL_GAL"));
+    const toUnitVol = (gal) => state.unit === "metric" ? Math.round(gal * 3.78541 * 10) / 10 : Math.round(gal * 10) / 10;
+    const hasGwlVolumes = !isNaN(savedMashGal) && savedMashGal > 0;
+    if (hasGwlVolumes) {
+      state.mashVol = toUnitVol(savedMashGal);
+      state.spargeVol = !isNaN(savedSpargeGal) && savedSpargeGal > 0 ? toUnitVol(savedSpargeGal) : 0;
+    }
+
     // Parse total water from ingredients
     let totalWaterGal = 0;
     const waterIngredients = recipeNode.querySelectorAll("INGREDIENTS INGREDIENT");
@@ -1430,7 +1575,9 @@ function loadBeerXml(e) {
       }
     });
 
-    if (totalWaterGal > 0 && totalMashWaterGal > 0) {
+    if (hasGwlVolumes) {
+      // Volumes already restored from GWL tags above; skip the heuristics.
+    } else if (totalWaterGal > 0 && totalMashWaterGal > 0) {
       state.mashVol = Math.round(totalMashWaterGal * 10) / 10;
       state.spargeVol = Math.round((totalWaterGal - totalMashWaterGal) * 10) / 10;
       if (state.spargeVol < 0) state.spargeVol = 0;
