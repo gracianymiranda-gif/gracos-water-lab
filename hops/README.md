@@ -33,13 +33,15 @@ questions: **Alpha / Beta**, **Cohumulone / Oil**, **Cross-checked**,
 
 Profile source is one of:
 
-| Badge | Meaning |
-| --- | --- |
-| `from post` | First-hand: read out of the article's own Hop Stats table |
-| `composite` | Hand-tuned generalized variety character |
-| `estimate` | Generalized variety character — judgement, not measurement |
-| `reported` | Second-hand: descriptors from a *search summary* of an article |
-| `unscored` | No reliable public character. Blank rather than guessed |
+| Badge | n | Meaning |
+| --- | --- | --- |
+| `from post` | 138 | First-hand: extracted from the article's own tables |
+| `composite` | 20 | Hand-tuned generalized variety character |
+
+Every Hop Chronicles entry is now first-hand. Earlier builds carried `estimate`
+and `reported` tiers for profiles derived from judgement or from search
+summaries; a full extraction of all 138 articles replaced them, and those tiers
+no longer appear.
 
 `reported` is styled as provisional deliberately. Those descriptors came
 through a channel that was separately caught reporting one hop's lab figures
@@ -53,11 +55,23 @@ shipped estimate.
 
 ## Accuracy
 
-Alpha and beta for 81 entries were reconciled against a second hop database
-(363 records); 64 of 75 comparable ranges already agreed. A separate 12-hop
-spot-check against vendor and breeder sources matched on 10 of 12 alphas, and
-was directionally right on flavour for all 12. Corrections from both passes are
-applied.
+The library was cross-checked against 14 hops whose Hop Stats were transcribed
+from the articles by hand: **15 of 16 chemistry fields agreed**. The one that
+did not was a parser fault — Vista is the only article printing two stats on one
+line, and its alpha field had swallowed `Beta: 3.5 - 5.5%`. Fixed.
+
+An earlier pass reconciled alpha and beta against a second hop database (363
+records), and spot-checked 12 hops against vendor and breeder sources. Both
+agreed with the extraction.
+
+### One entry is wrong at source
+
+**Enigma and Pekko publish identical chemistry and identical parentage text.**
+One of those two articles carries the other hop's figures — the error is
+Brülosophy's, not the extraction's. Both entries are annotated, and
+`tests/hop-calculus.test.mjs` records the pair as a known source duplicate so it
+warns rather than failing. Verify either against a merchant spec sheet before
+brewing.
 
 Alpha figures are variety-typical ranges. **Confirm alpha acid on your actual
 lot before any bittering calculation** — this tool covers flavour and aroma

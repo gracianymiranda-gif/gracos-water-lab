@@ -103,12 +103,23 @@ ok("profiles: header has every axis", AXES.every((a) => col[a] !== undefined));
 // German-grown Perle is still Perle.
 const ALIASES = [
   ["Chinook", "California Chinook"],
+  ["Cascade", "California Cascade"],
   ["Idaho 7", "007 Golden Hop"],
   ["Northern Brewer", "German Northern Brewer"],
   ["Perle", "German Perle"],
   ["Tettnanger", "German Tettnanger"],
 ];
 const aliased = (a, b) => ALIASES.some(([x, y]) => (a === x && b === y) || (a === y && b === x));
+
+// Pairs that share chemistry because the SOURCE published it that way. These
+// warn rather than fail -- the duplication is real and already recorded in the
+// entry's Cross-check note, so failing here forever would only train someone
+// to ignore the check. A pair not listed here is a new problem.
+const KNOWN_SOURCE_DUPES = [
+  ["Enigma", "Pekko", "Brulosophy published identical stats and parentage text for both; one carries the wrong hop's figures at source"],
+];
+const sourceDupe = (a, b) =>
+  KNOWN_SOURCE_DUPES.find(([x, y]) => (a === x && b === y) || (a === y && b === x));
 
 let badScore = 0, dupStats = 0;
 const statKeys = new Map();
@@ -123,8 +134,9 @@ for (const r of prof) {
   const k = figures.join("|");
   const prev = statKeys.get(k);
   if (prev && !aliased(prev, r[0])) {
-    dupStats++;
-    console.error(`  duplicate stats: ${r[0]} == ${prev}`);
+    const known = sourceDupe(prev, r[0]);
+    if (known) console.warn(`  known source duplicate: ${r[0]} == ${prev} -- ${known[2]}`);
+    else { dupStats++; console.error(`  duplicate stats: ${r[0]} == ${prev}`); }
   } else if (!prev) statKeys.set(k, r[0]);
 }
 eq("profiles: every descriptor score is 0-10", badScore, 0);
@@ -138,7 +150,9 @@ ok("index: every row cites a Brulosophy URL",
 // ---- Set F: the built page is in step with the CSVs ----
 const built = readFileSync(join(hops, "hop-calculus.html"), "utf8");
 ok("built page: has no unreplaced build marker", !built.includes("INJECT:"));
-ok("built page: carries a data version", /const DATA_VERSION = "[0-9a-f]{6,}"/.test(built));
+// Any non-empty version works — it only has to differ between builds so a
+// browser holding an older copy can tell. It need not be a hash.
+ok("built page: carries a data version", /const DATA_VERSION = "[^"]+"/.test(built));
 const m = built.match(/const CHRONICLE_INDEX = \[/);
 ok("built page: embeds the index", Boolean(m));
 ok("built page: entry count matches the CSV",
