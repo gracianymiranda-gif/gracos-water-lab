@@ -30,13 +30,21 @@ This is a static site with no dependencies or build step.
 └── assets/         # Static assets
 ```
 
+## Hop Calculus
+
+A companion tool for comparing hop varieties lives in [`hops/`](hops/) — radar-chart
+flavour profiles, blend prediction, and a library built from Brülosophy's Hop
+Chronicles series. Open `hops/hop-calculus.html` directly; like the water
+calculator it needs no build step. See [`hops/README.md`](hops/README.md) for
+how its data is sourced and how trustworthy each profile is.
+
 ## Important Disclaimer
 
 The mash and sparge pH models used in this tool are **heuristic estimates**, not lab-grade predictions. Always verify your actual mash pH with a calibrated pH meter — water chemistry, grain chemistry, and mash conditions vary enough that software estimates should be treated as a starting point, not a guarantee.
 
 ## Roadmap / Known Limitations
 
-- No automated test suite yet — calculation logic (mash pH, sparge pH, salt optimizer) is validated manually.
+- The water calculation logic is covered by `tests/bw-calibration.test.mjs`, validated against Bru'n Water 5.5; the hop tool by `tests/hop-calculus.test.mjs`. Both run with plain `node`, no dependencies.
 - `app.js` is currently a single file; a future refactor may split it into focused modules (salts, pH models, BeerXML, UI).
 - Cache-busting for `app.js`/`styles.css` is currently done via manual version query strings in `index.html`.
 
