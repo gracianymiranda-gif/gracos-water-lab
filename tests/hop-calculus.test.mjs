@@ -155,6 +155,16 @@ ok("built page: has no unreplaced build marker", !built.includes("INJECT:"));
 ok("built page: carries a data version", /const DATA_VERSION = "[^"]+"/.test(built));
 const m = built.match(/const CHRONICLE_INDEX = \[/);
 ok("built page: embeds the index", Boolean(m));
+// A \uXXXX escape means something in JavaScript and nothing in HTML, so one
+// written into the page's prose renders as the six literal characters. That
+// shipped once in the provenance legend. Only the markup outside <script> is
+// checked -- inside a script the escapes are correct and intended.
+const prose = built.replace(/<script[\s\S]*?<\/script>/gi, "");
+const strayEscapes = prose.match(/\\u[0-9a-fA-F]{4}/g) || [];
+ok("built page: no JS unicode escape left in HTML prose",
+  strayEscapes.length === 0,
+  `renders literally: ${strayEscapes.join(", ")}`);
+
 ok("built page: entry count matches the CSV",
   (built.match(/"variety":/g) || []).length === idx.length,
   `page has ${(built.match(/"variety":/g) || []).length}, CSV has ${idx.length} -- re-run node hops/build-hops.mjs`);
