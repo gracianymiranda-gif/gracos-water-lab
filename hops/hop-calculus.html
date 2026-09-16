@@ -1,0 +1,4984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hop Calculus — Homebrew Edition</title>
+<style>
+  :root{
+    --bg:#12100e; --panel:#1c1815; --accent:#e6a817; --accent2:#7fae42;
+    --text:#f2ede4; --muted:#a89f92; --border:#332d27;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--text); padding:24px;
+  }
+  h1{font-size:1.5rem; margin:0 0 4px;}
+  .sub{color:var(--muted); margin:0 0 24px; font-size:0.9rem;}
+  .layout{display:grid; grid-template-columns:340px 1fr; gap:24px;}
+  @media (max-width:900px){.layout{grid-template-columns:1fr;} body{padding:16px;}}
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:18px;
+  }
+  .panel h2{font-size:1rem; margin:0 0 12px; color:var(--accent);}
+  .hop-list{max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:6px;}
+  .hop-item{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    padding:8px 10px; border-bottom:1px solid var(--border); cursor:pointer; font-size:0.88rem;
+    width:100%; background:none; border-left:none; border-right:none; border-top:none;
+    color:inherit; font-family:inherit; text-align:left;
+  }
+  .hop-item:last-child{border-bottom:none;}
+  .hop-item:hover{background:#241f1a;}
+  .hop-item:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .hop-item.selected{background:#332a17; color:var(--accent);}
+  .hop-item.unscored{opacity:0.72;}
+  .hop-meta{color:var(--muted); font-size:0.75rem; white-space:nowrap;}
+  .chip{
+    display:inline-flex; align-items:center; gap:6px; background:#241f1a; border:1px solid var(--border);
+    border-radius:999px; padding:4px 10px; margin:3px 4px 3px 0; font-size:0.82rem;
+  }
+  .chip button{background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.9rem; line-height:1;}
+  select, input[type=text], input[type=number], textarea{
+    width:100%; padding:8px; background:#241f1a; border:1px solid var(--border); color:var(--text);
+    border-radius:6px; font-size:0.86rem; margin-bottom:10px; font-family:inherit;
+  }
+  textarea{resize:vertical; min-height:90px;}
+  label{font-size:0.78rem; color:var(--muted); display:block; margin-bottom:3px;}
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  @media (max-width:560px){.field-row{grid-template-columns:1fr;}}
+  .slider-row{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .slider-row span:first-child{width:110px; font-size:0.8rem; color:var(--muted);}
+  .slider-row input[type=range]{flex:1; margin:0;}
+  .slider-row span.val{width:24px; text-align:right; font-size:0.8rem;}
+  .desc-toggle{
+    display:inline-block; padding:5px 10px; margin:3px 4px 3px 0; border-radius:999px;
+    border:1px solid var(--border); cursor:pointer; font-size:0.8rem; background:#241f1a; color:var(--muted);
+  }
+  .desc-toggle.active{background:var(--accent2); color:#0e1406; border-color:var(--accent2);}
+  canvas{background:#1c1815; border-radius:8px; max-width:100%;}
+  table{width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:10px;}
+  th, td{text-align:left; padding:6px 8px; border-bottom:1px solid var(--border);}
+  th{color:var(--muted); font-weight:600;}
+  .tag{
+    display:inline-block; background:#2a2a13; color:var(--accent); border-radius:5px; padding:2px 7px;
+    font-size:0.75rem; margin:2px 3px 0 0;
+  }
+  .badge{
+    display:inline-block; border-radius:4px; padding:1px 6px; font-size:0.68rem;
+    border:1px solid var(--border); color:var(--muted); background:#241f1a; white-space:nowrap;
+  }
+  .badge.unscored{color:#c79a3a; border-color:#5a4715;}
+  .badge.parsed{color:var(--accent2); border-color:#3d5220;}
+  .badge.verified{color:#0e1406; background:var(--accent2); border-color:var(--accent2); font-weight:600;}
+  .note{color:var(--muted); font-size:0.78rem; margin-top:14px; line-height:1.45;}
+  .warn{color:var(--accent); font-size:0.78rem; margin-top:6px; line-height:1.45;}
+  .tabs{display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap;}
+  .tab-btn{
+    padding:8px 14px; border-radius:8px 8px 0 0; border:1px solid var(--border); border-bottom:none;
+    background:#1c1815; color:var(--muted); cursor:pointer; font-size:0.85rem;
+  }
+  .tab-btn.active{background:var(--panel); color:var(--accent); border-color:var(--accent);}
+  .tabpanel{display:none;}
+  .tabpanel.active{display:block;}
+  button.btn{
+    background:var(--accent); color:#1a1400; border:none; border-radius:6px; padding:9px 14px;
+    font-size:0.85rem; cursor:pointer; font-weight:600; margin-right:8px; margin-bottom:8px;
+  }
+  button.btn.secondary{background:#241f1a; color:var(--text); border:1px solid var(--border);}
+  button.btn.danger{background:#5a2323; color:#f2ede4;}
+  .mgmt-list-item{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    padding:7px 10px; border-bottom:1px solid var(--border); font-size:0.85rem;
+  }
+  .mgmt-list{max-height:340px; overflow-y:auto;}
+  .small-btn{
+    background:#241f1a; color:var(--muted); border:1px solid var(--border); border-radius:5px;
+    padding:3px 8px; font-size:0.75rem; cursor:pointer; margin-left:6px;
+  }
+  .status{font-size:0.8rem; margin-top:8px; color:var(--muted); line-height:1.45;}
+  .status.ok{color:var(--accent2);}
+  .status.err{color:#e68b8b;}
+  .preview{
+    background:#0e0c0a; border:1px solid var(--border); border-radius:6px; padding:10px;
+    font-size:0.78rem; max-height:150px; overflow-y:auto; margin-top:8px; white-space:pre-wrap; color:var(--muted);
+  }
+  .src-link{color:var(--accent); font-size:0.75rem;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+
+<h1>Hop Calculus — Homebrew Edition</h1>
+<p class="sub">Compare hop varieties, predict blend flavor profiles, match hops to a style, and manage your own hop library. Built for a 3&#8209;vessel RIMS setup, 6&nbsp;gal batches, 72–75% efficiency.</p>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="compare">Compare Hops</button>
+  <button class="tab-btn" data-tab="style">Style Match</button>
+  <button class="tab-btn" data-tab="target">Characteristic Search</button>
+  <button class="tab-btn" data-tab="chronicles">Hop Chronicles</button>
+  <button class="tab-btn" data-tab="manage">Manage Hops</button>
+</div>
+
+<div class="layout">
+  <div class="panel">
+    <h2>Hop Library</h2>
+    <input type="text" id="hopSearch" placeholder="Search hop variety...">
+    <label style="margin-bottom:8px;">
+      <input type="checkbox" id="scoredOnly" style="width:auto; margin:0 6px 0 0; vertical-align:-1px;">
+      Scored entries only
+    </label>
+    <label style="margin-bottom:8px;">
+      <input type="checkbox" id="verifiedOnly" style="width:auto; margin:0 6px 0 0; vertical-align:-1px;">
+      Verified entries only
+    </label>
+    <div class="hop-list" id="hopList"></div>
+    <div id="libraryCounts" class="note" style="margin-top:8px;"></div>
+    <div style="margin-top:12px;">
+      <h2 style="margin-bottom:6px;">Selected (max 5)</h2>
+      <div id="selectedChips"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="tabpanel active" id="tab-compare">
+      <div class="panel">
+        <h2>Flavor / Aroma Radar</h2>
+        <canvas id="radar" width="480" height="480"></canvas>
+        <table id="compareTable"></table>
+        <div id="blendNote" class="note"></div>
+      </div>
+    </div>
+
+    <div class="tabpanel" id="tab-style">
+      <div class="panel">
+        <h2>Match Hops to a Style</h2>
+        <select id="styleSelect"></select>
+        <div id="styleResults"></div>
+        <p class="note">Style tags are approximate flavor associations, not official BJCP hop requirements — cross&#8209;check against BJCP guidelines for competition recipes. Hop Chronicles entries are tagged with the base recipe they were brewed in (Pale Ale or Pale Lager), which is a test vehicle, not a style recommendation.</p>
+      </div>
+    </div>
+
+    <div class="tabpanel" id="tab-target">
+      <div class="panel">
+        <h2>Pick Descriptors You Want</h2>
+        <div id="descToggles"></div>
+        <div id="targetResults" style="margin-top:14px;"></div>
+        <p class="note">Only scored entries can be ranked. Unscored Hop Chronicles entries are excluded until you fill them in from the Hop Chronicles tab.</p>
+      </div>
+    </div>
+
+    <div class="tabpanel" id="tab-chronicles">
+      <div class="panel">
+        <h2>Pull a Hop from The Hop Chronicles</h2>
+        <label>Paste a Hop Chronicles post URL</label>
+        <input type="text" id="chronUrl" placeholder="https://brulosophy.com/2025/10/13/the-hop-chronicles-harlequin-2023-pale-ale/">
+        <button class="btn" id="chronLookupBtn">Look up</button>
+        <button class="btn secondary" id="chronFetchBtn">Look up &amp; try fetch</button>
+        <div id="chronStatus" class="status"></div>
+        <div id="chronResult" class="hidden"></div>
+
+        <div id="pasteBlock" class="hidden" style="margin-top:14px;">
+          <label>Paste the post text here (select all on the page, copy, paste)</label>
+          <textarea id="chronPaste" placeholder="Paste the article text — the parser looks for the results sentence, e.g. &quot;The most prominent aroma and flavor characteristics noted by blind tasters ... were citrus and tropical fruit.&quot;"></textarea>
+          <button class="btn" id="chronParseBtn">Parse pasted text</button>
+          <div id="pasteStatus" class="status"></div>
+        </div>
+
+        <div id="chronPreview" class="preview hidden"></div>
+
+        <p class="note">The index of 106 posts is built into this file, so <strong>looking up a URL works offline</strong> — it resolves the variety, crop year, origin, series and publication date with no network at all. Fetching only adds the descriptor ratings and the measured alpha acid of that lot.</p>
+        <p class="warn">Fetching will usually fail. Brülosophy does not send CORS headers, and a browser will not let this page read a cross&#8209;site response without them — that is the site's decision, not something this file can work around. Opening the post and pasting its text does the same job and always works. Nothing is ever saved automatically; every parsed value lands in the form for you to check.</p>
+      </div>
+
+      <div class="panel" style="margin-top:16px;">
+        <h2>How scores are derived</h2>
+        <p class="note" style="margin-top:0;">The series uses a consistent results sentence, so scores come from the post's own ranking rather than a guess:</p>
+        <table>
+          <tr><th>Where the descriptor appears</th><th>Score</th></tr>
+          <tr><td>1st in the "most prominent" list</td><td>9/10</td></tr>
+          <tr><td>2nd / 3rd / 4th+</td><td>8 / 7 / 6</td></tr>
+          <tr><td>Mentioned elsewhere in the post</td><td>5/10</td></tr>
+          <tr><td>Never mentioned</td><td>2/10</td></tr>
+          <tr><td>Named among the "lowest rated"</td><td>1/10</td></tr>
+        </table>
+        <p class="note">This is a ranking translated to a scale, not a measurement — Brülosophy publishes descriptor votes, not oil analysis. Two hops both scoring 9 on citrus were each their post's top descriptor; it does not mean they are equally citrusy. Descriptors the series tracks but this tool has no axis for (onion/garlic, apple/pear) are reported as notes instead of being folded into a neighbouring axis.</p>
+      </div>
+    </div>
+
+    <div class="tabpanel" id="tab-manage">
+      <div class="panel">
+        <h2>Add / Edit a Hop</h2>
+        <div class="field-row">
+          <div>
+            <label>Hop name</label>
+            <input type="text" id="mName" placeholder="e.g. Talus">
+          </div>
+          <div>
+            <label>Alpha acid % (e.g. 11-14%)</label>
+            <input type="text" id="mAA" placeholder="e.g. 12-15%">
+          </div>
+        </div>
+        <label>Typical styles (comma-separated)</label>
+        <input type="text" id="mStyles" placeholder="e.g. Hazy IPA, American IPA">
+        <label>Source URL (optional)</label>
+        <input type="text" id="mUrl" placeholder="https://...">
+        <label style="margin-top:4px;">Descriptor scores (0-10)</label>
+        <div id="sliderContainer"></div>
+        <label style="margin-top:4px;">
+          <input type="checkbox" id="mUnscored" style="width:auto; margin:0 6px 0 0; vertical-align:-1px;">
+          Save as unscored (keep metadata, leave the profile blank)
+        </label>
+        <label style="margin-top:6px;">
+          <input type="checkbox" id="mVerified" style="width:auto; margin:0 6px 0 0; vertical-align:-1px;">
+          I have verified this against a real source
+        </label>
+        <input type="text" id="mVerifiedSrc" placeholder="Verified against what? e.g. Yakima Valley Hops spec sheet 2024, or my lot's COA">
+        <button class="btn" id="saveHopBtn">Save Hop</button>
+        <button class="btn secondary" id="clearFormBtn">Clear Form</button>
+        <div id="mgmtNote" class="note"></div>
+      </div>
+
+      <div class="panel" style="margin-top:16px;">
+        <h2 id="mgmtHeading">Your Hop Library</h2>
+        <div id="mgmtList" class="mgmt-list"></div>
+      </div>
+
+      <div class="panel" style="margin-top:16px;">
+        <h2>Import / Export</h2>
+        <button class="btn secondary" id="exportBtn">Export library as JSON</button>
+        <button class="btn secondary" id="importBtn">Import JSON file</button>
+        <input type="file" id="importFile" accept=".json" class="hidden">
+        <button class="btn danger" id="resetBtn">Reset to defaults</button>
+        <div id="importStatus" class="status"></div>
+        <p class="note">Export saves your current library (defaults + your edits) to a JSON file you can back up or share. Import replaces the working library with a JSON file in the same format, and rejects a file whose entries are malformed rather than half-loading it.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="note"><strong>Where each profile comes from.</strong> Every comparison shows a badge.
+<span class="badge">composite</span> and <span class="badge">estimate</span> are generalized variety characters — informed judgement about how a hop reads, not measurement.
+<span class="badge unscored">reported</span> is second-hand: the descriptors were taken from search-engine summaries of a Brülosophy post, not from the post itself. Treat these as provisional. The same channel was caught repeating one hop's lab figures for two others, and 12 of these 14 lead with the same citrus-and-tropical pair, which is either genuine or a summariser repeating itself — there is no way to tell without the page.
+<span class="badge parsed">from post</span> is first-hand: you pasted the article text into the Hop Chronicles tab and the descriptors were read out of it. Doing that upgrades a <span class="badge unscored">reported</span> entry.
+<span class="badge unscored">unscored</span> means no profile exists; the entry is excluded from the radar, the blend average and the ranking. A few obscure experimentals have no reliable public character to draw on, and are left blank rather than guessed.</p>
+<p class="note"><strong>Cross-checked vs verified.</strong> <em>Cross-checked</em> means the alpha and beta figures were reconciled against a second hop database and the entry names which record it matched — a real citation, but still someone else's compiled figures rather than a measurement of your lot. <em>Verified</em> is the stronger claim and only you can set it. A hop can be cross-checked and still unverified.</p>
+<p class="note"><strong>Verified vs assumed.</strong> Nothing ships verified — only you can attest to a source. When you check a hop against a spec sheet, a lab report or your own lot, tick <em>verified</em> under Manage Hops and name what you checked it against; the entry is then marked <span class="badge verified">\u2713</span> everywhere it appears, and a later data update will never overwrite it with an estimate. The library panel tracks how much of your library is confirmed rather than assumed.</p>
+<p class="note">Alpha-acid figures are variety-typical ranges. <strong>Always confirm alpha acid on your actual lot</strong> before any bittering calculation — this tool covers flavour and aroma character only, not IBU math. Your edits are saved to this browser's local storage, so they persist here on reload but will not sync across devices unless you export/import the JSON.</p>
+
+<script>
+/* ---- Brulosophy post parsers (generated: see tools/hop-calculus/chronicle-parser.js) ---- */
+/**
+ * Parsers for Brulosophy "The Hop Chronicles" posts.
+ *
+ * Pure string-in / object-out: no DOM, no network. The browser tool inlines
+ * this file verbatim; tests import it directly.
+ */
+
+/** The ten radar axes, in order. Must match DESCRIPTORS in the tool. */
+const AXES = [
+  'Citrus', 'Tropical', 'Stone Fruit', 'Berry', 'Pine/Resin',
+  'Dank', 'Floral', 'Herbal/Grassy', 'Spicy/Noble', 'Earthy',
+];
+
+/**
+ * Brulosophy's descriptor vocabulary mapped onto the ten axes. Longer phrases
+ * are listed first so "tropical fruit" wins over a bare "fruit"-style match.
+ * @type {Array<[string, string]>}
+ */
+const VOCAB = [
+  ['citrus', 'Citrus'],
+  ['grapefruit', 'Citrus'],
+  ['lemon', 'Citrus'],
+  ['lime', 'Citrus'],
+  ['orange', 'Citrus'],
+  ['tangerine', 'Citrus'],
+  ['tropical fruit', 'Tropical'],
+  ['tropical', 'Tropical'],
+  ['mango', 'Tropical'],
+  ['pineapple', 'Tropical'],
+  ['passion fruit', 'Tropical'],
+  ['passionfruit', 'Tropical'],
+  ['guava', 'Tropical'],
+  ['lychee', 'Tropical'],
+  ['melon', 'Tropical'],
+  ['stone fruit', 'Stone Fruit'],
+  ['peach', 'Stone Fruit'],
+  ['apricot', 'Stone Fruit'],
+  ['nectarine', 'Stone Fruit'],
+  ['berry', 'Berry'],
+  ['blackcurrant', 'Berry'],
+  ['strawberry', 'Berry'],
+  ['blueberry', 'Berry'],
+  ['pine', 'Pine/Resin'],
+  ['resin', 'Pine/Resin'],
+  ['dank', 'Dank'],
+  ['catty', 'Dank'],
+  ['floral', 'Floral'],
+  ['blossom', 'Floral'],
+  ['herbal', 'Herbal/Grassy'],
+  ['grassy', 'Herbal/Grassy'],
+  ['hay', 'Herbal/Grassy'],
+  ['spicy', 'Spicy/Noble'],
+  ['noble', 'Spicy/Noble'],
+  ['pepper', 'Spicy/Noble'],
+  ['clove', 'Spicy/Noble'],
+  ['earthy', 'Earthy'],
+  ['woody', 'Earthy'],
+  ['tobacco', 'Earthy'],
+];
+
+/**
+ * Descriptors Brulosophy tracks that have no axis in this tool. Surfaced as
+ * notes so a fault like onion/garlic is never silently folded into Dank.
+ */
+const UNMAPPED = ['onion/garlic', 'onion', 'garlic', 'apple/pear', 'apple', 'pear', 'sweet aromatic', 'cream caramel'];
+
+/** Score awarded by rank within the post's "most prominent" list. */
+const RANK_SCORES = [9, 8, 7, 6];
+/** An axis mentioned in the prose but not among the most prominent. */
+const SECONDARY_SCORE = 5;
+/** An axis the post never mentions. */
+const ABSENT_SCORE = 2;
+/** An axis the post explicitly calls lowest-rated. */
+const LOWEST_SCORE = 1;
+
+/**
+ * Pull the hop variety, crop year and series out of a Hop Chronicles URL.
+ * Works offline — the slug alone carries all three.
+ * @param {string} url
+ * @returns {{variety: string, cropYear: string|null, series: string|null}|null}
+ */
+function parseChronicleUrl(url) {
+  if (typeof url !== 'string') return null;
+  const m = url.match(/the-hop-chronicles-([a-z0-9-]+?)\/?$/i);
+  if (!m) return null;
+
+  let slug = m[1];
+  let series = null;
+  let cropYear = null;
+
+  const seriesMatch = slug.match(/-(pale-ale|pale-lager)$/);
+  if (seriesMatch) {
+    series = seriesMatch[1] === 'pale-lager' ? 'Pale Lager' : 'Pale Ale';
+    slug = slug.slice(0, -seriesMatch[0].length);
+  }
+
+  const yearMatch = slug.match(/-((?:19|20)\d{2})$/);
+  if (yearMatch) {
+    cropYear = yearMatch[1];
+    slug = slug.slice(0, -yearMatch[0].length);
+  }
+
+  if (!slug) return null;
+
+  const variety = slug
+    .split('-')
+    .map((w) => (/^(lupomax|ctz|us|hbc|007)$/i.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(' ')
+    .replace(/\bLUPOMAX\b/i, 'LUPOMAX');
+
+  return {variety, cropYear, series};
+}
+
+/**
+ * Extract the measured alpha acid of the lot from post text.
+ * @param {string} text
+ * @returns {string|null} e.g. "12.4%"
+ */
+function parseAlphaAcid(text) {
+  if (typeof text !== 'string') return null;
+  const m = text.match(/alpha\s*acids?[^0-9%]{0,40}?(\d{1,2}(?:\.\d+)?)\s*%/i);
+  return m ? `${m[1]}%` : null;
+}
+
+/**
+ * Split a descriptor list ("tropical fruit, citrus, and apple/pear") into terms.
+ * @param {string} list
+ * @returns {string[]}
+ */
+function splitList(list) {
+  return list
+    .split(/,|\band\b/i)
+    .map((s) => s.trim().replace(/^(notes? of|characteristics|descriptors)\s+/i, '').trim())
+    .filter(Boolean);
+}
+
+/**
+ * Map one Brulosophy descriptor term to an axis, or null if it has none.
+ * @param {string} term
+ * @returns {string|null}
+ */
+function termToAxis(term) {
+  const t = term.toLowerCase();
+  for (const [needle, axis] of VOCAB) {
+    if (t.includes(needle)) return axis;
+  }
+  return null;
+}
+
+/**
+ * Derive 0-10 axis scores from the results prose of a Hop Chronicles post.
+ *
+ * The series uses a consistent sentence template — "The most prominent aroma
+ * and flavor characteristics noted by blind tasters ... were X, Y and Z" and,
+ * when relevant, "... were among the lowest rated descriptors". Scores come
+ * from rank in those lists, so every number traces back to the post's own
+ * wording rather than a guess.
+ *
+ * @param {string} text Plain text of the post.
+ * @returns {{scores: number[]|null, prominent: string[], lowest: string[], unmapped: string[]}}
+ */
+function parseDescriptorScores(text) {
+  const empty = {scores: null, prominent: [], lowest: [], unmapped: []};
+  if (typeof text !== 'string' || !text.trim()) return empty;
+
+  const prose = text.replace(/\s+/g, ' ');
+
+  const promMatch = prose.match(/most prominent[^.]*?\bwere\b([^.]*)/i);
+  if (!promMatch) return empty;
+
+  // "were X, Y and Z, while less desirable notes of A and B were among the
+  // lowest rated" — keep only the part before the contrastive clause.
+  const promSegment = promMatch[1].split(/\b(?:while|although|whereas)\b/i)[0];
+  const promTerms = splitList(promSegment);
+
+  const lowMatch = prose.match(/notes? of ([^.]*?)\bwere among the lowest/i);
+  const lowTerms = lowMatch ? splitList(lowMatch[1]) : [];
+
+  const scores = AXES.map(() => ABSENT_SCORE);
+  const prominent = [];
+  const unmapped = [];
+
+  let rank = 0;
+  for (const term of promTerms) {
+    const axis = termToAxis(term);
+    if (axis) {
+      const idx = AXES.indexOf(axis);
+      const score = RANK_SCORES[Math.min(rank, RANK_SCORES.length - 1)];
+      // A repeated axis keeps its best rank.
+      if (score > scores[idx] || scores[idx] === ABSENT_SCORE) scores[idx] = score;
+      prominent.push(axis);
+      rank++;
+    } else if (UNMAPPED.some((u) => term.toLowerCase().includes(u))) {
+      unmapped.push(term);
+      rank++;
+    }
+  }
+
+  if (prominent.length === 0) return empty;
+
+  // Secondary mentions elsewhere in the prose sit between absent and prominent.
+  AXES.forEach((axis, i) => {
+    if (scores[i] !== ABSENT_SCORE) return;
+    const hits = VOCAB.filter(([, a]) => a === axis).map(([needle]) => needle);
+    if (hits.some((h) => prose.toLowerCase().includes(h))) scores[i] = SECONDARY_SCORE;
+  });
+
+  const lowest = [];
+  for (const term of lowTerms) {
+    const axis = termToAxis(term);
+    if (axis) {
+      scores[AXES.indexOf(axis)] = LOWEST_SCORE;
+      lowest.push(axis);
+    } else if (UNMAPPED.some((u) => term.toLowerCase().includes(u))) {
+      unmapped.push(term);
+    }
+  }
+
+  return {scores, prominent, lowest, unmapped};
+}
+
+/**
+ * Strip markup to readable text, dropping script and style *contents* first so
+ * stylesheet words never land in the descriptor scan.
+ * @param {string} html
+ * @returns {string}
+ */
+function htmlToText(html) {
+  if (typeof html !== 'string') return '';
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#8217;|&rsquo;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Stat labels, each with the spellings different sources use. Brulosophy
+ * prints "Alpha"; BeerMaverick prints "Alpha Acid (aA)"; vendors print
+ * "Alpha Acids %". All must land in the same field.
+ * @type {Array<{field: string, unit: string, re: string}>}
+ */
+const STAT_LABELS = [
+  {field: 'alpha', unit: '%', re: '(?:Alpha\\s*Acids?|Alpha|\\u03b1A|AA)'},
+  {field: 'beta', unit: '%', re: '(?:Beta\\s*Acids?|Beta|\\u03b2A|BA)'},
+  {field: 'cohumulone', unit: '%', re: '(?:Co[-\\s]?Humulone|Cohumulone|CoH)'},
+  {field: 'totalOil', unit: 'oil', re: '(?:Total\\s*Oils?|Oil\\s*Total)'},
+  {field: 'myrcene', unit: '%', re: 'Myrcene'},
+  {field: 'humulene', unit: '%', re: 'Humulene'},
+  {field: 'caryophyllene', unit: '%', re: 'Caryophyllene'},
+  {field: 'farnesene', unit: '%', re: 'Farnesene'},
+];
+
+/** Which field a matched label belongs to, or null. */
+function labelField(text) {
+  const t = text.replace(/\s+/g, ' ').trim();
+  for (const {field, re} of STAT_LABELS) {
+    if (new RegExp(`^${re}$`, 'i').test(t)) return field;
+  }
+  return null;
+}
+
+/**
+ * Pull the Hop Stats table out of a post.
+ *
+ * Works on the post's plain text, so it survives whether the stats are marked
+ * up as a table, a list, or plain "Label: value" lines. Every value is returned
+ * verbatim as printed (ranges, dashes and units intact) — never normalised into
+ * a single number, because the source really does publish ranges.
+ *
+ * @param {string} text
+ * @returns {{alpha: string|null, beta: string|null, cohumulone: string|null, totalOil: string|null,
+ *            myrcene: string|null, humulene: string|null, caryophyllene: string|null, farnesene: string|null}}
+ */
+function parseHopStats(text) {
+  /** @type {Record<string, string|null>} */
+  const out = {
+    alpha: null, beta: null, cohumulone: null, totalOil: null,
+    myrcene: null, humulene: null, caryophyllene: null, farnesene: null,
+  };
+  if (typeof text !== 'string' || !text) return /** @type {any} */ (out);
+
+  const flat = text
+    .replace(/[\t\u00a0]/g, ' ')
+    // Drop a parenthetical symbol for the same stat, e.g. "Alpha Acid (\u03b1A) 9%".
+    // Left in place it sits between a label and its value and blocks the match,
+    // because the symbol is itself a label synonym.
+    .replace(/\(\s*(?:\u03b1A|\u03b2A|CoH|AA|BA)\s*\)/gi, ' ')
+    .replace(/ {2,}/g, ' ');
+  const labelAlt = STAT_LABELS.map((l) => l.re).join('|');
+  const valueAtom =
+    '\\d[\\d.]*\\s*(?:[-–—]\\s*\\d[\\d.]*\\s*)?(?:%|(?:mL|ml)\\s*\\/\\s*100\\s*g)(?:\\s*of\\s+alpha\\s+acids)?';
+  const clean = (raw) => raw.replace(/\s*of\s+alpha\s+acids\s*$/i, '').replace(/\s+/g, ' ').trim();
+
+  // Column layout is checked FIRST and is unambiguous: a run of two or more
+  // labels with no values between them, then the matching run of values.
+  // Checking row-wise first would misread "Alpha | Beta | 10.5% | 4.5%" as
+  // Beta=10.5%, silently attributing one stat's value to another.
+  const sep = '[\\s|:,()]*';
+  const runRe = new RegExp(
+    `((?:(?:${labelAlt})${sep}){2,})((?:${valueAtom})${sep}(?:(?:${valueAtom})${sep})+)`,
+    'i',
+  );
+  const run = flat.match(runRe);
+  if (run) {
+    const labels = run[1].match(new RegExp(labelAlt, 'gi')) || [];
+    const values = run[2].match(new RegExp(valueAtom, 'gi')) || [];
+    // Only trust a positional pairing when the two runs line up exactly.
+    if (labels.length >= 2 && labels.length === values.length) {
+      labels.forEach((label, i) => {
+        const field = labelField(label);
+        if (field) out[field] = clean(values[i]);
+      });
+      return /** @type {any} */ (out);
+    }
+  }
+
+  // Row-wise: label, optional filler, value. The filler may not cross another
+  // stat label or a digit, so a label with no value cannot borrow the next.
+  const filler = `(?:(?!${labelAlt})[^\\d|\\n]){0,24}`;
+  for (const {field, unit, re} of STAT_LABELS) {
+    const value = unit === 'oil'
+      ? `(\\d[\\d.]*\\s*(?:[-–—]\\s*\\d[\\d.]*\\s*)?(?:mL|ml)\\s*\\/\\s*100\\s*g)`
+      : `(\\d[\\d.]*\\s*(?:[-–—]\\s*\\d[\\d.]*\\s*)?%)`;
+    const m = flat.match(new RegExp(`\\b${re}\\b[\\s:|()]*${filler}${value}`, 'i'));
+    if (m) out[field] = clean(m[1]);
+  }
+
+  return /** @type {any} */ (out);
+}
+
+/**
+ * Extract a BeerMaverick hop page: the four stats plus the beer styles and
+ * flavour descriptors it publishes. Styles answer "what do I brew with this"
+ * from a source that actually states it, rather than by inference.
+ *
+ * @param {string} text Plain text of the page.
+ * @returns {{stats: object, styles: string[], profile: string[], purpose: string|null}}
+ */
+function parseBeerMaverickPage(text) {
+  const empty = {stats: parseHopStats(''), styles: [], profile: [], purpose: null};
+  if (typeof text !== 'string' || !text.trim()) return empty;
+  const prose = text.replace(/\s+/g, ' ');
+
+  const listAfter = (re) => {
+    const m = prose.match(re);
+    if (!m) return [];
+    return m[1]
+      .split(/,|&|\band\b/i)
+      .map((s) => s.replace(/[.*]/g, '').trim())
+      .filter((s) => s && s.length < 40);
+  };
+
+  const styles = listAfter(/beer styles that (?:make use of|use)[^:]*?(?:include|are)\s*:?\s*([^.]{3,200})\./i);
+  const profile = listAfter(/(?:flavor|flavour)\s*(?:&|and)?\s*aroma\s*(?:profile)?\s*:?\s*([^.]{3,240})\./i)
+    .concat(listAfter(/\bprofile\s*:\s*([^.]{3,240})(?:\.|$)/i));
+
+  const purposeMatch = prose.match(/\b(dual[-\s]?purpose|aroma|bittering)\b\s*hop/i);
+
+  return {
+    stats: parseHopStats(prose),
+    styles,
+    profile: [...new Set(profile.map((p) => p.toLowerCase()))],
+    purpose: purposeMatch ? purposeMatch[1].toLowerCase().replace(/\s+/g, '-') : null,
+  };
+}
+
+/**
+ * The characteristics participants endorsed as most prominent, in the order the
+ * post lists them and using the post's own wording.
+ *
+ * @param {string} text
+ * @returns {string[]} e.g. ["tropical fruit", "citrus", "apple/pear"]
+ */
+function parseProminentCharacteristics(text) {
+  if (typeof text !== 'string' || !text.trim()) return [];
+  const prose = text.replace(/\s+/g, ' ');
+  const m = prose.match(/most prominent[^.]*?\bwere\b([^.]*)/i)
+    || prose.match(/(?:endorsed|noted|rated)[^.]*?\bas being the (?:most|strongest)[^.]*?\b([^.]*)/i);
+  if (!m) return [];
+  const segment = m[1].split(/\b(?:while|although|whereas|with)\b/i)[0];
+  return splitList(segment)
+    .map((t) => t.replace(/\s+/g, ' ').trim().toLowerCase())
+    .filter((t) => t && t.length < 40);
+}
+
+/**
+ * Best-effort grab of the breeder's suggested application, which the series
+ * reports in the intro ("marketed as ideal for late kettle and dry hop
+ * additions"). Returns null rather than a guess when no such claim is present.
+ *
+ * @param {string} text
+ * @returns {string|null}
+ */
+function parseSuggestedUse(text) {
+  if (typeof text !== 'string') return null;
+  const prose = text.replace(/\s+/g, ' ');
+  const patterns = [
+    /(?:marketed|said|purported|reputed|known|touted)\s+(?:as\s+|to\s+be\s+)?(?:being\s+)?(?:ideal(?:ly)?\s+|well[-\s]suited\s+|good\s+|great\s+)?(?:for|in)\s+([^.]{10,200})\./i,
+    /commonly used (?:in|for) ([^.]{10,200})\./i,
+    /(?:works|pairs) well (?:in|with) ([^.]{10,200})\./i,
+  ];
+  for (const re of patterns) {
+    const m = prose.match(re);
+    if (m) return m[1].trim();
+  }
+  return null;
+}
+
+/* ---- Hop Chronicles index (generated from data/hop-chronicles/hop-chronicles.csv) ---- */
+const DATA_VERSION = "776d9fbf2740";
+const CHRONICLE_INDEX = [
+ {
+  "variety": "007 Golden Hop",
+  "cropYear": "2016",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2018-01-04",
+  "notes": "Idaho Jackson Farm release, formerly Idaho 7; high alpha and oil, orange/tangerine/black tea/pine",
+  "url": "https://brulosophy.com/2018/01/04/the-hop-chronicles-007-golden-hop/",
+  "aa": "10-14%",
+  "beta": "2.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   5,
+   5,
+   2,
+   6,
+   6,
+   2,
+   4,
+   2,
+   3
+  ],
+  "styles": [
+   "American IPA",
+   "Hazy IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Idaho #7"
+ },
+ {
+  "variety": "African Queen",
+  "cropYear": "2021",
+  "origin": "South Africa",
+  "series": "Pale Ale",
+  "published": "2024-08-05",
+  "notes": "Developed by SAB Hop Farms in 1998, commercially released 2014",
+  "url": "https://brulosophy.com/2024/08/05/the-hop-chronicles-african-queen-2021-pale-ale/",
+  "aa": "10-17%",
+  "beta": "2.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   4,
+   6,
+   6,
+   8,
+   3,
+   8,
+   2,
+   4,
+   2,
+   3
+  ],
+  "styles": [
+   "West Coast IPA",
+   "Dark IPA",
+   "Fruited Sour"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: African Queen"
+ },
+ {
+  "variety": "Amarillo",
+  "cropYear": "2016",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2017-11-02",
+  "notes": "Known for orange and grapefruit along with floral and spicy notes",
+  "url": "https://brulosophy.com/2017/11/02/the-hop-chronicles-amarillo-2016/",
+  "aa": "8-11%",
+  "beta": "6.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   8,
+   5,
+   4,
+   2,
+   3,
+   2,
+   5,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Pale Ale",
+   "American IPA",
+   "Wheat"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Amarillo"
+ },
+ {
+  "variety": "Amarillo",
+  "cropYear": "2021",
+  "origin": "USA",
+  "series": "Pale Lager",
+  "published": "2022-11-03",
+  "notes": "Released 1990; known for citrus and floral notes",
+  "url": "https://brulosophy.com/2022/11/03/the-hop-chronicles-amarillo-2021-pale-lager/",
+  "aa": "8-11%",
+  "beta": "6.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   8,
+   5,
+   4,
+   2,
+   3,
+   2,
+   5,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Pale Ale",
+   "American IPA",
+   "Wheat"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Amarillo"
+ },
+ {
+  "variety": "Azacca",
+  "cropYear": "2016",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2017-06-15",
+  "notes": "Moderately pungent tropical and stone fruit with solid bittering potential",
+  "url": "https://brulosophy.com/2017/06/15/the-hop-chronicles-azacca/",
+  "aa": "14-16%",
+  "beta": "2.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   6,
+   8,
+   5,
+   2,
+   4,
+   3,
+   2,
+   2,
+   3,
+   2
+  ],
+  "styles": [
+   "Hazy IPA",
+   "Pale Ale",
+   "Saison"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Azacca"
+ },
+ {
+  "variety": "Belma",
+  "cropYear": "2022",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2023-10-05",
+  "notes": "Released 2012 by Puterbaugh Farms; fruity notes led by sweet strawberry",
+  "url": "https://brulosophy.com/2023/10/05/the-hop-chronicles-belma-2022-pale-ale/",
+  "aa": "8-12%",
+  "beta": "4-8%",
+  "coh": "34-38%",
+  "oil": "1.0-2.5 mL/100g",
+  "oils": "",
+  "d": [
+   6,
+   6,
+   3,
+   7,
+   1,
+   1,
+   3,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Blonde Ale",
+   "Wheat",
+   "Cream Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2023/10/05/the-hop-chronicles-belma-2022-pale-ale/"
+ },
+ {
+  "variety": "Bravo",
+  "cropYear": "2016",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2017-04-13",
+  "notes": "Descriptors included orange, vanilla and floral",
+  "url": "https://brulosophy.com/2017/04/13/the-hop-chronicles-bravo/",
+  "aa": "14-17%",
+  "beta": "3.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   6,
+   3,
+   3,
+   2,
+   3,
+   3,
+   5,
+   2,
+   2,
+   2
+  ],
+  "styles": [
+   "American IPA",
+   "Amber Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Bravo"
+ },
+ {
+  "variety": "Bru-1",
+  "cropYear": "2016",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2017-03-02",
+  "notes": "Tropical-fruit-forward variety",
+  "url": "https://brulosophy.com/2017/03/02/the-hop-chronicles-bru-1/",
+  "aa": "13-15%",
+  "beta": "10.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   4,
+   9,
+   5,
+   2,
+   2,
+   3,
+   2,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "NEIPA",
+   "Pale Ale",
+   "Wheat"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Bru-1"
+ },
+ {
+  "variety": "BRU-1 LUPOMAX",
+  "cropYear": "2020",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2021-05-06",
+  "notes": "Brulotte Farms with John I. Haas, experimental release 2016. Top blind-taster descriptors: citrus, tropical fruit, stone fruit, with floral rated highly",
+  "url": "https://brulosophy.com/2021/05/06/the-hop-chronicles-bru-1-lupomax-2020/",
+  "aa": "19.5%",
+  "beta": "8-10%",
+  "coh": "35-37%",
+  "oil": "1.95-2.6 mL/100g",
+  "oils": "myrcene 50-55%; humulene 7-8%; caryophyllene 9-11%; farnesene 0-1%; linalool 0-1%; geraniol 0-1%",
+  "d": [
+   5,
+   9,
+   6,
+   2,
+   2,
+   3,
+   5,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "NEIPA"
+  ],
+  "basis": "chronicle",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2021/05/06/the-hop-chronicles-bru-1-lupomax-2020/"
+ },
+ {
+  "variety": "California Chinook",
+  "cropYear": "2018",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2018-09-13",
+  "notes": "",
+  "url": "https://brulosophy.com/2018/09/13/the-hop-chronicles-california-chinook-2018/",
+  "aa": "11-14%",
+  "beta": "3.6%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   5,
+   2,
+   2,
+   1,
+   8,
+   5,
+   2,
+   3,
+   3,
+   4
+  ],
+  "styles": [
+   "West Coast IPA",
+   "American IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Chinook"
+ },
+ {
+  "variety": "Callista",
+  "cropYear": "2020",
+  "origin": "Germany",
+  "series": "Pale Ale",
+  "published": "2022-11-17",
+  "notes": "Hüll Hop Research Center, released 2016; low alpha aroma hop — stone fruit, citrus, berry, cream caramel",
+  "url": "https://brulosophy.com/2022/11/17/the-hop-chronicles-callista-2020-pale-ale/",
+  "aa": "2-5%",
+  "beta": "10.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   4,
+   6,
+   6,
+   7,
+   3,
+   1,
+   4,
+   2,
+   2,
+   2
+  ],
+  "styles": [
+   "Modern German Lager",
+   "Summer Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Callista"
+ },
+ {
+  "variety": "Cascade",
+  "cropYear": "2016",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2016-11-03",
+  "notes": "Imparts floral and citrus character; many tasters perceived grapefruit in particular",
+  "url": "https://brulosophy.com/2016/11/03/the-hop-chronicles-cascade/",
+  "aa": "4.5-9%",
+  "beta": "6.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   2,
+   2,
+   2,
+   3,
+   2,
+   7,
+   3,
+   3,
+   2
+  ],
+  "styles": [
+   "American Pale Ale",
+   "American IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Cascade"
+ },
+ {
+  "variety": "Cascade LUPOMAX",
+  "cropYear": "2021",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2022-12-01",
+  "notes": "",
+  "url": "https://brulosophy.com/2022/12/01/the-hop-chronicles-cascade-lupomax-2021-pale-ale/",
+  "aa": "12.5%",
+  "beta": "6.0-7.5%",
+  "coh": "30-35%",
+  "oil": "0.8-2.5 mL/100g",
+  "oils": "myrcene 45-60%; humulene 14-20%; caryophyllene 5-9%; farnesene 6-9%; linalool 0.3-0.6%; b-pinene 0.5-0.8%",
+  "d": [
+   8,
+   3,
+   2,
+   2,
+   4,
+   2,
+   7,
+   3,
+   3,
+   2
+  ],
+  "styles": [
+   "American Pale Ale",
+   "Amber Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2022/12/01/the-hop-chronicles-cascade-lupomax-2021-pale-ale/"
+ },
+ {
+  "variety": "Cashmere",
+  "cropYear": "2018",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2019-10-03",
+  "notes": "",
+  "url": "https://brulosophy.com/2019/10/03/the-hop-chronicles-cashmere-2018/",
+  "aa": "7.7-9.1%",
+  "beta": "6.7%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   5,
+   5,
+   2,
+   2,
+   1,
+   3,
+   6,
+   3,
+   2
+  ],
+  "styles": [
+   "Pale Ale",
+   "Saison",
+   "Sour"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Cashmere"
+ },
+ {
+  "variety": "Centennial",
+  "cropYear": "2015",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "",
+  "notes": "",
+  "url": "https://brulosophy.com/the-hop-chronicles/the-hop-chronicles-centennial/",
+  "aa": "9.5-11.5%",
+  "beta": "4.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   8,
+   3,
+   2,
+   1,
+   6,
+   3,
+   6,
+   2,
+   2,
+   2
+  ],
+  "styles": [
+   "American IPA",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Centennial"
+ },
+ {
+  "variety": "Centennial LUPOMAX",
+  "cropYear": "2021",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2023-05-19",
+  "notes": "Top blind-taster descriptors: citrus, tropical fruit, pine, floral",
+  "url": "https://brulosophy.com/2023/05/19/the-hop-chronicles-centennial-lupomax-2021-pale-ale/",
+  "aa": "14%",
+  "beta": "5%",
+  "coh": "23-27%",
+  "oil": "2.2 mL/100g",
+  "oils": "myrcene 55-65%; humulene 10-20%; caryophyllene 5-7%; farnesene <1%; linalool 0.6-0.9%; geraniol 1.2-1.8%; b-pinene 0.8-1.0%",
+  "d": [
+   9,
+   7,
+   3,
+   2,
+   7,
+   3,
+   6,
+   2,
+   2,
+   2
+  ],
+  "styles": [
+   "Double IPA",
+   "American IPA"
+  ],
+  "basis": "chronicle",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2023/05/19/the-hop-chronicles-centennial-lupomax-2021-pale-ale/"
+ },
+ {
+  "variety": "Chinook",
+  "cropYear": "2020",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2021-04-15",
+  "notes": "Bred by the USDA hop breeding program and released in 1985",
+  "url": "https://brulosophy.com/2021/04/15/the-hop-chronicles-chinook-2020/",
+  "aa": "11-14%",
+  "beta": "3.6%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   5,
+   2,
+   2,
+   1,
+   8,
+   5,
+   2,
+   3,
+   3,
+   4
+  ],
+  "styles": [
+   "West Coast IPA",
+   "American IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Chinook"
+ },
+ {
+  "variety": "Citra",
+  "cropYear": "2017",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2018-04-05",
+  "notes": "Released by Hop Breeding Company in 2007; citrus and tropical fruit with solid bittering potential",
+  "url": "https://brulosophy.com/2018/04/05/the-hop-chronicals-citra-2017/",
+  "aa": "11-13%",
+  "beta": "4.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   9,
+   9,
+   4,
+   3,
+   3,
+   4,
+   2,
+   1,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "American IPA",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Citra"
+ },
+ {
+  "variety": "Citra LUPOMAX",
+  "cropYear": "2021",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2022-06-09",
+  "notes": "Top blind-taster descriptors: citrus, tropical fruit",
+  "url": "https://brulosophy.com/2022/06/09/the-hop-chronicles-citra-lupomax-2021/",
+  "aa": "18%",
+  "beta": "4.2%",
+  "coh": "20-24%",
+  "oil": "2.7 mL/100g",
+  "oils": "myrcene 60-70%; humulene 7-12%; caryophyllene 5-8%; farnesene <1%; linalool 0.6-0.9%; geraniol 0.3-0.5%; b-pinene 0.7-1%",
+  "d": [
+   9,
+   8,
+   4,
+   3,
+   3,
+   4,
+   2,
+   1,
+   1,
+   1
+  ],
+  "styles": [
+   "Double IPA",
+   "Hazy IPA"
+  ],
+  "basis": "chronicle",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2022/06/09/the-hop-chronicles-citra-lupomax-2021/"
+ },
+ {
+  "variety": "Comet",
+  "cropYear": "2018",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2019-12-05",
+  "notes": "",
+  "url": "https://brulosophy.com/2019/12/05/the-hop-chronicles-comet-2018/",
+  "aa": "9-12%",
+  "beta": "4.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   2,
+   2,
+   1,
+   5,
+   4,
+   2,
+   5,
+   3,
+   4
+  ],
+  "styles": [
+   "American IPA",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Comet"
+ },
+ {
+  "variety": "Crystal",
+  "cropYear": "2017",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2019-07-04",
+  "notes": "",
+  "url": "https://brulosophy.com/2019/07/04/the-hop-chronicles-crystal-2017/",
+  "aa": "3-6%",
+  "beta": "5.2%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   3,
+   1,
+   2,
+   1,
+   2,
+   1,
+   6,
+   5,
+   7,
+   3
+  ],
+  "styles": [
+   "Pilsner",
+   "Kolsch",
+   "Altbier"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Crystal"
+ },
+ {
+  "variety": "CTZ",
+  "cropYear": "2018",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2020-01-02",
+  "notes": "Columbus/Tomahawk/Zeus; author called it his favorite Hop Chronicles beer to that date",
+  "url": "https://brulosophy.com/2020/01/02/the-hop-chronicles-ctz-2018/",
+  "aa": "14-17%",
+  "beta": "4.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   4,
+   3,
+   1,
+   1,
+   6,
+   8,
+   1,
+   2,
+   4,
+   5
+  ],
+  "styles": [
+   "West Coast IPA",
+   "IPL"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Columbus/Tomahawk/Zeus (CTZ)"
+ },
+ {
+  "variety": "CTZ",
+  "cropYear": "2022",
+  "origin": "USA",
+  "series": "Pale Lager",
+  "published": "2023-12-28",
+  "notes": "Top descriptors: tropical fruit, citrus, apple/pear; lowest rated: onion/garlic, dank/catty, earthy/woody",
+  "url": "https://brulosophy.com/2023/12/28/the-hop-chronicles-ctz-2022-pale-lager/",
+  "aa": "14-17%",
+  "beta": "4.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   4,
+   3,
+   1,
+   1,
+   6,
+   8,
+   1,
+   2,
+   4,
+   5
+  ],
+  "styles": [
+   "West Coast IPA",
+   "IPL"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Columbus/Tomahawk/Zeus (CTZ)"
+ },
+ {
+  "variety": "Dr. Rudi",
+  "cropYear": "2020",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2022-02-03",
+  "notes": "Released 1976 by the NZ Horticulture Research Center as SuperAlpha",
+  "url": "https://brulosophy.com/2022/02/03/the-hop-chronicles-dr-rudi-2020/",
+  "aa": "10-13%",
+  "beta": "8.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   4,
+   3,
+   2,
+   3,
+   8,
+   4,
+   2,
+   3,
+   2,
+   3
+  ],
+  "styles": [
+   "Pacific Pale Ale",
+   "Bittering"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Dr. Rudi"
+ },
+ {
+  "variety": "East Kent Golding",
+  "cropYear": "2018",
+  "origin": "UK",
+  "series": "Pale Ale",
+  "published": "2020-11-19",
+  "notes": "First released 1790; a staple of British ale",
+  "url": "https://brulosophy.com/2020/11/19/the-hop-chronicles-east-kent-golding-2018/",
+  "aa": "4-6.5%",
+  "beta": "3.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   2,
+   1,
+   1,
+   1,
+   6,
+   4,
+   5,
+   6
+  ],
+  "styles": [
+   "ESB",
+   "Bitter",
+   "Porter"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: East Kent Goldings (EKG)"
+ },
+ {
+  "variety": "Eclipse",
+  "cropYear": "2020",
+  "origin": "Australia",
+  "series": "Pale Ale",
+  "published": "2021-11-04",
+  "notes": "",
+  "url": "https://brulosophy.com/2021/11/04/the-hop-chronicles-eclipse-2020/",
+  "aa": "15.7-18.7%",
+  "beta": "5.9-9.0%",
+  "coh": "33-37%",
+  "oil": "1.7-1.9 mL/100g",
+  "oils": "myrcene 42%; humulene 1.4%; caryophyllene 11.1%; farnesene 0.2%; linalool 0.6%",
+  "d": [
+   8,
+   4,
+   3,
+   4,
+   6,
+   4,
+   2,
+   2,
+   2,
+   2
+  ],
+  "styles": [
+   "Australian IPA",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2021/11/04/the-hop-chronicles-eclipse-2020/"
+ },
+ {
+  "variety": "Ekuanot",
+  "cropYear": "2015",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2016-09-01",
+  "notes": "Released as Equinox by Hop Breeding Company in 2014; renamed Ekuanot after a trademark dispute",
+  "url": "https://brulosophy.com/2016/09/01/the-hop-chronicles-hbc-366-formerly-equinox/",
+  "aa": "13-15%",
+  "beta": "4.8%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   6,
+   7,
+   4,
+   2,
+   4,
+   4,
+   2,
+   3,
+   4,
+   2
+  ],
+  "styles": [
+   "Hazy IPA",
+   "American IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Equinox (HBC 366)"
+ },
+ {
+  "variety": "Ekuanot LUPOMAX",
+  "cropYear": "2020",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2021-05-20",
+  "notes": "",
+  "url": "https://brulosophy.com/2021/05/20/the-hop-chronicles-ekuanot-lupomax-2020/",
+  "aa": "19%",
+  "beta": "4-5%",
+  "coh": "31-36%",
+  "oil": "4 mL/100g",
+  "oils": "myrcene 30-45%; humulene 12-20%; caryophyllene 8-12%; farnesene <1%; linalool 0.2-0.5%; geraniol 0.2%; b-pinene 0.4-0.8%",
+  "d": [
+   7,
+   8,
+   5,
+   2,
+   4,
+   4,
+   2,
+   3,
+   4,
+   2
+  ],
+  "styles": [
+   "Hazy IPA",
+   "Double IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2021/05/20/the-hop-chronicles-ekuanot-lupomax-2020/"
+ },
+ {
+  "variety": "El Dorado LUPOMAX",
+  "cropYear": "2021",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2022-10-20",
+  "notes": "Bred by CLS Farms, released 2010. Top blind-taster descriptors: tropical fruit, citrus, stone fruit",
+  "url": "https://brulosophy.com/2022/10/20/the-hop-chronicles-el-dorado-lupomax-2021-pale-ale/",
+  "aa": "17%",
+  "beta": "6.4-8.0%",
+  "coh": "28-33%",
+  "oil": "2.5-3.3 mL/100g",
+  "oils": "myrcene 55-60%; humulene 10-15%; caryophyllene 6-8%; farnesene 0-1%; linalool 0.3-0.6%; geraniol 0.1-0.3%; b-pinene 0.6-0.9%",
+  "d": [
+   8,
+   9,
+   7,
+   2,
+   2,
+   3,
+   2,
+   1,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "Double IPA"
+  ],
+  "basis": "chronicle",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2022/10/20/the-hop-chronicles-el-dorado-lupomax-2021-pale-ale/"
+ },
+ {
+  "variety": "Elani",
+  "cropYear": "2023",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2024-09-16",
+  "notes": "Discovered in Idaho's St. Joe River Valley by Yakima Quality Hops; likely an open cross-pollination of heirloom plants",
+  "url": "https://brulosophy.com/2024/09/16/the-hop-chronicles-elani-2023-pale-ale/",
+  "aa": "8.8%",
+  "beta": "5.7%",
+  "coh": "35%",
+  "oil": "2.1 mL/100g",
+  "oils": "myrcene 53.76%; humulene 9.7%; caryophyllene 5.2%; linalool 0.62%; geraniol <0.25%; b-pinene 0.91%",
+  "d": [
+   6,
+   8,
+   6,
+   2,
+   2,
+   2,
+   3,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Modern Pale Ale",
+   "Session IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2024/09/16/the-hop-chronicles-elani-2023-pale-ale/"
+ },
+ {
+  "variety": "Enigma",
+  "cropYear": "2017",
+  "origin": "Australia",
+  "series": "Pale Ale",
+  "published": "2018-06-07",
+  "notes": "",
+  "url": "https://brulosophy.com/2018/06/07/the-hop-chronicles-enigma-2017/",
+  "aa": "13-17%",
+  "beta": "6.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   4,
+   6,
+   3,
+   8,
+   1,
+   2,
+   3,
+   3,
+   2,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "Saison"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Enigma"
+ },
+ {
+  "variety": "French Fuggle",
+  "cropYear": "2021",
+  "origin": "France",
+  "series": "Pale Ale",
+  "published": "2023-04-07",
+  "notes": "Alsace-grown version of the classic British Fuggle; little published information available",
+  "url": "https://brulosophy.com/2023/04/07/the-hop-chronicles-french-fuggle-2021-pale-ale/",
+  "aa": "3.5-5.5%",
+  "beta": "2.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   1,
+   1,
+   1,
+   1,
+   2,
+   1,
+   4,
+   6,
+   4,
+   8
+  ],
+  "styles": [
+   "Biere de Garde",
+   "Mild",
+   "Sweet Stout"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Fuggle"
+ },
+ {
+  "variety": "Galaxy",
+  "cropYear": "2015",
+  "origin": "Australia",
+  "series": "Pale Ale",
+  "published": "2016-10-06",
+  "notes": "Tasters noted the bitterness can be harsh relative to its citrus aromatics",
+  "url": "https://brulosophy.com/2016/10/06/the-hop-chronicles-galaxy/",
+  "aa": "13-16.3%",
+  "beta": "5.9%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   9,
+   7,
+   5,
+   2,
+   3,
+   2,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "American IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Galaxy"
+ },
+ {
+  "variety": "Galaxy",
+  "cropYear": "2022",
+  "origin": "Australia",
+  "series": "Pale Lager",
+  "published": "2023-11-02",
+  "notes": "",
+  "url": "https://brulosophy.com/2023/11/02/the-hop-chronicles-galaxy-2022-pale-lager/",
+  "aa": "13-16.3%",
+  "beta": "5.9%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   9,
+   7,
+   5,
+   2,
+   3,
+   2,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "American IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Galaxy"
+ },
+ {
+  "variety": "German Northern Brewer",
+  "cropYear": "2021",
+  "origin": "Germany",
+  "series": "Pale Lager",
+  "published": "2022-10-06",
+  "notes": "",
+  "url": "https://brulosophy.com/2022/10/06/the-hop-chronicles-german-northern-brewer-2021-pale-lager/",
+  "aa": "7-10%",
+  "beta": "4.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   1,
+   1,
+   7,
+   3,
+   2,
+   7,
+   5,
+   6
+  ],
+  "styles": [
+   "German Dark Lager",
+   "Baltic Porter"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Northern Brewer"
+ },
+ {
+  "variety": "German Perle",
+  "cropYear": "2017",
+  "origin": "Germany",
+  "series": "Pale Ale",
+  "published": "2018-05-03",
+  "notes": "",
+  "url": "https://brulosophy.com/2018/05/03/the-hop-chronicles-german-perle-2017/",
+  "aa": "6-9%",
+  "beta": "4.8%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   3,
+   1,
+   1,
+   1,
+   3,
+   2,
+   5,
+   5,
+   6,
+   4
+  ],
+  "styles": [
+   "Vienna Lager",
+   "Bock",
+   "Dunkel"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Perle"
+ },
+ {
+  "variety": "German Tettnanger",
+  "cropYear": "2017",
+  "origin": "Germany",
+  "series": "Pale Ale",
+  "published": "2019-01-03",
+  "notes": "Standard THC recipe adapted to better suit a noble hop",
+  "url": "https://brulosophy.com/2019/01/03/the-hop-chronicles-german-tettnanger-2017/",
+  "aa": "3-5.5%",
+  "beta": "4.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   3,
+   1,
+   1,
+   1,
+   1,
+   1,
+   6,
+   5,
+   8,
+   3
+  ],
+  "styles": [
+   "German Pilsner",
+   "Helles"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Tettnang (Tettnang Tettnager)"
+ },
+ {
+  "variety": "Green Bullet",
+  "cropYear": "2021",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2023-05-05",
+  "notes": "First released by NZ's DSIR in 1972",
+  "url": "https://brulosophy.com/2023/05/05/the-hop-chronicles-green-bullet-2021-pale-ale/",
+  "aa": "11-14%",
+  "beta": "7.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   2,
+   2,
+   3,
+   7,
+   3,
+   4,
+   4,
+   5,
+   5
+  ],
+  "styles": [
+   "Pacific Pale Ale",
+   "English Strong Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Green Bullet"
+ },
+ {
+  "variety": "Hallertau Blanc",
+  "cropYear": "2018",
+  "origin": "Germany",
+  "series": "Pale Ale",
+  "published": "2019-04-04",
+  "notes": "Released by Hop Research Center Hüll in 2012; Sauvignon Blanc-like. Blind tasters: citrus, tropical fruit, strong apple/pear aroma",
+  "url": "https://brulosophy.com/2019/04/04/the-hop-chronicles-hallertau-blanc-2018/",
+  "aa": "9-12%",
+  "beta": "4.5-6%",
+  "coh": "22-26%",
+  "oil": "0.8-1.5 mL/100g",
+  "oils": "myrcene 50-75%; humulene 0-3%; caryophyllene 0-2%; farnesene 0-3.5%; linalool 0.2-0.5%",
+  "d": [
+   7,
+   7,
+   4,
+   5,
+   1,
+   2,
+   4,
+   3,
+   2,
+   1
+  ],
+  "styles": [
+   "Modern German Lager",
+   "Saison"
+  ],
+  "basis": "chronicle",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2019/04/04/the-hop-chronicles-hallertau-blanc-2018/"
+ },
+ {
+  "variety": "Hallertau Mittelfrüh",
+  "cropYear": "2020",
+  "origin": "Germany",
+  "series": "Pale Ale",
+  "published": "2021-07-15",
+  "notes": "",
+  "url": "https://brulosophy.com/2021/07/15/the-hop-chronicles-hallertau-mittelfruh-2020/",
+  "aa": "3-5.5%",
+  "beta": "4.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   1,
+   1,
+   1,
+   1,
+   6,
+   5,
+   8,
+   3
+  ],
+  "styles": [
+   "German Pilsner",
+   "Helles",
+   "Vienna Lager"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Hallertau"
+ },
+ {
+  "variety": "Harlequin",
+  "cropYear": "2023",
+  "origin": "UK",
+  "series": "Pale Ale",
+  "published": "2025-10-13",
+  "notes": "Peach, passion fruit, pineapple. Top blind-taster descriptors: citrus, tropical fruit",
+  "url": "https://brulosophy.com/2025/10/13/the-hop-chronicles-harlequin-2023-pale-ale/",
+  "aa": "9-12%",
+  "beta": "7-9%",
+  "coh": "27-31%",
+  "oil": "1.0-1.8 mL/100g",
+  "oils": "myrcene 55-65%; humulene 0-10%; farnesene 5-15%",
+  "d": [
+   8,
+   9,
+   7,
+   2,
+   1,
+   1,
+   3,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Juicy Pale Ale",
+   "Modern English IPA",
+   "NEIPA"
+  ],
+  "basis": "post",
+  "xcheck": "Brulosophy post (pasted): https://brulosophy.com/2025/10/13/the-hop-chronicles-harlequin-2023-pale-ale/ | descriptors supplied by user"
+ },
+ {
+  "variety": "HBC 586 LUPOMAX",
+  "cropYear": "2021",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2022-05-19",
+  "notes": "Experimental HBC variety; mango/guava/citrus. Top blind-taster descriptors: citrus, tropical fruit",
+  "url": "https://brulosophy.com/2022/05/19/the-hop-chronicles-hbc-586-lupomax-2021/",
+  "aa": "17%",
+  "beta": "7.5-8.5%",
+  "coh": "",
+  "oil": "1.2-2.5 mL/100g",
+  "oils": "myrcene 40-50%; humulene 14-22%; caryophyllene 7-15%; farnesene <1%; linalool <1%; geraniol 1-3%",
+  "d": [
+   8,
+   9,
+   5,
+   2,
+   2,
+   2,
+   2,
+   1,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy Pale Ale",
+   "Tropical IPA"
+  ],
+  "basis": "chronicle",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2022/05/19/the-hop-chronicles-hbc-586-lupomax-2021/"
+ },
+ {
+  "variety": "Hersbrucker",
+  "cropYear": "2021",
+  "origin": "Germany",
+  "series": "Pale Lager",
+  "published": "2023-03-03",
+  "notes": "",
+  "url": "https://brulosophy.com/2023/03/03/the-hop-chronicles-hersbrucker-2021-pale-lager/",
+  "aa": "2.5-5%",
+  "beta": "2.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   2,
+   1,
+   1,
+   1,
+   6,
+   7,
+   5,
+   4
+  ],
+  "styles": [
+   "Munich Helles",
+   "Dortmunder"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Hersbrucker"
+ },
+ {
+  "variety": "Huell Melon",
+  "cropYear": "2014",
+  "origin": "Germany",
+  "series": "Pale Ale",
+  "published": "2017-01-05",
+  "notes": "Bred at the Hop Research Institute of Hüll, parentage unknown; mild melon and strawberry",
+  "url": "https://brulosophy.com/2017/01/05/the-hop-chronicles-huell-melon/",
+  "aa": "6-7.5%",
+  "beta": "7.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   3,
+   7,
+   4,
+   7,
+   1,
+   1,
+   4,
+   2,
+   2,
+   1
+  ],
+  "styles": [
+   "Summer Ale",
+   "Wheat"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Huell Melon"
+ },
+ {
+  "variety": "Idaho 7",
+  "cropYear": "2020",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2022-06-23",
+  "notes": "Orange, tangerine, black tea, pine",
+  "url": "https://brulosophy.com/2022/06/23/the-hop-chronicles-idaho-7-2020/",
+  "aa": "10-14%",
+  "beta": "2.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   6,
+   5,
+   2,
+   6,
+   6,
+   2,
+   4,
+   2,
+   3
+  ],
+  "styles": [
+   "Hazy IPA",
+   "American IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Idaho #7"
+ },
+ {
+  "variety": "Idaho Gem",
+  "cropYear": "2020",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2021-03-04",
+  "notes": "",
+  "url": "https://brulosophy.com/2021/03/04/the-hop-chronicles-idaho-gem-2020/",
+  "aa": "10-14%",
+  "beta": "7.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   7,
+   6,
+   2,
+   2,
+   2,
+   3,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Idaho Gem"
+ },
+ {
+  "variety": "Kazbek",
+  "cropYear": "2020",
+  "origin": "Czech Republic",
+  "series": "Pale Ale",
+  "published": "2022-07-07",
+  "notes": "'Super Saaz'; Saaz progeny — citrus, sweet fruit, berry, noble spice, low alpha",
+  "url": "https://brulosophy.com/2022/07/07/the-hop-chronicles-kazbek-2020/",
+  "aa": "5-8%",
+  "beta": "5.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   5,
+   2,
+   2,
+   2,
+   2,
+   1,
+   4,
+   5,
+   7,
+   5
+  ],
+  "styles": [
+   "Bohemian Pilsner",
+   "Saison"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Kazbek"
+ },
+ {
+  "variety": "Kazbek",
+  "cropYear": "2021",
+  "origin": "Czech Republic",
+  "series": "Pale Lager",
+  "published": "2023-07-21",
+  "notes": "'Super Saaz'; citrus, sweet fruit, berry, noble spice, low alpha",
+  "url": "https://brulosophy.com/2023/07/21/the-hop-chronicles-kazbek-2021-pale-lager/",
+  "aa": "5-8%",
+  "beta": "5.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   5,
+   2,
+   2,
+   2,
+   2,
+   1,
+   4,
+   5,
+   7,
+   5
+  ],
+  "styles": [
+   "Bohemian Pilsner",
+   "Saison"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Kazbek"
+ },
+ {
+  "variety": "Kohatu",
+  "cropYear": "2020",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2021-10-21",
+  "notes": "Released 2011 by NZ Plant & Food Research; intense tropical fruit and pungent pine",
+  "url": "https://brulosophy.com/2021/10/21/the-hop-chronicles-kohatu-2020/",
+  "aa": "6-8%",
+  "beta": "5.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   5,
+   8,
+   3,
+   2,
+   6,
+   2,
+   5,
+   2,
+   2,
+   2
+  ],
+  "styles": [
+   "Pacific Pale Ale",
+   "NZ Pilsner"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Kohatu"
+ },
+ {
+  "variety": "Lemondrop",
+  "cropYear": "2016",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2017-06-01",
+  "notes": "Bred by Hopsteiner in 2001; strong lemon balanced by mint, green tea and melon",
+  "url": "https://brulosophy.com/2017/06/01/the-hop-chronicles-lemondrop/",
+  "aa": "5-7%",
+  "beta": "2.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   8,
+   4,
+   2,
+   1,
+   2,
+   1,
+   3,
+   7,
+   3,
+   2
+  ],
+  "styles": [
+   "Wheat",
+   "Blonde Ale",
+   "Session IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Lemondrop"
+ },
+ {
+  "variety": "Loral",
+  "cropYear": "2015",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2017-03-23",
+  "notes": "",
+  "url": "https://brulosophy.com/2017/03/23/the-hop-chronicles-loral/",
+  "aa": "10-12%",
+  "beta": "5.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   5,
+   2,
+   2,
+   4,
+   3,
+   2,
+   7,
+   4,
+   6,
+   3
+  ],
+  "styles": [
+   "Lager",
+   "Saison",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Loral"
+ },
+ {
+  "variety": "Mackinac",
+  "cropYear": "2021",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2023-07-07",
+  "notes": "First cultivar released by the Great Lakes Hops breeding program, 2014",
+  "url": "https://brulosophy.com/2023/07/07/the-hop-chronicles-mackinac-2021-pale-ale/",
+  "aa": "9-13.3%",
+  "beta": "2.8-4%",
+  "coh": "35%",
+  "oil": "1.65 mL/100g",
+  "oils": "myrcene 18.4%; humulene 25.9%; caryophyllene 12.5%; farnesene 1.83%; linalool 0.48%; geraniol 2.47%",
+  "d": [
+   6,
+   7,
+   3,
+   2,
+   2,
+   2,
+   3,
+   2,
+   4,
+   2
+  ],
+  "styles": [
+   "American IPA",
+   "Blonde Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2023/07/07/the-hop-chronicles-mackinac-2021-pale-ale/"
+ },
+ {
+  "variety": "Magnum",
+  "cropYear": "2016",
+  "origin": "Germany",
+  "series": "Pale Ale",
+  "published": "2017-02-02",
+  "notes": "Bred from a Galena mother crossed with a German male",
+  "url": "https://brulosophy.com/2017/02/02/the-hop-chronicles-magnum/",
+  "aa": "12-16%",
+  "beta": "5.2%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   1,
+   1,
+   3,
+   2,
+   3,
+   3,
+   4,
+   3
+  ],
+  "styles": [
+   "Any (clean bittering)"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Magnum"
+ },
+ {
+  "variety": "Mandarina Bavaria",
+  "cropYear": "2018",
+  "origin": "Germany",
+  "series": "Pale Ale",
+  "published": "2020-03-05",
+  "notes": "Hüll, released 2012; parentage includes Cascade, Huell Melon and Hallertau Blanc",
+  "url": "https://brulosophy.com/2020/03/05/the-hop-chronicles-mandarina-bavaria-2018/",
+  "aa": "7-10%",
+  "beta": "6.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   9,
+   4,
+   3,
+   3,
+   1,
+   1,
+   3,
+   2,
+   2,
+   1
+  ],
+  "styles": [
+   "Wheat",
+   "Modern Lager",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Mandarina Bavaria"
+ },
+ {
+  "variety": "McKenzie LUPOMAX",
+  "cropYear": "2023",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2025-08-18",
+  "notes": "Top blind-taster descriptors: citrus, tropical fruit, stone fruit",
+  "url": "https://brulosophy.com/2025/08/18/the-hop-chronicles-mckenzie-lupomax-2023-pale-ale/",
+  "aa": "15.5%",
+  "beta": "8.7%",
+  "coh": "",
+  "oil": "2.3 mL/100g",
+  "oils": "",
+  "d": [
+   9,
+   8,
+   7,
+   2,
+   4,
+   2,
+   2,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "West Coast IPA",
+   "Double IPA"
+  ],
+  "basis": "chronicle",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2025/08/18/the-hop-chronicles-mckenzie-lupomax-2023-pale-ale/"
+ },
+ {
+  "variety": "Melba",
+  "cropYear": "2016",
+  "origin": "Australia",
+  "series": "Pale Ale",
+  "published": "2017-10-05",
+  "notes": "",
+  "url": "https://brulosophy.com/2017/10/05/the-hop-chronicles-melba/",
+  "aa": "8.5-17%",
+  "beta": "4.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   5,
+   7,
+   6,
+   2,
+   1,
+   1,
+   4,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Australian Pale Ale",
+   "IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Melba"
+ },
+ {
+  "variety": "Mosaic",
+  "cropYear": "2016",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2017-02-16",
+  "notes": "Descriptors included resinous, tropical fruit and citrus",
+  "url": "https://brulosophy.com/2017/02/16/the-hop-chronicles-mosaic/",
+  "aa": "11-14%",
+  "beta": "3.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   6,
+   8,
+   6,
+   7,
+   4,
+   6,
+   3,
+   2,
+   1,
+   2
+  ],
+  "styles": [
+   "Hazy IPA",
+   "American IPA",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Mosaic (HBC 369)"
+ },
+ {
+  "variety": "Motueka",
+  "cropYear": "2016",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2017-07-06",
+  "notes": "Said to impart lime citrus character",
+  "url": "https://brulosophy.com/2017/07/06/the-hop-chronicles-motueka/",
+  "aa": "6.5-8.5%",
+  "beta": "5.2%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   8,
+   5,
+   2,
+   2,
+   2,
+   1,
+   3,
+   5,
+   3,
+   1
+  ],
+  "styles": [
+   "NZ Pilsner",
+   "Saison",
+   "Hazy IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Motueka"
+ },
+ {
+  "variety": "Motueka",
+  "cropYear": "2021",
+  "origin": "New Zealand",
+  "series": "Pale Lager",
+  "published": "2022-09-01",
+  "notes": "",
+  "url": "https://brulosophy.com/2022/09/01/the-hop-chronicles-motueka-2021-pale-lager/",
+  "aa": "6.5-8.5%",
+  "beta": "5.2%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   8,
+   5,
+   2,
+   2,
+   2,
+   1,
+   3,
+   5,
+   3,
+   1
+  ],
+  "styles": [
+   "NZ Pilsner",
+   "Saison",
+   "Hazy IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Motueka"
+ },
+ {
+  "variety": "Moutere",
+  "cropYear": "2018",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2020-04-09",
+  "notes": "Dual-purpose hop released by NZ Plant & Food Research in 2015",
+  "url": "https://brulosophy.com/2020/04/09/the-hop-chronicles-moutere-2018/",
+  "aa": "17.5-19.5%",
+  "beta": "8-10%",
+  "coh": "26%",
+  "oil": "1.7 mL/100g",
+  "oils": "myrcene 22.2%; humulene 15.2%; caryophyllene 5.8%; farnesene 0.3%",
+  "d": [
+   8,
+   8,
+   4,
+   2,
+   3,
+   2,
+   3,
+   2,
+   2,
+   2
+  ],
+  "styles": [
+   "NZ IPA",
+   "Pale Ale"
+  ],
+  "basis": "chronicle",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2020/04/09/the-hop-chronicles-moutere-2018/"
+ },
+ {
+  "variety": "Mt. Hood",
+  "cropYear": "2024",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2025-03-31",
+  "notes": "Hallertau Mittelfrüh derivative; viewed by some as an American noble hop",
+  "url": "https://brulosophy.com/2025/03/31/the-hop-chronicles-mt-hood-2024-pale-ale/",
+  "aa": "4-8%",
+  "beta": "6.3%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   1,
+   1,
+   2,
+   1,
+   6,
+   6,
+   6,
+   4
+  ],
+  "styles": [
+   "Bock",
+   "Vienna Lager",
+   "American Wheat"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Mt. Hood"
+ },
+ {
+  "variety": "Mystic",
+  "cropYear": "2020",
+  "origin": "UK",
+  "series": "Pale Ale",
+  "published": "2024-12-23",
+  "notes": "Recent release from the Charles Faram Hop Development Programme",
+  "url": "https://brulosophy.com/2024/12/23/the-hop-chronicles-mystic-2020-pale-ale/",
+  "aa": "4-7%",
+  "beta": "2-4%",
+  "coh": "30-40%",
+  "oil": "0.5-1.5 mL/100g",
+  "oils": "myrcene 30-40%; humulene 30-40%; farnesene >1%",
+  "d": [
+   6,
+   6,
+   3,
+   8,
+   2,
+   2,
+   3,
+   2,
+   2,
+   2
+  ],
+  "styles": [
+   "English IPA",
+   "Summer Ale",
+   "ESB"
+  ],
+  "basis": "composite",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2024/12/23/the-hop-chronicles-mystic-2020-pale-ale/"
+ },
+ {
+  "variety": "Nectaron",
+  "cropYear": "2021",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2023-02-03",
+  "notes": "Bred 2004 by NZ Plant & Food Research, released 2020. Top descriptors: tropical fruit, citrus, stone fruit, floral in flavor",
+  "url": "https://brulosophy.com/2023/02/03/the-hop-chronicles-nectaron-2021-pale-ale/",
+  "aa": "10.5-11.5%",
+  "beta": "4.5-5.0%",
+  "coh": "26-28%",
+  "oil": "1.5-2.0 mL/100g",
+  "oils": "myrcene 60%; humulene 16%; caryophyllene 4.5%; farnesene 0.2%",
+  "d": [
+   7,
+   9,
+   8,
+   2,
+   2,
+   5,
+   4,
+   1,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "Dry-hopped Pilsner",
+   "IPA"
+  ],
+  "basis": "post",
+  "xcheck": "Brulosophy post (pasted): https://brulosophy.com/2023/09/07/the-hop-chronicles-nectaron-2022-pale-lager/ | descriptors supplied by user"
+ },
+ {
+  "variety": "Nectaron",
+  "cropYear": "2022",
+  "origin": "New Zealand",
+  "series": "Pale Lager",
+  "published": "2023-09-07",
+  "notes": "Pineapple, peach, grapefruit",
+  "url": "https://brulosophy.com/2023/09/07/the-hop-chronicles-nectaron-2022-pale-lager/",
+  "aa": "10.5-11.5%",
+  "beta": "4.5-5.0%",
+  "coh": "26-28%",
+  "oil": "1.5-2.0 mL/100g",
+  "oils": "myrcene 60%; humulene 16%; caryophyllene 4.5%; farnesene 0.2%",
+  "d": [
+   7,
+   9,
+   8,
+   2,
+   2,
+   5,
+   4,
+   1,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "Dry-hopped Pilsner",
+   "IPA"
+  ],
+  "basis": "post",
+  "xcheck": "Brulosophy post (pasted): https://brulosophy.com/2023/09/07/the-hop-chronicles-nectaron-2022-pale-lager/ | descriptors supplied by user"
+ },
+ {
+  "variety": "Nelson Sauvin",
+  "cropYear": "2018",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2019-08-01",
+  "notes": "",
+  "url": "https://brulosophy.com/2019/08/01/the-hop-chronicles-nelson-sauvin-2018/",
+  "aa": "12-13%",
+  "beta": "7.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   5,
+   8,
+   3,
+   7,
+   2,
+   3,
+   2,
+   3,
+   3,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "American IPA",
+   "Saison"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Nelson Sauvin"
+ },
+ {
+  "variety": "Northern Brewer",
+  "cropYear": "2021",
+  "origin": "Germany",
+  "series": "Pale Ale",
+  "published": "2024-02-05",
+  "notes": "",
+  "url": "https://brulosophy.com/2024/02/05/the-hop-chronicles-northern-brewer-2021-pale-ale/",
+  "aa": "7-10%",
+  "beta": "4.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   1,
+   1,
+   7,
+   3,
+   2,
+   7,
+   5,
+   6
+  ],
+  "styles": [
+   "California Common",
+   "Porter",
+   "Brown Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Northern Brewer"
+ },
+ {
+  "variety": "Nugget",
+  "cropYear": "2016",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2017-09-21",
+  "notes": "",
+  "url": "https://brulosophy.com/2017/09/21/the-hop-chronicles-nugget/",
+  "aa": "12-15%",
+  "beta": "5.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   3,
+   2,
+   3,
+   1,
+   6,
+   4,
+   2,
+   6,
+   4,
+   4
+  ],
+  "styles": [
+   "American IPA",
+   "Barleywine"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Nugget"
+ },
+ {
+  "variety": "Pacific Jade",
+  "cropYear": "2022",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2024-04-15",
+  "notes": "Released by NZ HortResearch in 2004; herbal and citrus character",
+  "url": "https://brulosophy.com/2024/04/15/the-hop-chronicles-pacific-jade-2022-pale-ale/",
+  "aa": "12-14%",
+  "beta": "7.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   6,
+   2,
+   2,
+   1,
+   4,
+   2,
+   2,
+   6,
+   7,
+   4
+  ],
+  "styles": [
+   "Pacific Pale Ale",
+   "Porter"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Pacific Jade"
+ },
+ {
+  "variety": "Pacifica",
+  "cropYear": "2020",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2022-01-20",
+  "notes": "",
+  "url": "https://brulosophy.com/2022/01/20/the-hop-chronicles-pacifica-2020/",
+  "aa": "5-6%",
+  "beta": "6.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   6,
+   2,
+   2,
+   1,
+   1,
+   1,
+   7,
+   3,
+   4,
+   2
+  ],
+  "styles": [
+   "NZ Pilsner",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Pacifica"
+ },
+ {
+  "variety": "Perle",
+  "cropYear": "2022",
+  "origin": "Germany",
+  "series": "Pale Lager",
+  "published": "2026-02-02",
+  "notes": "",
+  "url": "https://brulosophy.com/2026/02/02/the-hop-chronicles-perle-2022-pale-lager/",
+  "aa": "6-9%",
+  "beta": "4.8%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   3,
+   1,
+   1,
+   1,
+   3,
+   2,
+   5,
+   5,
+   6,
+   4
+  ],
+  "styles": [
+   "Vienna Lager",
+   "Bock",
+   "Dunkel",
+   "Kolsch"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Perle"
+ },
+ {
+  "variety": "Rakau",
+  "cropYear": "2018",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2019-06-06",
+  "notes": "Bred by the New Zealand Hop Breeding Programme",
+  "url": "https://brulosophy.com/2019/06/06/the-hop-chronicles-rakau-2018/",
+  "aa": "10-11%",
+  "beta": "5-6%",
+  "coh": "24%",
+  "oil": "2.2 mL/100g",
+  "oils": "myrcene 56%; humulene 16.3%; caryophyllene 5.2%; farnesene 4.5%",
+  "d": [
+   8,
+   7,
+   8,
+   2,
+   3,
+   2,
+   3,
+   2,
+   2,
+   2
+  ],
+  "styles": [
+   "NZ Pale Ale",
+   "IPA"
+  ],
+  "basis": "chronicle",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2019/06/06/the-hop-chronicles-rakau-2018/"
+ },
+ {
+  "variety": "Riwaka",
+  "cropYear": "2020",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2021-11-18",
+  "notes": "Released by New Zealand Hops in 1997; high oil content, pungent citrus",
+  "url": "https://brulosophy.com/2021/11/18/the-hop-chronicles-riwaka-2020/",
+  "aa": "4.5-6.5%",
+  "beta": "4.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   9,
+   7,
+   3,
+   2,
+   5,
+   4,
+   2,
+   2,
+   2,
+   1
+  ],
+  "styles": [
+   "NZ Pilsner",
+   "Hazy IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Riwaka"
+ },
+ {
+  "variety": "Riwaka",
+  "cropYear": "2022",
+  "origin": "New Zealand",
+  "series": "Pale Lager",
+  "published": "2023-04-21",
+  "notes": "",
+  "url": "https://brulosophy.com/2023/04/21/the-hop-chronicles-riwaka-2021-pale-lager/",
+  "aa": "4.5-6.5%",
+  "beta": "4.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   9,
+   7,
+   3,
+   2,
+   5,
+   4,
+   2,
+   2,
+   2,
+   1
+  ],
+  "styles": [
+   "NZ Pilsner",
+   "Hazy IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Riwaka"
+ },
+ {
+  "variety": "Saaz",
+  "cropYear": "2020",
+  "origin": "Czech Republic",
+  "series": "Pale Lager",
+  "published": "2023-01-06",
+  "notes": "",
+  "url": "https://brulosophy.com/2023/01/06/the-hop-chronicles-saaz-2020-pale-lager/",
+  "aa": "2.5-4.5%",
+  "beta": "3.8%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   1,
+   1,
+   1,
+   1,
+   4,
+   6,
+   9,
+   5
+  ],
+  "styles": [
+   "Czech Pilsner",
+   "Bohemian Lager"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Saaz"
+ },
+ {
+  "variety": "Sabro",
+  "cropYear": "2018",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2019-05-02",
+  "notes": "",
+  "url": "https://brulosophy.com/2019/05/02/the-hop-chronicles-sabro-2018/",
+  "aa": "12-16%",
+  "beta": "7.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   6,
+   9,
+   5,
+   2,
+   3,
+   3,
+   2,
+   3,
+   2,
+   4
+  ],
+  "styles": [
+   "Hazy IPA",
+   "American IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Sabro"
+ },
+ {
+  "variety": "Saphir",
+  "cropYear": "2020",
+  "origin": "Germany",
+  "series": "Pale Ale",
+  "published": "2022-08-18",
+  "notes": "",
+  "url": "https://brulosophy.com/2022/08/18/the-hop-chronicles-saphir-2020-pale-ale/",
+  "aa": "2-4.5%",
+  "beta": "4.6%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   2,
+   2,
+   3,
+   1,
+   1,
+   6,
+   3,
+   5,
+   2
+  ],
+  "styles": [
+   "Munich Helles",
+   "Witbier"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Saphir"
+ },
+ {
+  "variety": "Simcoe",
+  "cropYear": "2016",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2018-03-01",
+  "notes": "",
+  "url": "https://brulosophy.com/2018/03/01/the-hop-chronicles-simcoe-2016/",
+  "aa": "12-14%",
+  "beta": "4.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   5,
+   5,
+   4,
+   3,
+   8,
+   7,
+   2,
+   2,
+   2,
+   4
+  ],
+  "styles": [
+   "West Coast IPA",
+   "American IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Simcoe"
+ },
+ {
+  "variety": "Sonnet",
+  "cropYear": "2020",
+  "origin": "UK",
+  "series": "Pale Ale",
+  "published": "2022-05-05",
+  "notes": "",
+  "url": "https://brulosophy.com/2022/05/05/the-hop-chronicles-sonnet-2020/",
+  "aa": "4-6%",
+  "beta": "2.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   2,
+   1,
+   1,
+   1,
+   6,
+   6,
+   4,
+   5
+  ],
+  "styles": [
+   "Belgian Single",
+   "Blonde Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Sonnet"
+ },
+ {
+  "variety": "Southern Star",
+  "cropYear": "2019",
+  "origin": "South Africa",
+  "series": "Pale Ale",
+  "published": "",
+  "notes": "",
+  "url": "https://brulosophy.com/the-hop-chronicles/the-hop-chronicles-southern-star-2019/",
+  "aa": "12-15%",
+  "beta": "5.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   4,
+   7,
+   3,
+   7,
+   6,
+   4,
+   2,
+   2,
+   2,
+   3
+  ],
+  "styles": [
+   "West Coast IPA",
+   "Red IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Southern Star"
+ },
+ {
+  "variety": "Spalter Select",
+  "cropYear": "2022",
+  "origin": "Germany",
+  "series": "Pale Lager",
+  "published": "2023-06-02",
+  "notes": "Bred at Hüll (Hallertau Mittelfrüh x Spalt), released 1993; spicy and floral Spalt character with good disease tolerance",
+  "url": "https://brulosophy.com/2023/06/02/the-hop-chronicles-spalter-select-2022-pale-lager/",
+  "aa": "3.5-6%",
+  "beta": "3.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   1,
+   1,
+   1,
+   1,
+   6,
+   6,
+   7,
+   3
+  ],
+  "styles": [
+   "Kolsch",
+   "Altbier",
+   "Helles"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Spalter Select"
+ },
+ {
+  "variety": "Sterling",
+  "cropYear": "2018",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2020-02-06",
+  "notes": "",
+  "url": "https://brulosophy.com/2020/02/06/the-hop-chronicles-sterling-2018/",
+  "aa": "6-9%",
+  "beta": "5.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   5,
+   2,
+   1,
+   1,
+   2,
+   1,
+   5,
+   5,
+   6,
+   3
+  ],
+  "styles": [
+   "Pilsner",
+   "Belgian Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Sterling"
+ },
+ {
+  "variety": "Strata",
+  "cropYear": "2018",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2019-09-05",
+  "notes": "Relatively new variety developed by Oregon's Indie Hops",
+  "url": "https://brulosophy.com/2019/09/05/the-hop-chronicles-strata-2018/",
+  "aa": "11-13%",
+  "beta": "5.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   6,
+   7,
+   3,
+   6,
+   4,
+   9,
+   2,
+   3,
+   1,
+   2
+  ],
+  "styles": [
+   "Hazy IPA",
+   "American IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Strata"
+ },
+ {
+  "variety": "Styrian Wolf",
+  "cropYear": "2021",
+  "origin": "Slovenia",
+  "series": "Pale Ale",
+  "published": "2024-06-24",
+  "notes": "Slovenian Institute of Hop Research and Brewing; high alpha and oil — pungent mango, lemon, floral",
+  "url": "https://brulosophy.com/2024/06/24/the-hop-chronicles-styrian-wolf-2021-pale-ale/",
+  "aa": "13-18.5%",
+  "beta": "6.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   8,
+   4,
+   3,
+   2,
+   2,
+   6,
+   2,
+   2,
+   1
+  ],
+  "styles": [
+   "Belgian IPA",
+   "Saison",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Styrian Wolf"
+ },
+ {
+  "variety": "Summit",
+  "cropYear": "2017",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2018-08-02",
+  "notes": "",
+  "url": "https://brulosophy.com/2018/08/02/the-hop-chronicles-summit-2017/",
+  "aa": "14-18%",
+  "beta": "5.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   3,
+   2,
+   1,
+   5,
+   8,
+   1,
+   2,
+   2,
+   4
+  ],
+  "styles": [
+   "West Coast IPA",
+   "Bittering"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Summit"
+ },
+ {
+  "variety": "Superdelic",
+  "cropYear": "2024",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2025-06-23",
+  "notes": "Top blind-taster descriptors: citrus, tropical fruit",
+  "url": "https://brulosophy.com/2025/06/23/the-hop-chronicles-superdelic-2024-pale-ale/",
+  "aa": "9-10.5%",
+  "beta": "2.9-3.6%",
+  "coh": "26-30%",
+  "oil": "1.3-2.2 mL/100g",
+  "oils": "myrcene 20-35%; humulene 20-30%; caryophyllene 7.5-12%; farnesene 0.1-0.5%; linalool 0.4-0.7%; geraniol 1.2-2.0%",
+  "d": [
+   7,
+   8,
+   4,
+   8,
+   1,
+   1,
+   4,
+   1,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "Juicy IPA"
+  ],
+  "basis": "post",
+  "xcheck": "Brulosophy post (pasted): https://brulosophy.com/2025/06/23/the-hop-chronicles-superdelic-2024-pale-ale/ | descriptors supplied by user"
+ },
+ {
+  "variety": "Superdelic",
+  "cropYear": "2024",
+  "origin": "New Zealand",
+  "series": "Pale Lager",
+  "published": "2025-02-03",
+  "notes": "",
+  "url": "https://brulosophy.com/2025/02/03/the-hop-chronicles-superdelic-2024-pale-lager/",
+  "aa": "9-10.5%",
+  "beta": "2.9-3.6%",
+  "coh": "26-30%",
+  "oil": "1.3-2.2 mL/100g",
+  "oils": "myrcene 20-35%; humulene 20-30%; caryophyllene 7.5-12%; farnesene 0.1-0.5%; linalool 0.4-0.7%; geraniol 1.2-2.0%",
+  "d": [
+   7,
+   8,
+   4,
+   8,
+   1,
+   1,
+   4,
+   1,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "Juicy IPA"
+  ],
+  "basis": "post",
+  "xcheck": "Brulosophy post (pasted): https://brulosophy.com/2025/06/23/the-hop-chronicles-superdelic-2024-pale-ale/ | descriptors supplied by user"
+ },
+ {
+  "variety": "Tahoma",
+  "cropYear": "2017",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2019-02-07",
+  "notes": "",
+  "url": "https://brulosophy.com/2019/02/07/the-hop-chronicles-tahoma-2017/",
+  "aa": "6-9%",
+  "beta": "9.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   7,
+   2,
+   2,
+   1,
+   3,
+   1,
+   5,
+   3,
+   4,
+   3
+  ],
+  "styles": [
+   "Pale Ale",
+   "Pilsner"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Tahoma"
+ },
+ {
+  "variety": "Taiheke",
+  "cropYear": "2020",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2022-03-10",
+  "notes": "USDA-released 1972 (Fuggle x Serebrianka-derived male); bright grapefruit and lime",
+  "url": "https://brulosophy.com/2022/03/10/the-hop-chronicles-taiheke-2020/",
+  "aa": "6-8.5%",
+  "beta": "5.2%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   8,
+   3,
+   2,
+   2,
+   3,
+   2,
+   6,
+   3,
+   2,
+   2
+  ],
+  "styles": [
+   "NZ Pale Ale",
+   "Session IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Taiheke"
+ },
+ {
+  "variety": "Talus",
+  "cropYear": "2019",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2021-01-07",
+  "notes": "Rated highly for citrus and tropical fruit",
+  "url": "https://brulosophy.com/2021/01/07/the-hop-chronicles-talus-2019/",
+  "aa": "8.9-9.5%",
+  "beta": "8.3-10.2%",
+  "coh": "34-39%",
+  "oil": "1.0-2.2 mL/100g",
+  "oils": "myrcene 40-50%; humulene 16-21%; caryophyllene 9-13%; farnesene 0-1%",
+  "d": [
+   9,
+   7,
+   3,
+   3,
+   6,
+   5,
+   5,
+   5,
+   3,
+   3
+  ],
+  "styles": [
+   "West Coast IPA",
+   "American Wheat"
+  ],
+  "basis": "chronicle",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2021/01/07/the-hop-chronicles-talus-2019/"
+ },
+ {
+  "variety": "Talus LUPOMAX",
+  "cropYear": "2021",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2022-12-15",
+  "notes": "",
+  "url": "https://brulosophy.com/2022/12/15/the-hop-chronicles-talus-lupomax-2021-pale-ale/",
+  "aa": "9.5%",
+  "beta": "8.3-10.2%",
+  "coh": "34-39%",
+  "oil": "2.0-2.7 mL/100g",
+  "oils": "myrcene 45-55%; humulene 15-20%; caryophyllene 6-10%; farnesene 0.1-1%; linalool 0.2-0.4%; geraniol 1.5-2.5%; b-pinene 0.7-0.9%",
+  "d": [
+   9,
+   7,
+   3,
+   3,
+   6,
+   5,
+   5,
+   5,
+   3,
+   3
+  ],
+  "styles": [
+   "West Coast IPA",
+   "Double IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2022/12/15/the-hop-chronicles-talus-lupomax-2021-pale-ale/"
+ },
+ {
+  "variety": "Target",
+  "cropYear": "2021",
+  "origin": "UK",
+  "series": "Pale Ale",
+  "published": "2023-11-30",
+  "notes": "Dual-purpose English variety released in 1972 with solid bittering potential",
+  "url": "https://brulosophy.com/2023/11/30/the-hop-chronicles-target-2021-pale-ale/",
+  "aa": "8.5-12.5%",
+  "beta": "5.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   2,
+   2,
+   3,
+   3,
+   3,
+   7,
+   6,
+   7
+  ],
+  "styles": [
+   "English Bitter",
+   "Dry Stout"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Target"
+ },
+ {
+  "variety": "Tettnanger",
+  "cropYear": "2022",
+  "origin": "Germany",
+  "series": "Pale Lager",
+  "published": "2023-06-16",
+  "notes": "",
+  "url": "https://brulosophy.com/2023/06/16/the-hop-chronicles-tettnanger-2022-pale-lager/",
+  "aa": "3-5.5%",
+  "beta": "4.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   3,
+   1,
+   1,
+   1,
+   1,
+   1,
+   6,
+   6,
+   6,
+   5
+  ],
+  "styles": [
+   "German Pilsner",
+   "Helles",
+   "Oktoberfest"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Tettnang (Tettnang Tettnager)"
+ },
+ {
+  "variety": "Topaz",
+  "cropYear": "2020",
+  "origin": "Australia",
+  "series": "Pale Ale",
+  "published": "2022-03-24",
+  "notes": "Created 1985 by Hop Products Australia, commercialized 1997; high alpha, lychee/tropical/resinous",
+  "url": "https://brulosophy.com/2022/03/24/the-hop-chronicles-topaz-2020/",
+  "aa": "14-17.5%",
+  "beta": "6.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   4,
+   8,
+   3,
+   3,
+   6,
+   5,
+   2,
+   3,
+   5,
+   3
+  ],
+  "styles": [
+   "Australian Pale Ale",
+   "Dark IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Topaz"
+ },
+ {
+  "variety": "Triumph",
+  "cropYear": "2020",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2020-12-03",
+  "notes": "",
+  "url": "https://brulosophy.com/2020/12/03/the-hop-chronicles-triumph-2020/",
+  "aa": "9-11%",
+  "beta": "4.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   6,
+   5,
+   6,
+   2,
+   3,
+   2,
+   5,
+   2,
+   2,
+   2
+  ],
+  "styles": [
+   "Pale Ale",
+   "IPA"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Triumph"
+ },
+ {
+  "variety": "US Goldings",
+  "cropYear": "2020",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2022-09-15",
+  "notes": "American-grown EKG; derived from wild Canterbury Whitebine, first grown in the US in the early 1990s",
+  "url": "https://brulosophy.com/2022/09/15/the-hop-chronicles-us-goldings-2020-pale-ale/",
+  "aa": "4-6%",
+  "beta": "2.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   2,
+   1,
+   1,
+   1,
+   5,
+   4,
+   5,
+   7
+  ],
+  "styles": [
+   "English Pale Ale",
+   "Bitter",
+   "Mild"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Golding, U.S."
+ },
+ {
+  "variety": "US ProvOAK",
+  "cropYear": "2018",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2020-03-26",
+  "notes": "",
+  "url": "https://brulosophy.com/2020/03/26/the-hop-chronicles-us-provoak-2018/"
+ },
+ {
+  "variety": "US Saaz",
+  "cropYear": "2022",
+  "origin": "USA",
+  "series": "Pale Lager",
+  "published": "2024-10-28",
+  "notes": "",
+  "url": "https://brulosophy.com/2024/10/28/the-hop-chronicles-us-saaz-2022-pale-lager/",
+  "aa": "3.0-5.0%",
+  "beta": "4-6%",
+  "coh": "24-28%",
+  "oil": "0.3-1.0 mL/100g",
+  "oils": "myrcene 25-37%; humulene 23-40%; caryophyllene 7-11%; farnesene 9-13%; linalool 0.4-0.6%; geraniol 0.1-0.4%; b-pinene 0.1-0.5%",
+  "d": [
+   3,
+   1,
+   1,
+   1,
+   2,
+   1,
+   4,
+   6,
+   7,
+   5
+  ],
+  "styles": [
+   "American Pilsner",
+   "Light Lager"
+  ],
+  "basis": "composite",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2024/10/28/the-hop-chronicles-us-saaz-2022-pale-lager/"
+ },
+ {
+  "variety": "USDA 008",
+  "cropYear": "2015",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2016-01-07",
+  "notes": "",
+  "url": "https://brulosophy.com/2016/01/07/the-hop-chronicles-usda-008/"
+ },
+ {
+  "variety": "Vic Secret",
+  "cropYear": "2017",
+  "origin": "Australia",
+  "series": "Pale Ale",
+  "published": "2018-02-01",
+  "notes": "Developed in Victoria, Australia in 2000",
+  "url": "https://brulosophy.com/2018/02/01/the-hop-chronicles-vic-secret-2017/",
+  "aa": "14-17%",
+  "beta": "2.6%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   5,
+   8,
+   4,
+   2,
+   6,
+   3,
+   2,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Australian IPA",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Vic Secret"
+ },
+ {
+  "variety": "Vinnie Special Experimental",
+  "cropYear": "2014",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2016-01-28",
+  "notes": "",
+  "url": "https://brulosophy.com/2016/01/28/the-hop-chronicles-vinnie-special-experimental/"
+ },
+ {
+  "variety": "Vista",
+  "cropYear": "2022",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2023-08-10",
+  "notes": "Relatively high alpha; tropical fruit, stone fruit, melon. Top descriptors: citrus, tropical fruit, melon",
+  "url": "https://brulosophy.com/2023/08/10/the-hop-chronicles-vista-2022-pale-ale/",
+  "aa": "8-12%",
+  "beta": "3.5-5.5%",
+  "coh": "32-34%",
+  "oil": "0.8-2.0 mL/100g",
+  "oils": "myrcene 30-40%; humulene 18-22%; caryophyllene 10-14%; farnesene 0.1-1.0%; linalool 0.4-0.8%; geraniol 0.5-0.8%",
+  "d": [
+   5,
+   8,
+   8,
+   2,
+   1,
+   1,
+   5,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Modern West Coast IPA",
+   "Hazy IPA",
+   "Hoppy Lager"
+  ],
+  "basis": "post",
+  "xcheck": "Brulosophy post (pasted): https://brulosophy.com/2025/11/10/the-hop-chronicles-vista-2023-pale-lager/ | descriptors supplied by user"
+ },
+ {
+  "variety": "Vista",
+  "cropYear": "2023",
+  "origin": "USA",
+  "series": "Pale Lager",
+  "published": "2025-11-10",
+  "notes": "",
+  "url": "https://brulosophy.com/2025/11/10/the-hop-chronicles-vista-2023-pale-lager/",
+  "aa": "8-12%",
+  "beta": "3.5-5.5%",
+  "coh": "32-34%",
+  "oil": "0.8-2.0 mL/100g",
+  "oils": "myrcene 30-40%; humulene 18-22%; caryophyllene 10-14%; farnesene 0.1-1.0%; linalool 0.4-0.8%; geraniol 0.5-0.8%",
+  "d": [
+   5,
+   8,
+   8,
+   2,
+   1,
+   1,
+   5,
+   2,
+   1,
+   1
+  ],
+  "styles": [
+   "Modern West Coast IPA",
+   "Hazy IPA",
+   "Hoppy Lager"
+  ],
+  "basis": "post",
+  "xcheck": "Brulosophy post (pasted): https://brulosophy.com/2025/11/10/the-hop-chronicles-vista-2023-pale-lager/ | descriptors supplied by user"
+ },
+ {
+  "variety": "Waimea",
+  "cropYear": "2018",
+  "origin": "New Zealand",
+  "series": "Pale Ale",
+  "published": "2020-01-16",
+  "notes": "",
+  "url": "https://brulosophy.com/2020/01/16/the-hop-chronicles-waimea-2018/",
+  "aa": "16-19%",
+  "beta": "8.0%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   8,
+   5,
+   3,
+   2,
+   7,
+   4,
+   2,
+   2,
+   2,
+   2
+  ],
+  "styles": [
+   "NZ IPA",
+   "Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Waimea"
+ },
+ {
+  "variety": "Warrior",
+  "cropYear": "2018",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2020-02-20",
+  "notes": "",
+  "url": "https://brulosophy.com/2020/02/20/the-hop-chronicles-warrior-2018/",
+  "aa": "15-17%",
+  "beta": "4.8%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   4,
+   2,
+   1,
+   1,
+   6,
+   4,
+   2,
+   2,
+   2,
+   3
+  ],
+  "styles": [
+   "American IPA (bittering)"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Warrior"
+ },
+ {
+  "variety": "Willamette",
+  "cropYear": "2016",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2017-05-04",
+  "notes": "Mellow hop imparting both earthy and floral notes",
+  "url": "https://brulosophy.com/2017/05/04/the-hop-chronicles-willamette/",
+  "aa": "4-6%",
+  "beta": "3.5%",
+  "coh": "",
+  "oil": "",
+  "oils": "",
+  "d": [
+   2,
+   1,
+   2,
+   1,
+   2,
+   1,
+   6,
+   5,
+   5,
+   7
+  ],
+  "styles": [
+   "English Ale",
+   "Porter",
+   "Brown Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "BeerSmith: Willamette"
+ },
+ {
+  "variety": "Zamba",
+  "cropYear": "2021",
+  "origin": "USA",
+  "series": "Pale Ale",
+  "published": "2024-03-04",
+  "notes": "First proprietary release of the BSG Hop Solutions Program; pineapple, mango, tangerine, candy — late kettle and dry hop",
+  "url": "https://brulosophy.com/2024/03/04/the-hop-chronicles-zamba-2021-pale-ale/",
+  "aa": "8-12%",
+  "beta": "4-6%",
+  "coh": "28-32%",
+  "oil": "1.5-2.5 mL/100g",
+  "oils": "myrcene 60-70%; humulene 9-13%; caryophyllene 5-8%; farnesene 1-4%",
+  "d": [
+   7,
+   9,
+   5,
+   3,
+   1,
+   2,
+   3,
+   1,
+   1,
+   1
+  ],
+  "styles": [
+   "Hazy IPA",
+   "Fruit-forward Pale Ale"
+  ],
+  "basis": "composite",
+  "xcheck": "Brulosophy post (pasted), stats only: https://brulosophy.com/2024/03/04/the-hop-chronicles-zamba-2021-pale-ale/"
+ }
+];
+
+const DESCRIPTORS = AXES;
+
+/** How a profile was arrived at, shown on every comparison. */
+const SRC_LABEL = {
+  curated: "composite",
+  estimate: "estimate",
+  reported: "reported",
+  chronicle: "from post",
+  unscored: "unscored",
+  manual: "yours"
+};
+const STORAGE_KEY = "hopCalculusLibrary_v2";
+const LEGACY_KEY = "hopCalculusLibrary_v1";
+
+/* Curated composites. `d` is a full 10-axis profile; `src:"curated"` marks it. */
+const CURATED_HOPS = {
+  "Citra":        {aa:"11-14%", d:[9,9,4,3,4,5,2,1,1,1], styles:["Hazy IPA","American IPA","Pale Ale"]},
+  "Mosaic":       {aa:"11-14%", d:[6,8,6,7,4,6,3,2,1,2], styles:["Hazy IPA","American IPA","Pale Ale"]},
+  "Simcoe":       {aa:"11-14%", d:[5,4,2,1,7,8,2,1,1,3], styles:["American IPA","West Coast IPA"]},
+  "Amarillo":     {aa:"7-9%",   d:[8,6,3,2,3,3,4,1,1,1], styles:["American IPA","Pale Ale"]},
+  "Centennial":   {aa:"9-11%",  d:[7,3,1,1,5,4,5,1,1,1], styles:["American IPA","Pale Ale","APA"]},
+  "Cascade":      {aa:"5-7%",   d:[6,2,1,1,3,2,7,2,1,1], styles:["American Pale Ale","American IPA"]},
+  "Nelson Sauvin":{aa:"12-13%", d:[5,9,3,7,1,2,2,3,1,1], styles:["Hazy IPA","American IPA","Saison"]},
+  "Galaxy":       {aa:"13-15%", d:[6,9,7,3,1,3,1,1,1,1], styles:["Hazy IPA","American IPA"]},
+  "El Dorado":    {aa:"14-16%", d:[5,8,7,3,2,4,1,1,1,1], styles:["Hazy IPA","American IPA"]},
+  "Idaho 7":      {aa:"11-14%", d:[4,7,4,2,6,7,2,2,1,2], styles:["Hazy IPA","American IPA"]},
+  "Sabro":        {aa:"12-14%", d:[3,9,6,1,2,3,1,1,1,4], styles:["Hazy IPA","American IPA"]},
+  "Motueka":      {aa:"6.5-8.5%",d:[8,5,2,2,2,1,3,4,1,1], styles:["Saison","Pilsner","Hazy IPA"]},
+  "Saaz":         {aa:"3-5%",   d:[2,1,1,1,1,1,4,3,9,3], styles:["Czech Pilsner","German Pilsner"]},
+  "Hallertau Mittelfrüh":{aa:"3-5.5%",d:[2,1,1,1,1,1,6,3,9,2], styles:["German Pilsner","Helles","Vienna Lager"]},
+  "Tettnang":     {aa:"3.5-5.5%",d:[3,1,1,1,1,1,5,4,8,2], styles:["German Pilsner","Helles"]},
+  "Perle":        {aa:"6-9%",   d:[3,1,1,1,3,2,4,3,6,3], styles:["Vienna Lager","Bock","Dunkel"]},
+  "Chinook":      {aa:"11-14%", d:[4,2,1,1,6,5,3,2,1,4], styles:["American IPA","West Coast IPA"]},
+  "Columbus/CTZ": {aa:"14-17%", d:[3,1,1,1,5,7,1,1,1,5], styles:["West Coast IPA","American IPA"]},
+  "Azacca":       {aa:"13-16%", d:[6,8,5,2,3,4,2,1,1,1], styles:["Hazy IPA","American IPA"]},
+  "Strata":       {aa:"11-13%", d:[4,7,3,2,4,9,2,2,1,2], styles:["Hazy IPA","American IPA"]}
+};
+
+/** Library key for a chronicle entry: unique across crop years and series. */
+function chronicleKey(e){
+  return e.cropYear || e.series
+    ? `${e.variety} (${[e.cropYear, e.series === "Pale Lager" ? "PL" : "PA"].filter(Boolean).join(" ")})`
+    : e.variety;
+}
+
+function buildDefaults(){
+  const lib = {};
+  for(const [name, h] of Object.entries(CURATED_HOPS)){
+    lib[name] = {aa:h.aa, d:h.d.slice(), styles:h.styles.slice(), src:"curated", verified:null};
+  }
+  for(const e of CHRONICLE_INDEX){
+    // `basis` marks how the profile was derived; absent means none exists yet.
+    const styles = [...new Set((e.styles && e.styles.length ? e.styles : [])
+      .concat(e.series ? [e.series] : []))];
+    lib[chronicleKey(e)] = {
+      aa: e.aa || "n/a",
+      d: Array.isArray(e.d) ? e.d.slice() : null,
+      styles: styles.length ? styles : ["Uncategorized"],
+      // "post" is first-hand, read off the article itself; "chronicle" here
+      // means a search summary of it, which is a weaker claim.
+      src: e.basis === "post" ? "chronicle"
+         : e.basis === "chronicle" ? "reported"
+         : (Array.isArray(e.d) ? "estimate" : "unscored"),
+      url: e.url,
+      beta: e.beta || "",
+      coh: e.coh || "",
+      oil: e.oil || "",
+      oils: e.oils || "",
+      // What this entry's figures were cross-checked against. Not the same as
+      // verified: a second database agreeing is not the reader attesting.
+      xcheck: e.xcheck || "",
+      chron: {cropYear:e.cropYear, origin:e.origin, series:e.series, published:e.published, notes:e.notes},
+      verified: null          // only a reader can attest to a source
+    };
+  }
+  return lib;
+}
+
+function isValidEntry(h){
+  if(!h || typeof h !== "object" || Array.isArray(h)) return "not an object";
+  if(h.d !== null && h.d !== undefined){
+    if(!Array.isArray(h.d) || h.d.length !== DESCRIPTORS.length) return `descriptor array must be null or ${DESCRIPTORS.length} numbers`;
+    if(h.d.some(v => typeof v !== "number" || !isFinite(v))) return "descriptor values must be numbers";
+  }
+  if(h.styles !== undefined && !Array.isArray(h.styles)) return "styles must be an array";
+  if(h.aa !== undefined && typeof h.aa !== "string") return "alpha acid must be a string";
+  if(h.verified !== undefined && h.verified !== null){
+    if(typeof h.verified !== "object" || Array.isArray(h.verified)) return "verified must be an object or null";
+    if(typeof h.verified.source !== "string") return "verified.source must be a string";
+  }
+  return null;
+}
+
+/** Fill in anything a hand-edited or older file left out. */
+function normalizeEntry(h){
+  return {
+    aa: typeof h.aa === "string" ? h.aa : "n/a",
+    beta: typeof h.beta === "string" ? h.beta : "",
+    coh: typeof h.coh === "string" ? h.coh : "",
+    oil: typeof h.oil === "string" ? h.oil : "",
+    oils: typeof h.oils === "string" ? h.oils : "",
+    xcheck: typeof h.xcheck === "string" ? h.xcheck : "",
+    d: Array.isArray(h.d) ? h.d.slice() : null,
+    styles: Array.isArray(h.styles) && h.styles.length ? h.styles.slice() : ["Uncategorized"],
+    src: h.src || "manual",
+    url: typeof h.url === "string" ? h.url : undefined,
+    chron: h.chron && typeof h.chron === "object" ? h.chron : undefined,
+    touched: h.touched === true,
+    // What this entry was checked against, and when. Never shipped — only a
+    // reader can attest to a source, so defaults always load unverified.
+    verified: (h.verified && typeof h.verified === "object" && typeof h.verified.source === "string")
+      ? {source: h.verified.source, at: typeof h.verified.at === "string" ? h.verified.at : ""}
+      : null
+  };
+}
+
+/**
+ * Merge the shipped library with whatever this browser has stored.
+ *
+ * Returning the stored copy outright (as this once did) freezes a browser on
+ * the data it first saw: new and corrected profiles could never arrive. So
+ * defaults are the base, and only what the reader actually changed is layered
+ * back on top.
+ */
+function loadLibrary(){
+  const defaults = buildDefaults();
+  let stored = null, storedVersion = "", deleted = [];
+
+  const read = (k) => {
+    try{ const raw = localStorage.getItem(k); return raw ? JSON.parse(raw) : null; }
+    catch(e){ return null; }
+  };
+
+  const envelope = read(STORAGE_KEY);
+  if(envelope && envelope.hops && typeof envelope.hops === "object" && !Array.isArray(envelope.hops)){
+    stored = envelope.hops;
+    storedVersion = String(envelope.version || "");
+    deleted = Array.isArray(envelope.deleted) ? envelope.deleted : [];
+  } else if(envelope && typeof envelope === "object" && !Array.isArray(envelope)){
+    stored = envelope;                       // pre-envelope shape
+  } else {
+    const legacy = read(LEGACY_KEY);
+    if(legacy && typeof legacy === "object" && !Array.isArray(legacy)) stored = legacy;
+  }
+
+  if(!stored){ upgradeNote = null; return defaults; }
+
+  const merged = {};
+  for(const [name, h] of Object.entries(defaults)) merged[name] = h;
+
+  let kept = 0;
+  for(const [name, h] of Object.entries(stored)){
+    if(isValidEntry(h)) continue;            // drop anything malformed
+    const entry = normalizeEntry(h);
+    // Keep an entry the reader edited, and anything they added themselves.
+    // A verified entry is knowledge the reader supplied; a shipped estimate
+    // must never overwrite it.
+    if(entry.touched || entry.verified || !defaults[name]){ merged[name] = entry; kept++; }
+  }
+  for(const name of deleted) delete merged[name];
+
+  if(storedVersion !== DATA_VERSION){
+    const gained = Object.keys(merged).filter(n => Array.isArray(merged[n].d)).length
+      - Object.keys(stored).filter(n => Array.isArray((stored[n]||{}).d)).length;
+    upgradeNote = gained > 0
+      ? `Library updated: ${gained} more hops now have a profile.` +
+        (kept ? ` Your ${kept} edited ${kept === 1 ? "entry was" : "entries were"} kept.` : "")
+      : null;
+  }
+  return merged;
+}
+
+function saveLibrary(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({version: DATA_VERSION, hops: HOPS, deleted: deletedNames}));
+  }catch(e){
+    setStatus("mgmtNote", "Could not save to local storage (private browsing or quota). Export to JSON to keep your edits.", "err");
+  }
+}
+
+let upgradeNote = null;
+let deletedNames = [];
+let HOPS = loadLibrary();
+let selected = [];
+let editingName = null;
+
+const scored = (name) => Array.isArray(HOPS[name] && HOPS[name].d);
+const verified = (name) => Boolean(HOPS[name] && HOPS[name].verified);
+const colors = ["#e6a817","#7fae42","#5aa9e6","#e65f5f","#c07fe6"];
+
+/** Text nodes only — hop names and styles are user/imported data. */
+function el(tag, text, className){
+  const n = document.createElement(tag);
+  if(className) n.className = className;
+  if(text !== undefined && text !== null) n.textContent = String(text);
+  return n;
+}
+
+function setStatus(id, msg, kind){
+  const n = document.getElementById(id);
+  if(!n) return;
+  n.textContent = msg || "";
+  n.className = (id === "mgmtNote" ? "note" : "status") + (kind ? " " + kind : "");
+}
+
+function getStyles(){
+  return [...new Set(Object.values(HOPS).flatMap(h => Array.isArray(h.styles) ? h.styles : []))].sort();
+}
+
+function renderHopList(filter=""){
+  const list = document.getElementById("hopList");
+  const onlyScored = document.getElementById("scoredOnly").checked;
+  const onlyVerified = document.getElementById("verifiedOnly").checked;
+  list.innerHTML = "";
+  const names = Object.keys(HOPS)
+    .filter(n => n.toLowerCase().includes(filter.toLowerCase()))
+    .filter(n => !onlyScored || scored(n))
+    .filter(n => !onlyVerified || verified(n))
+    .sort();
+
+  names.forEach(name => {
+    const item = el("button", null, "hop-item" + (selected.includes(name) ? " selected" : "") + (scored(name) ? "" : " unscored"));
+    item.type = "button";
+    item.appendChild(el("span", name));
+    const meta = el("span", null, "hop-meta");
+    if(verified(name)) meta.appendChild(el("span", "\u2713", "badge verified"));
+    if(scored(name)){
+      meta.appendChild(el("span", " AA " + HOPS[name].aa));
+    }else{
+      meta.appendChild(el("span", "unscored", "badge unscored"));
+    }
+    item.appendChild(meta);
+    item.onclick = () => toggleHop(name);
+    list.appendChild(item);
+  });
+
+  const total = Object.keys(HOPS).length;
+  const scoredCount = Object.keys(HOPS).filter(scored).length;
+  const counts = document.getElementById("libraryCounts");
+  const verifiedCount = Object.keys(HOPS).filter(verified).length;
+  counts.textContent =
+    `${total} entries — ${scoredCount} scored, ${total - scoredCount} awaiting a profile. Showing ${names.length}.`;
+  counts.appendChild(document.createElement("br"));
+  counts.appendChild(el("span",
+    verifiedCount
+      ? `${verifiedCount} verified against a real source; ${total - verifiedCount} still assumed.`
+      : `None verified yet — every profile here is assumed until you check it.`));
+  if(upgradeNote){
+    counts.appendChild(document.createElement("br"));
+    counts.appendChild(el("strong", upgradeNote));
+  }
+}
+
+function toggleHop(name){
+  if(selected.includes(name)){
+    selected = selected.filter(n => n !== name);
+  } else {
+    if(!scored(name)){
+      alert(`"${name}" has no descriptor profile yet.\n\nOpen the Hop Chronicles tab, paste its post URL, and fill in the ratings — or score it by hand under Manage Hops.`);
+      return;
+    }
+    if(selected.length >= 5){ alert("Max 5 hops for comparison."); return; }
+    selected.push(name);
+  }
+  renderAll();
+}
+
+function renderChips(){
+  const box = document.getElementById("selectedChips");
+  box.innerHTML = "";
+  selected.forEach(name => {
+    const chip = el("span", null, "chip");
+    chip.appendChild(el("span", name));
+    const x = el("button", "✕");
+    x.type = "button";
+    x.setAttribute("aria-label", "Remove " + name);
+    x.onclick = () => toggleHop(name);
+    chip.appendChild(x);
+    box.appendChild(chip);
+  });
+}
+
+function drawRadar(){
+  const canvas = document.getElementById("radar");
+  const ctx = canvas.getContext("2d");
+  if(!ctx) return;                     // no 2d context (headless/unsupported)
+  const cx = canvas.width/2, cy = canvas.height/2, r = 190;
+  const n = DESCRIPTORS.length;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "#332d27";
+  ctx.fillStyle = "#a89f92";
+  ctx.font = "11px sans-serif";
+  for(let ring=1; ring<=5; ring++){
+    ctx.beginPath();
+    for(let i=0;i<=n;i++){
+      const ang = (Math.PI*2*i/n) - Math.PI/2;
+      const rr = r*ring/5;
+      const x = cx+rr*Math.cos(ang), y = cy+rr*Math.sin(ang);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  for(let i=0;i<n;i++){
+    const ang = (Math.PI*2*i/n) - Math.PI/2;
+    const x = cx+r*Math.cos(ang), y = cy+r*Math.sin(ang);
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y); ctx.stroke();
+    const lx = cx+(r+22)*Math.cos(ang), ly = cy+(r+22)*Math.sin(ang);
+    ctx.textAlign = "center";
+    ctx.fillText(DESCRIPTORS[i], lx, ly);
+  }
+  selected.forEach((name,idx) => {
+    if(!scored(name)) return;
+    const vals = HOPS[name].d;
+    ctx.beginPath();
+    for(let i=0;i<=n;i++){
+      const ii = i%n;
+      const ang = (Math.PI*2*ii/n) - Math.PI/2;
+      const rr = r*vals[ii]/10;
+      const x = cx+rr*Math.cos(ang), y = cy+rr*Math.sin(ang);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = colors[idx];
+    ctx.fillStyle = colors[idx]+"33";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fill();
+    ctx.lineWidth = 1;
+  });
+}
+
+function renderTable(){
+  const table = document.getElementById("compareTable");
+  table.innerHTML = "";
+  if(selected.length === 0) return;
+
+  const head = document.createElement("tr");
+  head.appendChild(el("th", "Descriptor"));
+  selected.forEach((n,i) => {
+    const th = el("th", n);
+    th.style.color = colors[i];
+    head.appendChild(th);
+  });
+  table.appendChild(head);
+
+  DESCRIPTORS.forEach((desc,i) => {
+    const tr = document.createElement("tr");
+    tr.appendChild(el("td", desc));
+    selected.forEach(n => {
+      tr.appendChild(el("td", scored(n) ? `${HOPS[n].d[i]}/10` : "—"));
+    });
+    table.appendChild(tr);
+  });
+
+  const acidRow = document.createElement("tr");
+  acidRow.appendChild(el("td", "Alpha / Beta"));
+  selected.forEach(n => {
+    const h = HOPS[n] || {};
+    acidRow.appendChild(el("td", `${h.aa || "n/a"}${h.beta ? " / " + h.beta : ""}`));
+  });
+  table.appendChild(acidRow);
+
+  const chemRow = document.createElement("tr");
+  chemRow.appendChild(el("td", "Cohumulone / Oil"));
+  selected.forEach(n => {
+    const h = HOPS[n] || {};
+    const bits = [h.coh, h.oil].filter(Boolean);
+    chemRow.appendChild(el("td", bits.length ? bits.join(" / ") : "\u2014"));
+  });
+  table.appendChild(chemRow);
+
+  const xcRow = document.createElement("tr");
+  xcRow.appendChild(el("td", "Cross-checked"));
+  selected.forEach(n => {
+    const td = document.createElement("td");
+    const x = (HOPS[n] || {}).xcheck;
+    td.appendChild(x ? el("span", x, "badge") : el("span", "\u2014", "badge unscored"));
+    xcRow.appendChild(td);
+  });
+  table.appendChild(xcRow);
+
+  const verRow = document.createElement("tr");
+  verRow.appendChild(el("td", "Verified"));
+  selected.forEach(n => {
+    const td = document.createElement("td");
+    const v = (HOPS[n] || {}).verified;
+    if(v){
+      td.appendChild(el("span", "\u2713 " + v.source, "badge verified"));
+    }else{
+      td.appendChild(el("span", "assumed", "badge unscored"));
+    }
+    verRow.appendChild(td);
+  });
+  table.appendChild(verRow);
+
+  const srcRow = document.createElement("tr");
+  srcRow.appendChild(el("td", "Profile source"));
+  selected.forEach(n => {
+    const td = document.createElement("td");
+    const h = HOPS[n] || {};
+    td.appendChild(el("span", SRC_LABEL[h.src] || "yours",
+      "badge" + (h.src === "chronicle" ? " parsed" : h.src === "reported" ? " unscored" : "")));
+    if(h.url){
+      const a = el("a", "article \u2197", "src-link");
+      a.href = h.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+      td.appendChild(document.createTextNode(" "));
+      td.appendChild(a);
+    }
+    srcRow.appendChild(td);
+  });
+  table.appendChild(srcRow);
+}
+
+function renderBlend(){
+  const box = document.getElementById("blendNote");
+  box.innerHTML = "";
+  const usable = selected.filter(scored);
+  if(usable.length < 2) return;
+
+  const avg = DESCRIPTORS.map((_,i) => usable.reduce((s,n) => s + HOPS[n].d[i], 0) / usable.length);
+  const ranked = DESCRIPTORS.map((d,i) => ({d, v:avg[i]})).sort((a,b) => b.v - a.v).slice(0,3);
+
+  const strong = el("strong", `Predicted blend character (${usable.join(" + ")}): `);
+  box.appendChild(strong);
+  box.appendChild(document.createTextNode(
+    "leans toward " + ranked.map(r => `${r.d.toLowerCase()} (${r.v.toFixed(1)}/10)`).join(", ") +
+    ". This is a simple average of individual profiles — real blends can shift due to oil interaction, so treat as a starting hypothesis, not a guarantee."
+  ));
+
+  const mixed = new Set(usable.map(n => HOPS[n].src));
+  if(mixed.size > 1){
+    box.appendChild(document.createElement("br"));
+    box.appendChild(el("em", "Note: this blend mixes composite profiles with Hop Chronicles rankings. The two are built on different scales, so the average is rougher than it looks."));
+  }
+}
+
+function renderStyleSelect(){
+  const sel = document.getElementById("styleSelect");
+  const current = sel.value;
+  const styles = getStyles();
+  sel.innerHTML = "";
+  styles.forEach(s => {
+    const opt = el("option", s);
+    opt.value = s;
+    sel.appendChild(opt);
+  });
+  if(styles.includes(current)) sel.value = current;
+  renderStyleResults();
+}
+
+function renderStyleResults(){
+  const style = document.getElementById("styleSelect").value;
+  const box = document.getElementById("styleResults");
+  box.innerHTML = "";
+  const matches = Object.entries(HOPS)
+    .filter(([_,h]) => Array.isArray(h.styles) && h.styles.includes(style))
+    .map(([n]) => n)
+    .sort();
+
+  if(!matches.length){
+    box.appendChild(el("p", "No matches in this library yet.", "note"));
+    return;
+  }
+  const p = document.createElement("p");
+  p.style.marginBottom = "6px";
+  p.appendChild(document.createTextNode("Hops commonly suited to "));
+  p.appendChild(el("strong", style));
+  p.appendChild(document.createTextNode(":"));
+  box.appendChild(p);
+  matches.forEach(m => {
+    const tag = el("span", m, "tag");
+    if(!scored(m)) tag.style.opacity = "0.6";
+    box.appendChild(tag);
+  });
+}
+
+let activeDescs = new Set();
+function renderDescToggles(){
+  const box = document.getElementById("descToggles");
+  box.innerHTML = "";
+  DESCRIPTORS.forEach(d => {
+    const btn = el("span", d, "desc-toggle" + (activeDescs.has(d) ? " active" : ""));
+    btn.onclick = () => {
+      activeDescs.has(d) ? activeDescs.delete(d) : activeDescs.add(d);
+      renderDescToggles();
+      renderTargetResults();
+    };
+    box.appendChild(btn);
+  });
+}
+
+function renderTargetResults(){
+  const box = document.getElementById("targetResults");
+  box.innerHTML = "";
+  if(activeDescs.size === 0){
+    box.appendChild(el("p", "Select one or more descriptors above.", "note"));
+    return;
+  }
+  const idxs = [...activeDescs].map(d => DESCRIPTORS.indexOf(d));
+  const ranked = Object.entries(HOPS)
+    .filter(([name]) => scored(name))
+    .map(([name,h]) => ({name, score: idxs.reduce((s,i) => s + h.d[i], 0) / idxs.length, styles: h.styles, src: h.src}))
+    .sort((a,b) => b.score - a.score)
+    .slice(0,8);
+
+  if(!ranked.length){
+    box.appendChild(el("p", "No scored entries yet.", "note"));
+    return;
+  }
+
+  const table = document.createElement("table");
+  const head = document.createElement("tr");
+  ["Hop","Match score","Source","Typical styles"].forEach(h => head.appendChild(el("th", h)));
+  table.appendChild(head);
+  ranked.forEach(s => {
+    const tr = document.createElement("tr");
+    tr.appendChild(el("td", s.name));
+    tr.appendChild(el("td", `${s.score.toFixed(1)}/10`));
+    const srcTd = document.createElement("td");
+    srcTd.appendChild(el("span", SRC_LABEL[s.src] || "yours",
+      "badge" + (s.src === "chronicle" ? " parsed" : s.src === "reported" ? " unscored" : "")));
+    tr.appendChild(srcTd);
+    const stTd = document.createElement("td");
+    (s.styles || []).forEach(st => stTd.appendChild(el("span", st, "tag")));
+    tr.appendChild(stTd);
+    table.appendChild(tr);
+  });
+  box.appendChild(table);
+}
+
+function renderSliders(values){
+  const container = document.getElementById("sliderContainer");
+  container.innerHTML = "";
+  DESCRIPTORS.forEach((desc,i) => {
+    const val = Array.isArray(values) ? values[i] : 1;
+    const row = el("div", null, "slider-row");
+    row.appendChild(el("span", desc));
+    const range = document.createElement("input");
+    range.type = "range"; range.min = "0"; range.max = "10"; range.step = "1";
+    range.value = String(val); range.dataset.idx = String(i);
+    range.setAttribute("aria-label", desc);
+    const valSpan = el("span", val, "val");
+    range.oninput = () => { valSpan.textContent = range.value; };
+    row.appendChild(range);
+    row.appendChild(valSpan);
+    container.appendChild(row);
+  });
+}
+
+function getSliderValues(){
+  return [...document.querySelectorAll("#sliderContainer input[type=range]")].map(inp => parseInt(inp.value,10));
+}
+
+function clearForm(){
+  editingName = null;
+  ["mName","mAA","mStyles","mUrl"].forEach(id => { document.getElementById(id).value = ""; });
+  document.getElementById("mUnscored").checked = false;
+  document.getElementById("mVerified").checked = false;
+  document.getElementById("mVerifiedSrc").value = "";
+  renderSliders(null);
+  setStatus("mgmtNote", "");
+}
+
+function loadFormForEdit(name){
+  editingName = name;
+  const h = HOPS[name];
+  document.getElementById("mName").value = name;
+  document.getElementById("mAA").value = h.aa;
+  document.getElementById("mStyles").value = (h.styles || []).join(", ");
+  document.getElementById("mUrl").value = h.url || "";
+  document.getElementById("mUnscored").checked = !Array.isArray(h.d);
+  document.getElementById("mVerified").checked = Boolean(h.verified);
+  document.getElementById("mVerifiedSrc").value = h.verified ? h.verified.source : "";
+  renderSliders(h.d);
+  setStatus("mgmtNote", `Editing "${name}". Saving will overwrite this entry.`);
+  document.querySelector('.tab-btn[data-tab="manage"]').click();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function saveHopFromForm(){
+  const name = document.getElementById("mName").value.trim();
+  if(!name){ alert("Enter a hop name."); return; }
+  const aa = document.getElementById("mAA").value.trim() || "n/a";
+  const url = document.getElementById("mUrl").value.trim();
+  const styles = document.getElementById("mStyles").value.split(",").map(s => s.trim()).filter(Boolean);
+  const unscored = document.getElementById("mUnscored").checked;
+  const wantVerified = document.getElementById("mVerified").checked;
+  const verifiedSrc = document.getElementById("mVerifiedSrc").value.trim();
+  const prev = HOPS[editingName] || HOPS[name] || {};
+
+  // A claim of verification has to name what it was checked against, or it is
+  // just a tick box and the library learns nothing.
+  if(wantVerified && !verifiedSrc){
+    setStatus("mgmtNote", "Say what you verified this against before ticking the box \u2014 a spec sheet, a lab report, your own lot.", "err");
+    document.getElementById("mVerifiedSrc").focus();
+    return;
+  }
+
+  if(editingName && editingName !== name){
+    delete HOPS[editingName];
+    // Keep a renamed hop selected instead of leaving a dangling reference.
+    selected = selected.map(n => n === editingName ? name : n);
+  }
+
+  HOPS[name] = {
+    aa,
+    beta: prev.beta || "",
+    coh: prev.coh || "",
+    oil: prev.oil || "",
+    oils: prev.oils || "",
+    xcheck: prev.xcheck || "",
+    d: unscored ? null : getSliderValues(),
+    styles: styles.length ? styles : ["Uncategorized"],
+    src: (prev.src === "chronicle" || prev.src === "reported") ? prev.src
+       : (editingName || HOPS[name] ? (prev.src || "manual") : "manual"),
+    url: url || undefined,
+    chron: prev.chron,
+    touched: true,             // survives every future data update
+    verified: wantVerified
+      ? {source: verifiedSrc, at: (prev.verified && prev.verified.source === verifiedSrc && prev.verified.at)
+          ? prev.verified.at : new Date().toISOString().slice(0, 10)}
+      : null
+  };
+  if(unscored) selected = selected.filter(n => n !== name);
+
+  saveLibrary();
+  editingName = null;
+  setStatus("mgmtNote", `Saved "${name}".`, "ok");
+  renderAll();
+}
+
+function deleteHop(name){
+  if(!confirm(`Delete "${name}" from your library?`)) return;
+  delete HOPS[name];
+  if(!deletedNames.includes(name)) deletedNames.push(name);
+  selected = selected.filter(n => n !== name);
+  if(editingName === name) editingName = null;
+  saveLibrary();
+  renderAll();
+}
+
+function renderMgmtList(){
+  const box = document.getElementById("mgmtList");
+  document.getElementById("mgmtHeading").textContent = `Your Hop Library (${Object.keys(HOPS).length} entries)`;
+  box.innerHTML = "";
+  Object.keys(HOPS).sort().forEach(name => {
+    const row = el("div", null, "mgmt-list-item");
+    const left = document.createElement("span");
+    left.appendChild(el("span", name));
+    const meta = el("span", scored(name) ? ` (AA ${HOPS[name].aa})` : " ");
+    meta.style.color = "var(--muted)";
+    left.appendChild(meta);
+    if(!scored(name)) left.appendChild(el("span", "unscored", "badge unscored"));
+    if(verified(name)){
+      const v = el("span", "\u2713 verified", "badge verified");
+      v.title = `${HOPS[name].verified.source}${HOPS[name].verified.at ? " \u2014 " + HOPS[name].verified.at : ""}`;
+      left.appendChild(v);
+    }
+    row.appendChild(left);
+
+    const right = document.createElement("span");
+    const edit = el("button", "Edit", "small-btn");
+    edit.type = "button";
+    edit.onclick = () => loadFormForEdit(name);
+    const del = el("button", "Delete", "small-btn");
+    del.type = "button";
+    del.onclick = () => deleteHop(name);
+    right.appendChild(edit); right.appendChild(del);
+    row.appendChild(right);
+    box.appendChild(row);
+  });
+}
+
+function exportLibrary(){
+  const blob = new Blob([JSON.stringify(HOPS, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "hop_library.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importLibrary(file){
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(String(e.target.result));
+      if(!data || typeof data !== "object" || Array.isArray(data)) throw new Error("file must contain an object of hop entries");
+      const names = Object.keys(data);
+      if(!names.length) throw new Error("file contains no entries");
+      // Validate everything before touching the working library.
+      for(const name of names){
+        const problem = isValidEntry(data[name]);
+        if(problem) throw new Error(`"${name}": ${problem}`);
+      }
+      HOPS = {};
+      for(const name of names) HOPS[name] = normalizeEntry(data[name]);
+      saveLibrary();
+      selected = [];
+      editingName = null;
+      renderAll();
+      setStatus("importStatus", `Imported ${names.length} entries.`, "ok");
+    }catch(err){
+      setStatus("importStatus", "Import failed, library left unchanged: " + err.message, "err");
+    }
+  };
+  reader.onerror = () => setStatus("importStatus", "Could not read that file.", "err");
+  reader.readAsText(file);
+}
+
+function resetLibrary(){
+  if(!confirm("Reset to the built-in defaults (curated profiles + the Hop Chronicles index)? Your custom entries and edits will be lost unless exported first.")) return;
+  deletedNames = [];
+  HOPS = buildDefaults();
+  saveLibrary();
+  selected = [];
+  editingName = null;
+  renderAll();
+  setStatus("importStatus", "Library reset to defaults.", "ok");
+}
+
+/* ---------- Hop Chronicles lookup ---------- */
+
+let pendingChronicle = null;
+
+/** Find an indexed post by exact URL, then by variety/year/series from the slug. */
+function findChronicle(url){
+  const clean = url.trim().replace(/[?#].*$/, "");
+  const direct = CHRONICLE_INDEX.find(e => e.url.replace(/\/$/, "") === clean.replace(/\/$/, ""));
+  if(direct) return {entry: direct, how: "url"};
+
+  const parsed = parseChronicleUrl(clean);
+  if(!parsed) return null;
+  const norm = s => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const match = CHRONICLE_INDEX.find(e =>
+    norm(e.variety) === norm(parsed.variety) &&
+    (!parsed.cropYear || e.cropYear === parsed.cropYear) &&
+    (!parsed.series || e.series === parsed.series));
+  if(match) return {entry: match, how: "slug"};
+  return {entry: {
+    variety: parsed.variety, cropYear: parsed.cropYear || "", origin: "",
+    series: parsed.series || "", published: "", notes: "", url: clean
+  }, how: "slug-only"};
+}
+
+function showChronicleResult(found){
+  const box = document.getElementById("chronResult");
+  box.className = "";
+  box.innerHTML = "";
+  const e = found.entry;
+  const key = chronicleKey(e);
+  pendingChronicle = {entry: e, key};
+
+  const table = document.createElement("table");
+  const add = (label, value) => {
+    if(!value) return;
+    const tr = document.createElement("tr");
+    tr.appendChild(el("th", label));
+    tr.appendChild(el("td", value));
+    table.appendChild(tr);
+  };
+  add("Variety", e.variety);
+  add("Crop year", e.cropYear);
+  add("Origin", e.origin);
+  add("Series", e.series);
+  add("Published", e.published);
+  add("Background", e.notes);
+  add("Library entry", key);
+  box.appendChild(table);
+
+  const inLib = Boolean(HOPS[key]);
+  const p = el("p", null, "note");
+  p.textContent = inLib
+    ? (scored(key) ? `"${key}" is already in your library with a profile — filling in from the post will overwrite it.` : `"${key}" is in your library, awaiting a profile.`)
+    : `"${key}" is not in your library yet; saving will add it.`;
+  box.appendChild(p);
+
+  const openBtn = el("button", "Open the post", "btn secondary");
+  openBtn.type = "button";
+  openBtn.onclick = () => window.open(e.url, "_blank", "noopener");
+  box.appendChild(openBtn);
+
+  const formBtn = el("button", "Send to the form", "btn");
+  formBtn.type = "button";
+  formBtn.onclick = () => sendChronicleToForm(null);
+  box.appendChild(formBtn);
+}
+
+function sendChronicleToForm(parsed){
+  if(!pendingChronicle) return;
+  const {entry, key} = pendingChronicle;
+  const existing = HOPS[key];
+
+  editingName = existing ? key : null;
+  document.getElementById("mName").value = key;
+  document.getElementById("mStyles").value = entry.series || "";
+  document.getElementById("mUrl").value = entry.url;
+  document.getElementById("mAA").value = (parsed && parsed.aa) || (existing && existing.aa !== "n/a" ? existing.aa : "");
+
+  // Fall back to the profile already on the entry: opening a scored hop must
+  // not arrive with "save as unscored" ticked, which would wipe it on save.
+  const scores = (parsed && parsed.scores) || (existing && existing.d) || null;
+  document.getElementById("mUnscored").checked = !scores;
+  renderSliders(scores);
+
+  // Preserve chronicle provenance through the save.
+  HOPS[key] = HOPS[key] || {aa:"n/a", d:null, styles:[entry.series || "Uncategorized"], src:"chronicle", url:entry.url,
+    chron:{cropYear:entry.cropYear, origin:entry.origin, series:entry.series, published:entry.published, notes:entry.notes}};
+  // A profile read off the post itself outranks an estimate, so badge it.
+  if(parsed && parsed.scores) HOPS[key].src = "chronicle";
+
+  setStatus("mgmtNote", scores
+    ? `Parsed from the post. Check every slider against the article's chart before saving — these are ranks translated to a scale.`
+    : `Metadata filled in for "${key}". Set the sliders from the post's results chart, then save.`);
+  document.querySelector('.tab-btn[data-tab="manage"]').click();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function lookupChronicle(){
+  const url = document.getElementById("chronUrl").value.trim();
+  document.getElementById("chronPreview").className = "preview hidden";
+  document.getElementById("pasteBlock").className = "hidden";
+  if(!url){ setStatus("chronStatus", "Paste a Hop Chronicles URL first.", "err"); return null; }
+
+  const found = findChronicle(url);
+  if(!found){
+    setStatus("chronStatus", "That does not look like a Hop Chronicles post URL. They look like /the-hop-chronicles-<hop>-<year>-pale-ale/.", "err");
+    document.getElementById("chronResult").className = "hidden";
+    return null;
+  }
+  showChronicleResult(found);
+  setStatus("chronStatus",
+    found.how === "url" ? "Matched in the built-in index — no network needed."
+    : found.how === "slug" ? "Matched by variety and crop year from the URL."
+    : "Not in the built-in index (it may be newer than this file). Read what I could from the URL itself.",
+    found.how === "slug-only" ? "" : "ok");
+  return found;
+}
+
+function applyParsedText(text, statusId){
+  const plain = htmlToText(text);
+  const {scores, prominent, lowest, unmapped} = parseDescriptorScores(plain);
+  const stats = parseHopStats(plain);
+  const aa = stats.alpha || parseAlphaAcid(plain);
+
+  const preview = document.getElementById("chronPreview");
+  preview.className = "preview";
+  preview.textContent = plain.slice(0, 700) + (plain.length > 700 ? "…" : "");
+
+  if(!scores){
+    setStatus(statusId, "Could not find the results sentence (\"The most prominent … characteristics … were …\"). Nothing was guessed. Send the metadata to the form and set the sliders from the post's chart yourself.", "err");
+    return null;
+  }
+  const bits = [`Ranked: ${prominent.join(", ")}.`];
+  if(lowest.length) bits.push(`Lowest rated: ${lowest.join(", ")}.`);
+  if(unmapped.length) bits.push(`No axis for: ${unmapped.join(", ")} — recorded here only, not folded into another descriptor.`);
+  const statBits = [["Alpha", stats.alpha], ["Beta", stats.beta], ["Cohumulone", stats.cohumulone], ["Total oil", stats.totalOil]]
+    .filter(([, v]) => v).map(([k, v]) => `${k} ${v}`);
+  if(statBits.length) bits.push("Hop stats — " + statBits.join(", ") + ".");
+  else if(aa) bits.push(`Alpha acid: ${aa}.`);
+  setStatus(statusId, bits.join(" ") + " Review before saving.", "ok");
+
+  sendChronicleToForm({scores, aa});
+  return scores;
+}
+
+async function fetchChronicle(){
+  const found = lookupChronicle();
+  if(!found) return;
+  const url = found.entry.url;
+  setStatus("chronStatus", "Looking up… trying to fetch the post body (this usually fails — see the note below).");
+  try{
+    const resp = await fetch(url, {mode:"cors"});
+    if(!resp.ok) throw new Error("HTTP " + resp.status);
+    const text = await resp.text();
+    applyParsedText(text, "chronStatus");
+  }catch(err){
+    setStatus("chronStatus",
+      "Fetch blocked, as expected — Brülosophy does not allow cross-site reads, so the browser refused it. " +
+      "The metadata above came from the built-in index and is still good. For the ratings: open the post, select all, copy, and paste below. (" + err.message + ")",
+      "err");
+    document.getElementById("pasteBlock").className = "";
+  }
+}
+
+/* ---------- wiring ---------- */
+
+document.getElementById("hopSearch").addEventListener("input", e => renderHopList(e.target.value));
+document.getElementById("scoredOnly").addEventListener("change", () => renderHopList(document.getElementById("hopSearch").value));
+document.getElementById("verifiedOnly").addEventListener("change", () => renderHopList(document.getElementById("hopSearch").value));
+document.getElementById("saveHopBtn").onclick = saveHopFromForm;
+document.getElementById("clearFormBtn").onclick = clearForm;
+document.getElementById("exportBtn").onclick = exportLibrary;
+document.getElementById("importBtn").onclick = () => document.getElementById("importFile").click();
+document.getElementById("importFile").addEventListener("change", e => {
+  if(e.target.files[0]) importLibrary(e.target.files[0]);
+  e.target.value = "";
+});
+document.getElementById("resetBtn").onclick = resetLibrary;
+document.getElementById("styleSelect").addEventListener("change", renderStyleResults);
+document.getElementById("chronLookupBtn").onclick = lookupChronicle;
+document.getElementById("chronFetchBtn").onclick = fetchChronicle;
+document.getElementById("chronParseBtn").onclick = () => {
+  const text = document.getElementById("chronPaste").value;
+  if(!text.trim()){ setStatus("pasteStatus", "Paste the post text first.", "err"); return; }
+  applyParsedText(text, "pasteStatus");
+};
+document.getElementById("chronUrl").addEventListener("keydown", e => {
+  if(e.key === "Enter"){ e.preventDefault(); lookupChronicle(); }
+});
+
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tabpanel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  };
+});
+
+function renderAll(){
+  renderHopList(document.getElementById("hopSearch").value);
+  renderChips();
+  drawRadar();
+  renderTable();
+  renderBlend();
+  renderStyleSelect();
+  renderTargetResults();
+  renderMgmtList();
+}
+
+renderSliders(null);
+renderDescToggles();
+renderAll();
+</script>
+</body>
+</html>
