@@ -44,7 +44,7 @@ The mash and sparge pH models used in this tool are **heuristic estimates**, not
 
 ## Roadmap / Known Limitations
 
-- The water calculation logic is covered by `tests/bw-calibration.test.mjs`, validated against Bru'n Water 5.5; the hop tool by `tests/hop-calculus.test.mjs`. Both run with plain `node`, no dependencies.
+- The water calculation logic is covered by `tests/bw-calibration.test.mjs`, validated against Bru'n Water 5.5; the hop tool by `tests/hop-calculus.test.mjs`. Both run with plain `node`, no dependencies, and on every push via GitHub Actions.
 - `app.js` is currently a single file; a future refactor may split it into focused modules (salts, pH models, BeerXML, UI).
 - Cache-busting for `app.js`/`styles.css` is currently done via manual version query strings in `index.html`.
 

@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # No npm install: this project has no dependencies by design.
+
+      - name: Water chemistry (vs Bru'n Water 5.5)
+        run: node tests/bw-calibration.test.mjs
+
+      - name: Hop library and Chronicles parsers
+        run: node tests/hop-calculus.test.mjs
+
+      # hops/hop-calculus.html is generated from the CSVs. Editing the page by
+      # hand, or changing a CSV without rebuilding, leaves the two out of step
+      # and the next rebuild silently discards one of them. The build is
+      # deterministic, so regenerating must be a no-op.
+      - name: Built page is in step with its CSVs
+        run: |
+          node hops/build-hops.mjs
+          if ! git diff --exit-code --stat hops/hop-calculus.html; then
+            echo "::error file=hops/hop-calculus.html::Out of step with hops/data/*.csv. Run 'node hops/build-hops.mjs' and commit the result."
+            exit 1
+          fi
