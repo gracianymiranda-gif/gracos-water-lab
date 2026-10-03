@@ -20,8 +20,12 @@
   .back-link:hover, .back-link:focus-visible{color:var(--accent);}
   h1{font-size:1.5rem; margin:0 0 4px;}
   .sub{color:var(--muted); margin:0 0 24px; font-size:0.9rem;}
-  .layout{display:grid; grid-template-columns:340px 1fr; gap:24px;}
-  @media (max-width:900px){.layout{grid-template-columns:1fr;} body{padding:16px;}}
+  /* minmax(0,1fr) and min-width:0: a bare 1fr track cannot shrink below its
+     content's min-content width, so on a phone the whole page grew wider than
+     the screen and the right-hand columns were simply off the edge. */
+  .layout{display:grid; grid-template-columns:340px minmax(0,1fr); gap:24px;}
+  .layout > *{min-width:0;}
+  @media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr);} body{padding:16px;}}
   .panel{
     background:var(--panel); border:1px solid var(--border); border-radius:10px;
     padding:18px;
@@ -34,6 +38,7 @@
     width:100%; background:none; border-left:none; border-right:none; border-top:none;
     color:inherit; font-family:inherit; text-align:left;
   }
+  .hop-item > span:first-child{min-width:0; overflow-wrap:anywhere;}
   .hop-item:last-child{border-bottom:none;}
   .hop-item:hover{background:#241f1a;}
   .hop-item:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
