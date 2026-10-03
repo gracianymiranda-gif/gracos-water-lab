@@ -139,6 +139,22 @@ for (const r of prof) {
     else { dupStats++; console.error(`  duplicate stats: ${r[0]} == ${prev}`); }
   } else if (!prev) statKeys.set(k, r[0]);
 }
+// Chemistry is printed verbatim from the source, but in one shape: "9 - 12%",
+// "27%", "1.5 - 2.0 mL/100g". The extraction arrived with "mL / 100g",
+// "ml/100g", "4% vol/wt mL/100g", "27 %", "24 - 26" with no unit, and
+// "unavailable" as a value; a reader comparing two columns should not have
+// to notice that, and the blend averages have to parse every one of them.
+const PCT = /^\d[\d.]*( - \d[\d.]*)?%( \([^)]*\))?$/;
+const OIL = /^\d[\d.]*( - \d[\d.]*)? mL\/100g$/;
+const offShape = [];
+for (const r of prof) {
+  for (const c of ["Alpha Acid", "Beta Acid", "Cohumulone"]) {
+    const v = r[col[c]]; if (v && !PCT.test(v)) offShape.push(`${r[0]} ${c}=${JSON.stringify(v)}`);
+  }
+  const o = r[col["Total Oil"]]; if (o && !OIL.test(o)) offShape.push(`${r[0]} Total Oil=${JSON.stringify(o)}`);
+}
+eq("profiles: chemistry cells share one shape", offShape.length, 0);
+if (offShape.length) console.error("  " + offShape.join("\n  "));
 eq("profiles: every descriptor score is 0-10", badScore, 0);
 eq("profiles: no two hops share all four stat figures", dupStats, 0);
 
