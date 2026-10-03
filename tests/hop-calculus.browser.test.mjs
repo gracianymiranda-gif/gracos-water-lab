@@ -243,5 +243,31 @@ function browser() {
   ok("search: results appear", p.doc.querySelectorAll("#targetResults tr").length > 1);
 }
 
+// ---- Set J: the Hop Chronicles tab end to end ----
+{
+  const b = browser();
+  const p = b.boot();
+  const chron = p.ev('Object.keys(HOPS).find(k => HOPS[k].src === "chronicle")');
+  const url = p.ev(`HOPS[${JSON.stringify(chron)}].url`);
+  const variants = [url.replace("https://", "http://www."), url.replace(/\/$/, "") + "/amp/", url.toUpperCase() + "?utm_source=x"];
+  for (const v of variants) {
+    p.set("chronUrl", v); const found = p.ev("lookupChronicle()");
+    eq(`lookup: ${v.slice(0, 40)}… resolves to the indexed post`, found && found.how, "url");
+  }
+  // Stats only, no results sentence: chemistry still lands, sliders are left alone.
+  p.set("chronUrl", "https://brulosophy.com/2030/01/01/the-hop-chronicles-fakehop-2029-pale-ale/"); p.ev("lookupChronicle()");
+  p.ev(`applyParsedText("Fakehop Hop Stats Alpha: 10 - 12% Beta: 4 - 5% Cohumulone: 25 - 28% Total Oil: 1.5 - 2 mL/100g", "pasteStatus")`);
+  eq("paste: stats-only text fills beta", p.$("#mBeta").value, "4 - 5%");
+  eq("paste: and marks the hop unscored rather than guessing", p.$("#mUnscored").checked, true);
+  ok("paste: the status says the sliders were not set", /sliders were left alone/.test(p.$("#pasteStatus").textContent));
+  ok("paste: the summary also appears on the Manage tab", /Hop stats/.test(p.$("#mgmtNote").textContent));
+  // The wrong article asks before applying; Cancel applies nothing.
+  p.win.confirm = (m) => { p.win.__confirms.push(String(m)); return false; };
+  const r = p.ev(`applyParsedText("The most prominent characteristics noted by tasters in the beer made with Vista hops were stone fruit, berry, and floral.", "pasteStatus")`);
+  ok("paste: a post about a different hop asks first", p.win.__confirms.some((m) => /never mentions "Fakehop"/.test(m)));
+  eq("paste: and Cancel applies nothing", r, null);
+  ok("paste: with a status saying so", /Nothing applied/.test(p.$("#pasteStatus").textContent));
+}
+
 console.log(`\n${pass} passed, ${fail} failed (${pass + fail} total)`);
 process.exit(fail ? 1 : 0);

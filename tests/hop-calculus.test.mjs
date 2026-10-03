@@ -14,7 +14,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const hops = join(root, "hops");
 const {
   AXES, htmlToText, parseAlphaAcid, parseChronicleUrl,
-  parseDescriptorScores, parseHopStats, parseProminentCharacteristics,
+  parseDescriptorScores, parseHopStats, parseNumericRange, parseProminentCharacteristics,
 } = await import(join(hops, "chronicle-parser.js"));
 
 let pass = 0, fail = 0;
@@ -71,9 +71,61 @@ ok("descriptors: no results sentence yields nothing",
 eq("descriptors: post wording preserved",
   parseProminentCharacteristics("The most prominent characteristics were peach, citrus, and pine.").length, 3);
 
+// ---- Set B2: stats shapes seen in the articles ----
+// A column table with an "unknown" cell used to parse to nothing at all.
+const colUnknown = parseHopStats("Alpha | Beta | Cohumulone | Total Oil\n12.2 – 15.4% | unknown | 25 – 30% | 1 – 1.6 mL/100g");
+eq("stats column-wise: unknown cell is null, neighbours intact", [colUnknown.alpha, colUnknown.beta, colUnknown.cohumulone].join("|"), "12.2 – 15.4%||25 – 30%");
+// An oil breakdown printed below the table used to be lost to an early return.
+const belowTable = parseHopStats("Alpha\tBeta\tCohumulone\tTotal Oil\n9 – 12%\t7 – 9%\t27 – 31%\t1.0 – 1.8 mL/100g\nMyrcene: 55 – 65%\nFarnesene: 5 – 15%");
+eq("stats: oil breakdown below a column table is read", belowTable.myrcene + "|" + belowTable.farnesene, "55 – 65%|5 – 15%");
+// A tracked label printed "unknown" must not borrow the next, untracked figure.
+ok("stats: farnesene 'unknown' does not take linalool's value",
+  parseHopStats(htmlToText("Farnesene: unknown\nLinalool: 0.4 – 0.8%")).farnesene === null);
+eq("stats: a qualifier is kept verbatim", parseHopStats("Farnesene: <1%").farnesene, "<1%");
+eq("stats: 'of total oil' suffix stripped", parseHopStats("Myrcene: 55 – 65% of total oil").myrcene, "55 – 65%");
+eq("stats: (AA%) label form", parseHopStats("Alpha Acid (AA%): 9.5%").alpha, "9.5%");
+// The lot's alpha is the one under the Hop Stats heading, not the breeder's range in the intro.
+eq("stats: Hop Stats section outranks prose", parseHopStats("Brewers love it for alpha acids in the 15 – 17% range. HOP STATS Alpha: 12 – 14%").alpha, "12 – 14%");
+const nr = parseNumericRange("12.2 - 15.4%");
+ok("numeric range: midpoint of a range", nr && nr.low === 12.2 && nr.high === 15.4 && Math.abs(nr.mid - 13.8) < 1e-9);
+eq("numeric range: a point value", parseNumericRange("27%").mid, 27);
+ok("numeric range: nothing numeric is null, not zero", parseNumericRange("n/a") === null && parseNumericRange("") === null);
+
+// ---- Set C2: results sentences as the posts actually write them ----
+const two = parseDescriptorScores("The most prominent aroma characteristics noted by tasters were tropical fruit, citrus and stone fruit, while the most prominent flavor characteristics were berry, floral and spicy.");
+eq("descriptors: aroma and flavour lists both count", two.scores[AXES.indexOf("Berry")], 9);
+eq("descriptors: an axis keeps its best rank across lists", two.scores[AXES.indexOf("Tropical")], 9);
+const unknownTerm = parseDescriptorScores("The most prominent characteristics noted by tasters were tropical fruit, coconut, and citrus.");
+eq("descriptors: an unknown term holds its rank instead of promoting the next", unknownTerm.scores[AXES.indexOf("Citrus")], 7);
+ok("descriptors: and is reported", unknownTerm.unmapped.includes("coconut"));
+const pineapple = parseDescriptorScores("Breeder notes say it smells of pineapple and mango. The most prominent characteristics noted by tasters were citrus and floral.");
+eq("descriptors: 'pineapple' is not a pine mention", pineapple.scores[AXES.indexOf("Pine/Resin")], 2);
+eq("descriptors: but is a tropical one", pineapple.scores[AXES.indexOf("Tropical")], 5);
+ok("descriptors: 'Dr. Rudi' inside the sentence does not break it",
+  parseDescriptorScores("The most prominent characteristics noted by tasters in the beer made with Dr. Rudi hops were citrus, pine and tropical fruit.").scores !== null);
+const intro = parseDescriptorScores("Among the most prominent new varieties of that era were Citra and Mosaic. The most prominent characteristics noted by tasters were tropical fruit, citrus and stone fruit.");
+eq("descriptors: a 'most prominent' sentence naming no descriptor is skipped", intro.scores[AXES.indexOf("Tropical")], 9);
+eq("descriptors: lowest-rated clause without 'notes of'",
+  parseDescriptorScores("The most prominent characteristics were tropical fruit and citrus, while onion/garlic and earthy/woody were among the lowest rated descriptors.").scores[AXES.indexOf("Earthy")], 1);
+const fullPage = parseDescriptorScores("The most prominent characteristics noted by tasters were citrus and floral. Related: The Hop Chronicles | Strata 2018 (dank, berry). Comments: I got a lot of pine out of mine.");
+eq("descriptors: related posts and comments after the article are not mentions", [fullPage.scores[AXES.indexOf("Dank")], fullPage.scores[AXES.indexOf("Pine/Resin")]].join(), "2,2");
+
+// ---- Set A2: URL forms a browser hands over ----
+ok("url: http, www, /amp/ and a query all resolve",
+  ["http://www.brulosophy.com/2025/10/13/the-hop-chronicles-harlequin-2023-pale-ale/",
+   "https://brulosophy.com/2025/10/13/the-hop-chronicles-harlequin-2023-pale-ale/amp/",
+   "HTTPS://BRULOSOPHY.COM/2025/10/13/THE-HOP-CHRONICLES-HARLEQUIN-2023-PALE-ALE/?utm_source=x"]
+    .every((x) => { const r = parseChronicleUrl(x); return r && r.variety === "Harlequin" && r.cropYear === "2023" && r.series === "Pale Ale"; }));
+eq("url: the 2018 'chronicals' post", parseChronicleUrl("https://brulosophy.com/2018/04/05/the-hop-chronicals-citra-2017/").variety, "Citra");
+eq("url: WordPress -2 suffix is not part of the hop", parseChronicleUrl("https://brulosophy.com/x/the-hop-chronicles-harlequin-2023-pale-ale-2/").variety, "Harlequin");
+
 // ---- Set D: markup handling ----
 const text = htmlToText('<style>.a{color:green}</style><script>var pine="tea";</script><p>Citrus notes.</p>');
 eq("html: script and style contents dropped", text, "Citrus notes.");
+// Plain pasted text goes through the same function; "<1%" is not a tag.
+ok("html: '<1%' in plain text does not swallow the body",
+  htmlToText("Farnesene: <1% Linalool: 0.5% The most prominent characteristics were citrus. Comments > 3").includes("most prominent"));
+eq("html: numeric and named entities decoded", htmlToText("9 &#8211; 12% &ndash; &amp;lt;"), "9 – 12% – &lt;");
 eq("alpha acid helper", parseAlphaAcid("Alpha Acid: 12.4%"), "12.4%");
 
 // ---- Set E: shipped data integrity ----

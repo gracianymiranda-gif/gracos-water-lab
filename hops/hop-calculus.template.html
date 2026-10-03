@@ -1075,12 +1075,17 @@ let pendingSeed = null;
 /** Find an indexed post by exact URL, then by variety/year/series from the slug. */
 function findChronicle(url){
   const clean = url.trim().replace(/[?#].*$/, "");
-  const direct = CHRONICLE_INDEX.find(e => e.url.replace(/\/$/, "") === clean.replace(/\/$/, ""));
+  // The same post arrives as http://, www., /amp/, upper-case or with a
+  // tracking query; none of that changes which article it is.
+  const canon = u => String(u || "").trim().toLowerCase()
+    .replace(/^https?:\/\/(www\.)?/, "").replace(/[?#].*$/, "").replace(/\/amp\/?$/, "").replace(/\/+$/, "");
+  const direct = CHRONICLE_INDEX.find(e => canon(e.url) === canon(clean));
   if(direct) return {entry: direct, how: "url"};
 
   const parsed = parseChronicleUrl(clean);
   if(!parsed) return null;
-  const norm = s => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  // Diacritics go before punctuation does, or "Mittelfrüh" and the slug's "mittelfruh" never meet.
+  const norm = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const match = CHRONICLE_INDEX.find(e =>
     norm(e.variety) === norm(parsed.variety) &&
     (!parsed.cropYear || e.cropYear === parsed.cropYear) &&
@@ -1176,9 +1181,10 @@ function sendChronicleToForm(parsed){
       chron:{cropYear:entry.cropYear, origin:entry.origin, series:entry.series, published:entry.published, notes:entry.notes}}
   };
 
-  setStatus("mgmtNote", scores
-    ? `Parsed from the post. Check every slider against the article's chart before saving — these are ranks translated to a scale.`
-    : `Metadata filled in for "${key}". Set the sliders from the post's results chart, then save.`);
+  const summary = parsed && parsed.summary ? parsed.summary + " " : "";
+  setStatus("mgmtNote", summary + (parsed && parsed.scores
+    ? `Check every slider against the article's chart before saving — these are ranks translated to a scale.`
+    : `Metadata filled in for "${key}". Set the sliders from the post's results chart, then save.`));
   document.querySelector('.tab-btn[data-tab="manage"]').click();
   window.scrollTo({top:0, behavior:"smooth"});
 }
@@ -1213,25 +1219,40 @@ function applyParsedText(text, statusId){
   const {scores, prominent, lowest, unmapped} = parseDescriptorScores(plain);
   const stats = parseHopStats(plain);
   const aa = stats.alpha || parseAlphaAcid(plain);
+  const anyStat = Object.values(stats).some(Boolean);
 
   const preview = document.getElementById("chronPreview");
   preview.className = "preview";
   preview.textContent = plain.slice(0, 700) + (plain.length > 700 ? "…" : "");
 
-  if(!scores){
-    setStatus(statusId, "Could not find the results sentence (\"The most prominent … characteristics … were …\"). Nothing was guessed. Send the metadata to the form and set the sliders from the post's chart yourself.", "err");
+  if(!scores && !anyStat){
+    setStatus(statusId, "Could not find the results sentence (\"The most prominent … characteristics … were …\") or a Hop Stats block. Nothing was guessed. Send the metadata to the form and set the sliders from the post's chart yourself.", "err");
     return null;
   }
-  const bits = [`Ranked: ${prominent.join(", ")}.`];
+
+  // The text has to be about the hop that was looked up, or one post's
+  // ratings land on another hop's entry without anyone noticing.
+  const variety = pendingChronicle && pendingChronicle.entry.variety;
+  const fold = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if(variety && !fold(plain).includes(fold(variety)) &&
+     !confirm(`The pasted text never mentions "${variety}". Is this the right post?\n\nOK applies it to "${pendingChronicle.key}" anyway; Cancel applies nothing.`)){
+    setStatus(statusId, `Nothing applied — the text does not mention "${variety}".`, "err");
+    return null;
+  }
+
+  const bits = [];
+  if(scores) bits.push(`Ranked: ${prominent.join(", ")}.`);
+  else bits.push("No results sentence found, so the sliders were left alone — set them from the post's chart.");
   if(lowest.length) bits.push(`Lowest rated: ${lowest.join(", ")}.`);
   if(unmapped.length) bits.push(`No axis for: ${unmapped.join(", ")} — recorded here only, not folded into another descriptor.`);
   const statBits = [["Alpha", stats.alpha], ["Beta", stats.beta], ["Cohumulone", stats.cohumulone], ["Total oil", stats.totalOil]]
     .filter(([, v]) => v).map(([k, v]) => `${k} ${v}`);
   if(statBits.length) bits.push("Hop stats — " + statBits.join(", ") + ".");
   else if(aa) bits.push(`Alpha acid: ${aa}.`);
-  setStatus(statusId, bits.join(" ") + " Review before saving.", "ok");
+  const summary = bits.join(" ");
+  setStatus(statusId, summary + " Review before saving.", scores ? "ok" : "");
 
-  sendChronicleToForm({scores, aa, stats});
+  sendChronicleToForm({scores, aa, stats, summary});
   return scores;
 }
 

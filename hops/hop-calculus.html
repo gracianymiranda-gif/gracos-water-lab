@@ -331,13 +331,18 @@ const VOCAB = [
   ['passionfruit', 'Tropical'],
   ['guava', 'Tropical'],
   ['lychee', 'Tropical'],
+  ['watermelon', 'Tropical'],
   ['melon', 'Tropical'],
   ['stone fruit', 'Stone Fruit'],
   ['peach', 'Stone Fruit'],
   ['apricot', 'Stone Fruit'],
   ['nectarine', 'Stone Fruit'],
+  ['cherry', 'Stone Fruit'],
+  ['berries', 'Berry'],
   ['berry', 'Berry'],
   ['blackcurrant', 'Berry'],
+  ['currant', 'Berry'],
+  ['red fruit', 'Berry'],
   ['strawberry', 'Berry'],
   ['blueberry', 'Berry'],
   ['pine', 'Pine/Resin'],
@@ -345,18 +350,32 @@ const VOCAB = [
   ['dank', 'Dank'],
   ['catty', 'Dank'],
   ['floral', 'Floral'],
+  ['flowery', 'Floral'],
   ['blossom', 'Floral'],
   ['herbal', 'Herbal/Grassy'],
+  ['herb', 'Herbal/Grassy'],
   ['grassy', 'Herbal/Grassy'],
+  ['grass', 'Herbal/Grassy'],
   ['hay', 'Herbal/Grassy'],
   ['spicy', 'Spicy/Noble'],
+  ['spice', 'Spicy/Noble'],
   ['noble', 'Spicy/Noble'],
   ['pepper', 'Spicy/Noble'],
   ['clove', 'Spicy/Noble'],
   ['earthy', 'Earthy'],
   ['woody', 'Earthy'],
+  ['wood', 'Earthy'],
   ['tobacco', 'Earthy'],
 ];
+
+/**
+ * A needle as a whole word, with the plural and adjective endings the prose
+ * uses. Substring matching raised Pine/Resin for "pineapple", Citrus for
+ * "sublime" and Herbal/Grassy for "Hayward"; a word boundary stops all three
+ * while "piney", "resinous" and "berries" still count.
+ */
+const wordRe = (needle) =>
+  new RegExp('\\b' + needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:s|es|y|ey|ous)?\\b', 'i');
 
 /**
  * Descriptors Brulosophy tracks that have no axis in this tool. Surfaced as
@@ -381,10 +400,14 @@ const LOWEST_SCORE = 1;
  */
 function parseChronicleUrl(url) {
   if (typeof url !== 'string') return null;
-  const m = url.match(/the-hop-chronicles-([a-z0-9-]+?)\/?$/i);
+  // One 2018 post is published under "chronicals"; browsers also hand over
+  // upper-case, /amp/ and tracking-parameter forms of the same address.
+  const m = url.toLowerCase().replace(/[?#].*$/, '').replace(/\/amp\/?$/, '')
+    .match(/the-hop-chronic(?:le|al)s-([a-z0-9-]+?)\/?$/);
   if (!m) return null;
 
-  let slug = m[1];
+  // WordPress appends -2 to a re-published slug; the hop is the same.
+  let slug = m[1].replace(/^(.*(?:pale-ale|pale-lager|(?:19|20)\d{2}))-\d$/, '$1');
   let series = null;
   let cropYear = null;
 
@@ -428,10 +451,73 @@ function parseAlphaAcid(text) {
  * @returns {string[]}
  */
 function splitList(list) {
+  const lead = /^(?:notes? of|hints? of|a (?:bit|touch|hint) of|some|slight(?:ly)?|strong(?:ly)?|mild(?:ly)?|less desirable|characteristics|descriptors|the|a|an|also|both|of)\s+/i;
   return list
-    .split(/,|\band\b/i)
-    .map((s) => s.trim().replace(/^(notes? of|characteristics|descriptors)\s+/i, '').trim())
-    .filter(Boolean);
+    .split(/,|;|\band\b|\bas well as\b/i)
+    .map((s) => {
+      let t = s.trim();
+      for (let i = 0; i < 3 && lead.test(t); i++) t = t.replace(lead, '').trim();
+      return t.replace(/[.:]+$/, '').trim();
+    })
+    .filter((t) => t && !/^(?:the|a|an|also|both|some|of|notes?|hints?|were|was)$/i.test(t));
+}
+
+/** Periods that do not end a sentence, so "Dr. Rudi" cannot cut the results sentence in two. */
+const normalizeProse = (text) => text.replace(/\s+/g, ' ').replace(/\b(Dr|Mt|St|Mr|Mrs|Ms|No|vs|approx)\.\s*/gi, '$1 ');
+
+/**
+ * Every "the most prominent ... were X, Y and Z" list in the text, in order.
+ * A post may rank aroma and flavour separately, in one sentence or two; each
+ * list is returned on its own, cut before any contrastive clause and before
+ * the next "most prominent" so the second list is never swallowed by the first.
+ * @param {string} prose Whitespace-normalised text.
+ * @returns {Array<{terms: string[], index: number, end: number}>}
+ */
+function prominentLists(prose) {
+  const re = /most prominent[^.]*?\b(?:were|was|included?)\b:?\s*((?:(?!\bmost prominent\b|\bwhile\b|\bwhereas\b|\balthough\b|\bthough\b|\bhowever\b|\bwith\b)[^.])*)/gi;
+  const lists = [];
+  for (const m of prose.matchAll(re)) {
+    lists.push({terms: splitList(m[1]), index: m.index, end: m.index + m[0].length});
+  }
+  return lists;
+}
+
+/**
+ * Descriptor lists the post calls lowest rated, in any of the phrasings the
+ * series uses: "notes of X and Y were among the lowest rated", "while X and Y
+ * were among the lowest rated descriptors", "X was the least prominent".
+ * @param {string} prose
+ * @returns {string[]}
+ */
+function lowestTerms(prose) {
+  const re = /\b(?:were|was|being)\s+(?:among\s+)?the\s+(?:lowest|least)\b/gi;
+  const starts = /\b(?:while|whereas|although|though|however|but)\b|[.;]\s/gi;
+  const terms = [];
+  for (const m of prose.matchAll(re)) {
+    const before = prose.slice(0, m.index);
+    let start = 0;
+    for (const b of before.matchAll(starts)) start = b.index + b[0].length;
+    const clause = before.slice(start)
+      .replace(/^\s*(?:while|whereas|although|though|however|but)\b/i, '')
+      .replace(/^\s*(?:less desirable|less appealing|undesirable|off[- ]?flavou?rs?)?\s*(?:notes?|characteristics|descriptors|flavou?rs?|aromas?)?\s*(?:of|such as|like|including)?\s*/i, '');
+    terms.push(...splitList(clause));
+  }
+  return terms;
+}
+
+/**
+ * The part of a full-page paste that is the article. Everything after the
+ * results -- related-post titles, comments, navigation -- is dropped so a
+ * commenter's "I got a lot of pine out of mine" never counts as a mention.
+ * Text before the results is kept: the breeder's description is part of the post.
+ * @param {string} prose
+ * @param {number} resultsEnd Index just past the last results sentence.
+ */
+function articleBody(prose, resultsEnd) {
+  const stop = /\b(?:leave a (?:reply|comment)|\d+\s+(?:comments?|responses?|replies)\b|comments?\s*[:(]|related(?:\s+(?:posts?|articles?|reading)|:)|you may also like|share this|post navigation|previous post|next post|support br[uü]losophy|if you have (?:any )?thoughts)/i;
+  const tail = prose.slice(resultsEnd);
+  const m = tail.match(stop);
+  return m ? prose.slice(0, resultsEnd + m.index) : prose;
 }
 
 /**
@@ -463,55 +549,55 @@ function parseDescriptorScores(text) {
   const empty = {scores: null, prominent: [], lowest: [], unmapped: []};
   if (typeof text !== 'string' || !text.trim()) return empty;
 
-  const prose = text.replace(/\s+/g, ' ');
-
-  const promMatch = prose.match(/most prominent[^.]*?\bwere\b([^.]*)/i);
-  if (!promMatch) return empty;
-
-  // "were X, Y and Z, while less desirable notes of A and B were among the
-  // lowest rated" — keep only the part before the contrastive clause.
-  const promSegment = promMatch[1].split(/\b(?:while|although|whereas)\b/i)[0];
-  const promTerms = splitList(promSegment);
-
-  const lowMatch = prose.match(/notes? of ([^.]*?)\bwere among the lowest/i);
-  const lowTerms = lowMatch ? splitList(lowMatch[1]) : [];
-
+  const prose = normalizeProse(text);
   const scores = AXES.map(() => ABSENT_SCORE);
   const prominent = [];
   const unmapped = [];
+  let resultsEnd = 0;
+  let used = 0;
 
-  let rank = 0;
-  for (const term of promTerms) {
-    const axis = termToAxis(term);
-    if (axis) {
-      const idx = AXES.indexOf(axis);
+  for (const list of prominentLists(prose)) {
+    // A list naming nothing the series tracks ("the most prominent new
+    // varieties were Citra and Mosaic") is prose, not results; skip it.
+    const relevant = list.terms.some((t) => termToAxis(t) || UNMAPPED.some((u) => t.toLowerCase().includes(u)));
+    if (!relevant) continue;
+    used++;
+    resultsEnd = list.end;
+    let rank = 0;
+    for (const term of list.terms) {
+      const axis = termToAxis(term);
       const score = RANK_SCORES[Math.min(rank, RANK_SCORES.length - 1)];
-      // A repeated axis keeps its best rank.
-      if (score > scores[idx] || scores[idx] === ABSENT_SCORE) scores[idx] = score;
-      prominent.push(axis);
-      rank++;
-    } else if (UNMAPPED.some((u) => term.toLowerCase().includes(u))) {
-      unmapped.push(term);
+      if (axis) {
+        const idx = AXES.indexOf(axis);
+        // An axis ranked in both the aroma and the flavour list keeps its best rank.
+        if (score > scores[idx]) scores[idx] = score;
+        if (!prominent.includes(axis)) prominent.push(axis);
+      } else {
+        // A term with no axis still holds its place in the ranking: dropping
+        // it would promote everything after it by one.
+        unmapped.push(term);
+      }
       rank++;
     }
   }
 
-  if (prominent.length === 0) return empty;
+  if (!used) return empty;
 
-  // Secondary mentions elsewhere in the prose sit between absent and prominent.
+  // Secondary mentions elsewhere in the article sit between absent and prominent.
+  const body = articleBody(prose, resultsEnd);
   AXES.forEach((axis, i) => {
     if (scores[i] !== ABSENT_SCORE) return;
-    const hits = VOCAB.filter(([, a]) => a === axis).map(([needle]) => needle);
-    if (hits.some((h) => prose.toLowerCase().includes(h))) scores[i] = SECONDARY_SCORE;
+    const needles = VOCAB.filter(([, a]) => a === axis).map(([needle]) => needle);
+    if (needles.some((n) => wordRe(n).test(body))) scores[i] = SECONDARY_SCORE;
   });
 
   const lowest = [];
-  for (const term of lowTerms) {
+  for (const term of lowestTerms(body)) {
     const axis = termToAxis(term);
     if (axis) {
       scores[AXES.indexOf(axis)] = LOWEST_SCORE;
-      lowest.push(axis);
-    } else if (UNMAPPED.some((u) => term.toLowerCase().includes(u))) {
+      if (!lowest.includes(axis)) lowest.push(axis);
+    } else if (!unmapped.includes(term)) {
       unmapped.push(term);
     }
   }
@@ -528,19 +614,30 @@ function parseDescriptorScores(text) {
 function htmlToText(html) {
   if (typeof html !== 'string') return '';
   return html
+    .replace(/<!--[\s\S]*?-->/g, ' ')
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
+    // A tag starts with a letter. The old /<[^>]+>/ also ran on plain pasted
+    // text, where "Farnesene: <1%" followed by any later ">" deleted the body.
+    .replace(/<\/?[a-zA-Z][^<>]*>/g, ' ')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
     .replace(/&nbsp;/g, ' ')
+    .replace(/&ndash;/g, '\u2013')
+    .replace(/&mdash;/g, '\u2014')
+    .replace(/&rsquo;|&lsquo;/g, "'")
+    .replace(/&rdquo;|&ldquo;|&quot;/g, '"')
+    .replace(/&hellip;/g, '\u2026')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
     .replace(/&amp;/g, '&')
-    .replace(/&#8217;|&rsquo;/g, "'")
     .replace(/\s+/g, ' ')
     .trim();
 }
 
 /**
  * Stat labels, each with the spellings different sources use. Brulosophy
- * prints "Alpha"; BeerMaverick prints "Alpha Acid (aA)"; vendors print
+ * prints "Alpha"; merchant spec sheets print "Alpha Acid (aA)" or
  * "Alpha Acids %". All must land in the same field.
  * @type {Array<{field: string, unit: string, re: string}>}
  */
@@ -564,13 +661,23 @@ function labelField(text) {
   return null;
 }
 
+/** Words an article prints where a figure is missing. Each maps to null, never to a neighbour's value. */
+const PLACEHOLDER = '(?:unknown|unavailable|n\\/a|not\\s+(?:reported|available|listed|published)|tbd|\u2014|\u2013)';
+/** Oil fractions the series sometimes lists that this tool does not track; a tracked label may not borrow their value. */
+const NON_STAT_LABELS = '(?:Linalool|Geraniol|Pinene|Selinene|Limonene|Nerol|Citral|Caryophyllene\\s+oxide)';
+
 /**
  * Pull the Hop Stats table out of a post.
  *
  * Works on the post's plain text, so it survives whether the stats are marked
  * up as a table, a list, or plain "Label: value" lines. Every value is returned
- * verbatim as printed (ranges, dashes and units intact) — never normalised into
- * a single number, because the source really does publish ranges.
+ * verbatim as printed (ranges, dashes, "<1%" and units intact) -- never
+ * normalised into a single number, because the source really does publish
+ * ranges. A cell printed "unknown" is null, never guessed.
+ *
+ * When the text has a "Hop Stats" heading, only what follows it is read, so a
+ * figure in the introduction ("alpha acids in the 15-17% range") cannot stand
+ * in for the lot's.
  *
  * @param {string} text
  * @returns {{alpha: string|null, beta: string|null, cohumulone: string|null, totalOil: string|null,
@@ -589,84 +696,83 @@ function parseHopStats(text) {
     // Drop a parenthetical symbol for the same stat, e.g. "Alpha Acid (\u03b1A) 9%".
     // Left in place it sits between a label and its value and blocks the match,
     // because the symbol is itself a label synonym.
-    .replace(/\(\s*(?:\u03b1A|\u03b2A|CoH|AA|BA)\s*\)/gi, ' ')
+    .replace(/\(\s*(?:\u03b1A|\u03b2A|CoH|AA|BA)\s*%?\s*\)/gi, ' ')
     .replace(/ {2,}/g, ' ');
+
+  const heading = flat.match(/\b(?:hop stats|hop statistics|vital stat(?:istic)?s)\b/i);
+  if (heading) {
+    readStats(out, flat.slice(heading.index + heading[0].length));
+    if (Object.values(out).some(Boolean)) return /** @type {any} */ (out);
+  }
+  readStats(out, flat);
+  return /** @type {any} */ (out);
+}
+
+/** Fill the null fields of `out` from `flat`. */
+function readStats(out, flat) {
   const labelAlt = STAT_LABELS.map((l) => l.re).join('|');
   const valueAtom =
-    '\\d[\\d.]*\\s*(?:[-–—]\\s*\\d[\\d.]*\\s*)?(?:%|(?:mL|ml)\\s*\\/\\s*100\\s*g)(?:\\s*of\\s+alpha\\s+acids)?';
-  const clean = (raw) => raw.replace(/\s*of\s+alpha\s+acids\s*$/i, '').replace(/\s+/g, ' ').trim();
+    '(?:[<>~\u2264\u2265]\\s*)?\\d[\\d.]*\\s*(?:[-\u2013\u2014]\\s*\\d[\\d.]*\\s*)?(?:%|(?:mL|ml)\\s*\\/\\s*100\\s*m?g)(?:\\s*of\\s+(?:alpha\\s+acids?|total\\s+oils?))?';
+  const cell = `(?:${valueAtom}|${PLACEHOLDER})`;
+  const clean = (raw) => raw.replace(/\s*of\s+(?:alpha\s+acids?|total\s+oils?)\s*$/i, '').replace(/\s+/g, ' ').trim();
+  const isPlaceholder = (raw) => new RegExp(`^${PLACEHOLDER}$`, 'i').test(raw.trim());
 
   // Column layout is checked FIRST and is unambiguous: a run of two or more
-  // labels with no values between them, then the matching run of values.
+  // labels with no values between them, then the matching run of cells.
   // Checking row-wise first would misread "Alpha | Beta | 10.5% | 4.5%" as
   // Beta=10.5%, silently attributing one stat's value to another.
   const sep = '[\\s|:,()]*';
   const runRe = new RegExp(
-    `((?:(?:${labelAlt})${sep}){2,})((?:${valueAtom})${sep}(?:(?:${valueAtom})${sep})+)`,
+    `((?:(?:${labelAlt})${sep}){2,})((?:${cell})${sep}(?:(?:${cell})${sep})+)`,
     'i',
   );
+  let rest = flat;
   const run = flat.match(runRe);
   if (run) {
     const labels = run[1].match(new RegExp(labelAlt, 'gi')) || [];
-    const values = run[2].match(new RegExp(valueAtom, 'gi')) || [];
+    const values = run[2].match(new RegExp(cell, 'gi')) || [];
     // Only trust a positional pairing when the two runs line up exactly.
     if (labels.length >= 2 && labels.length === values.length) {
       labels.forEach((label, i) => {
         const field = labelField(label);
-        if (field) out[field] = clean(values[i]);
+        if (field && out[field] == null && !isPlaceholder(values[i])) out[field] = clean(values[i]);
       });
-      return /** @type {any} */ (out);
+      // The table is spent; anything printed below it (an oil breakdown,
+      // usually) is still read row-wise.
+      rest = flat.replace(run[0], ' ');
     }
   }
 
   // Row-wise: label, optional filler, value. The filler may not cross another
-  // stat label or a digit, so a label with no value cannot borrow the next.
-  const filler = `(?:(?!${labelAlt})[^\\d|\\n]){0,24}`;
+  // stat label, a placeholder, an untracked oil label or a digit, so a label
+  // with no value cannot borrow the next one's.
+  const filler = `(?:(?!${labelAlt}|${PLACEHOLDER}|${NON_STAT_LABELS})[^\\d|\\n<>~]){0,24}`;
   for (const {field, unit, re} of STAT_LABELS) {
+    if (out[field] != null) continue;
     const value = unit === 'oil'
-      ? `(\\d[\\d.]*\\s*(?:[-–—]\\s*\\d[\\d.]*\\s*)?(?:mL|ml)\\s*\\/\\s*100\\s*g)`
-      : `(\\d[\\d.]*\\s*(?:[-–—]\\s*\\d[\\d.]*\\s*)?%)`;
-    const m = flat.match(new RegExp(`\\b${re}\\b[\\s:|()]*${filler}${value}`, 'i'));
+      ? `((?:[<>~\u2264\u2265]\\s*)?\\d[\\d.]*\\s*(?:[-\u2013\u2014]\\s*\\d[\\d.]*\\s*)?(?:mL|ml)\\s*\\/\\s*100\\s*m?g)`
+      : `((?:[<>~\u2264\u2265]\\s*)?\\d[\\d.]*\\s*(?:[-\u2013\u2014]\\s*\\d[\\d.]*\\s*)?%)`;
+    const m = rest.match(new RegExp(`\\b${re}\\b[\\s:|()]*${filler}${value}`, 'i'));
     if (m) out[field] = clean(m[1]);
   }
-
-  return /** @type {any} */ (out);
 }
 
 /**
- * Extract a BeerMaverick hop page: the four stats plus the beer styles and
- * flavour descriptors it publishes. Styles answer "what do I brew with this"
- * from a source that actually states it, rather than by inference.
- *
- * @param {string} text Plain text of the page.
- * @returns {{stats: object, styles: string[], profile: string[], purpose: string|null}}
+ * The number a printed chemistry figure stands for. "12.2 - 15.4%" is a
+ * range, "27%" a point; both come back as {low, high, mid} so a caller can
+ * tell them apart. Anything without a number -- "", "n/a", "unavailable" --
+ * is null, and a caller averaging figures must leave such a hop out rather
+ * than count it as zero.
+ * @param {string} s
+ * @returns {{low: number, high: number, mid: number}|null}
  */
-function parseBeerMaverickPage(text) {
-  const empty = {stats: parseHopStats(''), styles: [], profile: [], purpose: null};
-  if (typeof text !== 'string' || !text.trim()) return empty;
-  const prose = text.replace(/\s+/g, ' ');
-
-  const listAfter = (re) => {
-    const m = prose.match(re);
-    if (!m) return [];
-    return m[1]
-      .split(/,|&|\band\b/i)
-      .map((s) => s.replace(/[.*]/g, '').trim())
-      .filter((s) => s && s.length < 40);
-  };
-
-  const styles = listAfter(/beer styles that (?:make use of|use)[^:]*?(?:include|are)\s*:?\s*([^.]{3,200})\./i);
-  const profile = listAfter(/(?:flavor|flavour)\s*(?:&|and)?\s*aroma\s*(?:profile)?\s*:?\s*([^.]{3,240})\./i)
-    .concat(listAfter(/\bprofile\s*:\s*([^.]{3,240})(?:\.|$)/i));
-
-  const purposeMatch = prose.match(/\b(dual[-\s]?purpose|aroma|bittering)\b\s*hop/i);
-
-  return {
-    stats: parseHopStats(prose),
-    styles,
-    profile: [...new Set(profile.map((p) => p.toLowerCase()))],
-    purpose: purposeMatch ? purposeMatch[1].toLowerCase().replace(/\s+/g, '-') : null,
-  };
+function parseNumericRange(s) {
+  if (typeof s !== 'string') return null;
+  const m = s.match(/(\d+(?:\.\d+)?)\s*(?:[-\u2013\u2014]|to)\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const low = parseFloat(m[1] ?? m[3]);
+  const high = parseFloat(m[2] ?? m[3]);
+  return {low, high, mid: (low + high) / 2};
 }
 
 /**
@@ -678,37 +784,9 @@ function parseBeerMaverickPage(text) {
  */
 function parseProminentCharacteristics(text) {
   if (typeof text !== 'string' || !text.trim()) return [];
-  const prose = text.replace(/\s+/g, ' ');
-  const m = prose.match(/most prominent[^.]*?\bwere\b([^.]*)/i)
-    || prose.match(/(?:endorsed|noted|rated)[^.]*?\bas being the (?:most|strongest)[^.]*?\b([^.]*)/i);
-  if (!m) return [];
-  const segment = m[1].split(/\b(?:while|although|whereas|with)\b/i)[0];
-  return splitList(segment)
-    .map((t) => t.replace(/\s+/g, ' ').trim().toLowerCase())
-    .filter((t) => t && t.length < 40);
-}
-
-/**
- * Best-effort grab of the breeder's suggested application, which the series
- * reports in the intro ("marketed as ideal for late kettle and dry hop
- * additions"). Returns null rather than a guess when no such claim is present.
- *
- * @param {string} text
- * @returns {string|null}
- */
-function parseSuggestedUse(text) {
-  if (typeof text !== 'string') return null;
-  const prose = text.replace(/\s+/g, ' ');
-  const patterns = [
-    /(?:marketed|said|purported|reputed|known|touted)\s+(?:as\s+|to\s+be\s+)?(?:being\s+)?(?:ideal(?:ly)?\s+|well[-\s]suited\s+|good\s+|great\s+)?(?:for|in)\s+([^.]{10,200})\./i,
-    /commonly used (?:in|for) ([^.]{10,200})\./i,
-    /(?:works|pairs) well (?:in|with) ([^.]{10,200})\./i,
-  ];
-  for (const re of patterns) {
-    const m = prose.match(re);
-    if (m) return m[1].trim();
-  }
-  return null;
+  const list = prominentLists(normalizeProse(text))
+    .find((l) => l.terms.some((t) => termToAxis(t) || UNMAPPED.some((u) => t.toLowerCase().includes(u))));
+  return list ? list.terms.map((t) => t.toLowerCase()).filter((t) => t.length < 40) : [];
 }
 
 /* ---- Hop Chronicles index (generated from data/hop-chronicles/hop-chronicles.csv) ---- */
@@ -5937,12 +6015,17 @@ let pendingSeed = null;
 /** Find an indexed post by exact URL, then by variety/year/series from the slug. */
 function findChronicle(url){
   const clean = url.trim().replace(/[?#].*$/, "");
-  const direct = CHRONICLE_INDEX.find(e => e.url.replace(/\/$/, "") === clean.replace(/\/$/, ""));
+  // The same post arrives as http://, www., /amp/, upper-case or with a
+  // tracking query; none of that changes which article it is.
+  const canon = u => String(u || "").trim().toLowerCase()
+    .replace(/^https?:\/\/(www\.)?/, "").replace(/[?#].*$/, "").replace(/\/amp\/?$/, "").replace(/\/+$/, "");
+  const direct = CHRONICLE_INDEX.find(e => canon(e.url) === canon(clean));
   if(direct) return {entry: direct, how: "url"};
 
   const parsed = parseChronicleUrl(clean);
   if(!parsed) return null;
-  const norm = s => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  // Diacritics go before punctuation does, or "Mittelfrüh" and the slug's "mittelfruh" never meet.
+  const norm = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const match = CHRONICLE_INDEX.find(e =>
     norm(e.variety) === norm(parsed.variety) &&
     (!parsed.cropYear || e.cropYear === parsed.cropYear) &&
@@ -6038,9 +6121,10 @@ function sendChronicleToForm(parsed){
       chron:{cropYear:entry.cropYear, origin:entry.origin, series:entry.series, published:entry.published, notes:entry.notes}}
   };
 
-  setStatus("mgmtNote", scores
-    ? `Parsed from the post. Check every slider against the article's chart before saving — these are ranks translated to a scale.`
-    : `Metadata filled in for "${key}". Set the sliders from the post's results chart, then save.`);
+  const summary = parsed && parsed.summary ? parsed.summary + " " : "";
+  setStatus("mgmtNote", summary + (parsed && parsed.scores
+    ? `Check every slider against the article's chart before saving — these are ranks translated to a scale.`
+    : `Metadata filled in for "${key}". Set the sliders from the post's results chart, then save.`));
   document.querySelector('.tab-btn[data-tab="manage"]').click();
   window.scrollTo({top:0, behavior:"smooth"});
 }
@@ -6075,25 +6159,40 @@ function applyParsedText(text, statusId){
   const {scores, prominent, lowest, unmapped} = parseDescriptorScores(plain);
   const stats = parseHopStats(plain);
   const aa = stats.alpha || parseAlphaAcid(plain);
+  const anyStat = Object.values(stats).some(Boolean);
 
   const preview = document.getElementById("chronPreview");
   preview.className = "preview";
   preview.textContent = plain.slice(0, 700) + (plain.length > 700 ? "…" : "");
 
-  if(!scores){
-    setStatus(statusId, "Could not find the results sentence (\"The most prominent … characteristics … were …\"). Nothing was guessed. Send the metadata to the form and set the sliders from the post's chart yourself.", "err");
+  if(!scores && !anyStat){
+    setStatus(statusId, "Could not find the results sentence (\"The most prominent … characteristics … were …\") or a Hop Stats block. Nothing was guessed. Send the metadata to the form and set the sliders from the post's chart yourself.", "err");
     return null;
   }
-  const bits = [`Ranked: ${prominent.join(", ")}.`];
+
+  // The text has to be about the hop that was looked up, or one post's
+  // ratings land on another hop's entry without anyone noticing.
+  const variety = pendingChronicle && pendingChronicle.entry.variety;
+  const fold = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if(variety && !fold(plain).includes(fold(variety)) &&
+     !confirm(`The pasted text never mentions "${variety}". Is this the right post?\n\nOK applies it to "${pendingChronicle.key}" anyway; Cancel applies nothing.`)){
+    setStatus(statusId, `Nothing applied — the text does not mention "${variety}".`, "err");
+    return null;
+  }
+
+  const bits = [];
+  if(scores) bits.push(`Ranked: ${prominent.join(", ")}.`);
+  else bits.push("No results sentence found, so the sliders were left alone — set them from the post's chart.");
   if(lowest.length) bits.push(`Lowest rated: ${lowest.join(", ")}.`);
   if(unmapped.length) bits.push(`No axis for: ${unmapped.join(", ")} — recorded here only, not folded into another descriptor.`);
   const statBits = [["Alpha", stats.alpha], ["Beta", stats.beta], ["Cohumulone", stats.cohumulone], ["Total oil", stats.totalOil]]
     .filter(([, v]) => v).map(([k, v]) => `${k} ${v}`);
   if(statBits.length) bits.push("Hop stats — " + statBits.join(", ") + ".");
   else if(aa) bits.push(`Alpha acid: ${aa}.`);
-  setStatus(statusId, bits.join(" ") + " Review before saving.", "ok");
+  const summary = bits.join(" ");
+  setStatus(statusId, summary + " Review before saving.", scores ? "ok" : "");
 
-  sendChronicleToForm({scores, aa, stats});
+  sendChronicleToForm({scores, aa, stats, summary});
   return scores;
 }
 
