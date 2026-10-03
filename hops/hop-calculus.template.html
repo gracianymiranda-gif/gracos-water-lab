@@ -222,6 +222,7 @@
       <button type="button" class="pill-btn" data-source="manual" aria-pressed="false">Yours</button>
     </div>
     <div class="hop-list" id="hopList"></div>
+    <p class="note" style="margin-top:6px;">An entry named like <em>Amarillo (2016 PA)</em> is one Hop Chronicles article: the 2016 crop, tested in the Pale Ale series (PL: Pale Lager). A bare name is a composite — a general character for the variety, not one article.</p>
     <div id="libraryCounts" class="note" style="margin-top:8px;" aria-live="polite"></div>
     <div style="margin-top:12px;">
       <h2 style="margin-bottom:6px;">Selected (max 5)</h2>
@@ -556,7 +557,12 @@ function loadLibrary(){
   const merged = {};
   for(const [name, h] of Object.entries(defaults)) merged[name] = h;
 
-  let kept = 0;
+  let kept = 0, replaced = 0;
+  // The first version of this page stored the whole library with no record
+  // of what the reader had changed, so an edit to a shipped hop from then
+  // cannot be told from the old shipped data and is not carried forward.
+  // The reader is told that, instead of being told their edits were kept.
+  const legacyShape = !(envelope && envelope.hops);
   for(const [name, h] of Object.entries(stored)){
     if(isValidEntry(h)) continue;            // drop anything malformed
     const entry = normalizeEntry(h);
@@ -564,6 +570,7 @@ function loadLibrary(){
     // A verified entry is knowledge the reader supplied; a shipped estimate
     // must never overwrite it.
     if(entry.touched || entry.verified || !defaults[name]){ merged[name] = entry; kept++; }
+    else if(legacyShape && JSON.stringify([entry.aa, entry.d, entry.styles]) !== JSON.stringify([defaults[name].aa, defaults[name].d, defaults[name].styles])) replaced++;
   }
   // Tombstones are state too. Applying them here without keeping them meant
   // the next save wrote an empty list, and every deleted shipped hop was back
@@ -574,9 +581,10 @@ function loadLibrary(){
   if(storedVersion !== DATA_VERSION){
     const gained = Object.keys(merged).filter(n => Array.isArray(merged[n].d)).length
       - Object.keys(stored).filter(n => Array.isArray((stored[n]||{}).d)).length;
-    upgradeNote = gained > 0
-      ? `Library updated: ${gained} more hops now have a profile.` +
-        (kept ? ` Your ${kept} edited ${kept === 1 ? "entry was" : "entries were"} kept.` : "")
+    upgradeNote = gained > 0 || replaced > 0
+      ? (gained > 0 ? `Library updated: ${gained} more hops now have a profile.` : "Library updated.") +
+        (kept ? ` Your ${kept} ${kept === 1 ? "entry was" : "entries were"} kept.` : "") +
+        (replaced ? ` ${replaced} ${replaced === 1 ? "entry" : "entries"} from the first version of this page ${replaced === 1 ? "was" : "were"} replaced by the current data — that version did not record which hops you had edited. Re-enter any edits under Manage Hops; they will be kept from now on.` : "")
       : null;
   }
   return merged;
@@ -686,7 +694,8 @@ function renderHopList(filter=""){
     item.title = [articleLine(h), h.chron && h.chron.notes].filter(Boolean).join("\n");
     item.appendChild(el("span", name));
     const meta = el("span", null, "hop-meta");
-    meta.appendChild(el("span", SRC_LABEL[h.src] === "from post" ? "post" : (SRC_LABEL[h.src] || "yours"), "badge tier" + (h.src === "chronicle" ? " parsed" : "")));
+    // 138 of 158 rows are posts; badging the exception reads, badging every row does not.
+    if(h.src !== "chronicle") meta.appendChild(el("span", SRC_LABEL[h.src] || "yours", "badge tier"));
     if(axisIdx >= 0 && scored(name)) meta.appendChild(el("span", `${DESCRIPTORS[axisIdx]} ${h.d[axisIdx]} \u00b7 `));
     if(verified(name)){
       const v = el("span", "\u2713", "badge verified");

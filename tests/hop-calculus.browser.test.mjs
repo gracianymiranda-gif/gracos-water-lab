@@ -372,7 +372,8 @@ function browser() {
   ok("sort: alpha descending puts a high-alpha hop first", /AA (1[6-9]|2\d)/.test(first), first);
   p.$("#hopSort").value = "axis:8"; p.ev('renderHopList("")');          // Spicy/Noble
   ok("sort: by an axis shows that axis's score", /Spicy\/Noble 9/.test(p.$("#hopList .hop-item").textContent));
-  ok("list: each row names its tier", p.$("#hopList .hop-item .badge.tier") !== null);
+  eq("list: only the exceptions carry a tier badge", p.doc.querySelectorAll("#hopList .badge.tier").length, 20);
+  ok("list: the suffix is explained once", /2016 crop, tested in the Pale Ale series/.test(p.$(".layout .panel").textContent));
   ok("list: the article line is the tooltip", /crop/.test(p.$('#hopList .hop-item[title*="tested in"]').title));
   // Browse table on the Hop Chronicles tab.
   eq("browse: every article listed", p.doc.querySelectorAll("#browseTable tbody tr").length, 138);
@@ -418,6 +419,17 @@ function browser() {
     beforeParse(win) { win.HTMLCanvasElement.prototype.getContext = () => null; } });
   eq("link: names in the hash are selected, unknown ones dropped", dom2.window.eval("selected.join()"), "Simcoe,Galaxy");
   eq("link: parts carried", dom2.window.eval('partsOf("Galaxy")'), 2);
+}
+
+// ---- Set Q: the first version's storage ----
+{
+  const b = browser();
+  b.setStore({ hopCalculusLibrary_v1: JSON.stringify({ "Citra": { aa: "15%", d: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1], styles: ["X"] }, "Legacy Hop": { aa: "7%", d: null, styles: ["Mine"] } }) });
+  const p = b.boot();
+  eq("v1: the reader's own hop is kept", p.ev('Boolean(HOPS["Legacy Hop"])'), true);
+  eq("v1: an edit to a shipped hop is not told apart from old data, so the current data wins", p.ev('HOPS["Citra"].aa'), "11-14%");
+  ok("v1: and the banner says so instead of claiming it was kept", /1 entry from the first version of this page was replaced/.test(p.$("#libraryCounts").textContent));
+  ok("v1: without claiming an edited entry was kept", !/edited (?:entry|entries)/.test(p.$("#libraryCounts").textContent));
 }
 
 console.log(`\n${pass} passed, ${fail} failed (${pass + fail} total)`);
