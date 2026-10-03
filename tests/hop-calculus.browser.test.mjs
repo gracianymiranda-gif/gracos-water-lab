@@ -388,6 +388,15 @@ function browser() {
   // Characteristic Search ties.
   p.ev('activeDescs = new Set(["Citrus"]); renderTargetResults()');
   ok("search: a tie is named, not passed off as a ranking", /hops share the top score of 9\.0/.test(p.$("#targetResults .tie-note").textContent));
+  eq("search: within a tie the order is alphabetical, not a made-up key", p.$("#targetResults table tr:nth-child(2) td").textContent, "007 Golden Hop (2016 PA)");
+  ok("search: no 'rest of profile' column", ![...p.doc.querySelectorAll("#targetResults th")].some((th) => /Rest of profile/.test(th.textContent)));
+  ok("search: a big tie suggests narrowing", /Pick two or three descriptors/.test(p.$("#targetResults .tie-note").textContent));
+  p.ev('activeDescs = new Set(["Spicy/Noble"]); renderTargetResults()');
+  ok("search: a small tie is named without the nudge", /hops share the top score/.test(p.$("#targetResults .tie-note").textContent) && !/Pick two or three/.test(p.$("#targetResults .tie-note").textContent));
+  p.ev('activeDescs = new Set(["Citrus", "Pine/Resin", "Dank"]); renderTargetResults()');
+  eq("search: three descriptors separate the field", p.$("#targetResults .tie-note"), null);
+  eq("search: and the leader is a real 9.0 across all three", p.$("#targetResults table tr:nth-child(2) td:nth-child(2)").textContent, "9.0/10");
+  p.ev('activeDescs = new Set(["Citrus"]); renderTargetResults()');
   eq("search: fifteen shown, then a button for the rest", p.doc.querySelectorAll("#targetResults table tr").length, 16);
   p.$("#targetResults .link-btn").click();
   ok("search: show all shows all", p.doc.querySelectorAll("#targetResults table tr").length > 100);

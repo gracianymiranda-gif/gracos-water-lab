@@ -261,7 +261,7 @@
         <h2>Pick Descriptors You Want</h2>
         <div id="descToggles"></div>
         <div id="targetResults" class="table-scroll" style="margin-top:14px;"></div>
-        <p class="note">Only scored entries can be ranked; an entry saved as unscored is left out until it has a profile.</p>
+        <p class="note">Hop Chronicles scores come from each post's ranked "most prominent" list, so a 9 means "the top descriptor in that tasting" and many hops share it; combining two or three descriptors is what separates them. Only scored entries can be ranked; an entry saved as unscored is left out until it has a profile.</p>
       </div>
     </div>
 
@@ -6674,6 +6674,7 @@ function renderDescToggles(){
     btn.setAttribute("aria-pressed", activeDescs.has(d) ? "true" : "false");
     btn.onclick = () => {
       activeDescs.has(d) ? activeDescs.delete(d) : activeDescs.add(d);
+      showAllTargets = false;             // the 15-row cap returns for a new search
       renderDescToggles();
       renderTargetResults();
     };
@@ -6689,19 +6690,20 @@ function renderTargetResults(){
     return;
   }
   const idxs = [...activeDescs].map(d => DESCRIPTORS.indexOf(d));
-  const rest = DESCRIPTORS.map((_, i) => i).filter(i => !idxs.includes(i));
-  // The post-derived scale saturates: a hop's top descriptor is always 9, so
-  // over a hundred entries tie on "Citrus". Within a tier, a hop whose other
-  // axes stay low is the more single-minded choice, so that breaks the tie,
-  // then the name -- and the tie is named rather than passed off as a ranking.
+  // The post-derived scale saturates: a post's top descriptor is always 9, so
+  // 115 of 158 entries tie on "Citrus". No secondary key in the data ranks a
+  // tie honestly -- the mean of the other axes rewards hops whose post named
+  // few descriptors (bittering hops rose to the top of the citrus list) and
+  // sorts composites first because they use 1s where posts floor at 2. So a
+  // tie is ordered by name and named as a tie; picking two or three
+  // descriptors is what actually separates the field.
   const all = Object.entries(HOPS)
     .filter(([name]) => scored(name))
     .map(([name,h]) => ({
       name, styles: h.styles, src: h.src,
       score: idxs.reduce((s,i) => s + h.d[i], 0) / idxs.length,
-      focus: rest.length ? rest.reduce((s,i) => s + h.d[i], 0) / rest.length : 0,
     }))
-    .sort((a,b) => b.score - a.score || a.focus - b.focus || a.name.localeCompare(b.name));
+    .sort((a,b) => b.score - a.score || a.name.localeCompare(b.name));
 
   if(!all.length){
     box.appendChild(el("p", "No scored entries yet.", "note"));
@@ -6712,18 +6714,18 @@ function renderTargetResults(){
   const limit = showAllTargets ? all.length : 15;
   const ranked = all.slice(0, limit);
   if(tied > 1){
-    box.appendChild(el("p", `${tied} hops share the top score of ${top.toFixed(1)}. Within a tier the order is by how low the rest of the profile stays, then by name; it is not a ranking of intensity.`, "tie-note"));
+    box.appendChild(el("p", `${tied} hops share the top score of ${top.toFixed(1)}/10 on ${[...activeDescs].join(" + ")}. They are listed alphabetically, not ranked against each other — each was a top descriptor in its own tasting.`
+      + (tied > 15 ? " Pick two or three descriptors to narrow this down." : ""), "tie-note"));
   }
 
   const table = document.createElement("table");
   const head = document.createElement("tr");
-  ["Hop","Match score","Rest of profile","Source","Typical styles",""].forEach(h => head.appendChild(el("th", h)));
+  ["Hop","Match score","Source","Typical styles",""].forEach(h => head.appendChild(el("th", h)));
   table.appendChild(head);
   ranked.forEach(s => {
     const tr = document.createElement("tr");
     tr.appendChild(el("td", s.name));
     tr.appendChild(el("td", `${s.score.toFixed(1)}/10`));
-    tr.appendChild(el("td", rest.length ? `${s.focus.toFixed(1)}/10` : "\u2014"));
     const srcTd = document.createElement("td");
     srcTd.appendChild(el("span", SRC_LABEL[s.src] || "yours",
       "badge" + (s.src === "chronicle" ? " parsed" : s.src === "reported" ? " unscored" : "")));
