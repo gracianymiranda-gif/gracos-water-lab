@@ -70,6 +70,34 @@
   .pill-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
   .pill-btn.active{background:var(--accent); color:#1a1400; border-color:var(--accent); font-weight:600;}
   td.wrap{white-space:normal; font-size:0.78rem; color:var(--muted);}
+  th.rowhead{color:var(--text); font-weight:500; white-space:nowrap;}
+  caption.sr-only, .sr-only{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
+  .search-row{display:flex; gap:8px; align-items:flex-start;}
+  .search-row input{flex:1;}
+  .search-row select{width:auto; flex:none; max-width:46%;}
+  .badge.tier{font-size:0.62rem; padding:0 5px; margin-right:4px;}
+  .nearest{margin-top:12px; font-size:0.82rem;}
+  .nearest p{margin:6px 0 4px; color:var(--muted);}
+  .nearest button{margin:2px 4px 2px 0;}
+  .link-btn{background:none; border:1px solid var(--border-ui); color:var(--muted); border-radius:6px; padding:5px 10px; font-size:0.76rem; cursor:pointer; font-family:inherit; margin:6px 6px 0 0;}
+  .link-btn:hover, .link-btn:focus-visible{color:var(--accent); border-color:var(--accent); outline:none;}
+  .mini-status{font-size:0.76rem; color:var(--accent2); margin-left:4px;}
+  .browse-table td, .browse-table th{font-size:0.8rem; vertical-align:top;}
+  .browse-table td.wrap{max-width:420px;}
+  .browse-scroll{max-height:380px; overflow:auto; border:1px solid var(--border); border-radius:6px;}
+  .browse-table{margin-top:0;}
+  .browse-table thead th{position:sticky; top:0; background:var(--panel);}
+  .tie-note{color:var(--muted); font-size:0.78rem; margin:0 0 8px;}
+  @media print{
+    body{background:#fff; color:#000; padding:0;}
+    .tabs, .layout > .panel:first-child, .back-link, body > p.note, .tabpanel:not(.active), .ratio-ctrl, .chip-remove, .link-btn, .nearest button{display:none !important;}
+    .layout{display:block;}
+    .panel{background:#fff; border-color:#999; color:#000;}
+    .panel h2, th, .note, td.wrap{color:#000;}
+    canvas{background:#fff; border:1px solid #999;}
+    th, td{border-bottom:1px solid #bbb;}
+    .blend-col{background:#eee !important;}
+  }
   select, input[type=text], input[type=search], input[type=number], textarea{
     width:100%; padding:8px; background:#241f1a; border:1px solid var(--border-ui); color:var(--text);
     border-radius:6px; font-size:0.86rem; margin-bottom:10px; font-family:inherit;
@@ -160,7 +188,13 @@
 <div class="layout">
   <div class="panel">
     <h2>Hop Library</h2>
-    <input type="search" id="hopSearch" placeholder="Search hop variety..." aria-label="Search hop variety" autocomplete="off">
+    <div class="search-row">
+      <input type="search" id="hopSearch" placeholder="Search name, origin, style, notes…" aria-label="Search hops by name, origin, style or background" autocomplete="off">
+      <select id="hopSort" aria-label="Sort the library">
+        <option value="name">Name</option>
+        <option value="aa">Alpha acid ↓</option>
+      </select>
+    </div>
     <label style="margin-bottom:8px;" id="scoredOnlyLabel">
       <input type="checkbox" id="scoredOnly" style="width:auto; margin:0 6px 0 0; vertical-align:-1px;">
       Scored entries only
@@ -197,7 +231,13 @@
         <canvas id="radar" width="480" height="480" role="img" aria-describedby="compareTable" aria-label="Flavour and aroma radar for the selected hops; the table below holds the same numbers">Flavour radar — the same scores are in the table below.</canvas>
         <div id="radarLegend" class="radar-legend"></div>
         <div class="table-scroll"><table id="compareTable"></table></div>
+        <div id="compareTools" class="hidden">
+          <button type="button" class="link-btn" id="copyLinkBtn">Copy link to this comparison</button>
+          <button type="button" class="link-btn" id="copyTextBtn">Copy table as text</button>
+          <span id="copyStatus" class="mini-status" role="status" aria-live="polite"></span>
+        </div>
         <div id="blendNote" class="note"></div>
+        <div id="nearest" class="nearest"></div>
       </div>
     </div>
 
@@ -221,6 +261,13 @@
 
     <div class="tabpanel" id="tab-chronicles" role="tabpanel" aria-labelledby="tabbtn-chronicles">
       <div class="panel">
+        <h2>Browse the <!-- INJECT:COUNT --> articles</h2>
+        <input type="search" id="browseSearch" placeholder="Filter by hop, origin, year, series or background…" aria-label="Filter the article index" autocomplete="off">
+        <div class="browse-scroll"><table class="browse-table" id="browseTable"></table></div>
+        <p class="note" id="browseCount"></p>
+      </div>
+
+      <div class="panel" style="margin-top:16px;">
         <h2>Pull a Hop from The Hop Chronicles</h2>
         <label for="chronUrl">Paste a Hop Chronicles post URL</label>
         <input type="text" id="chronUrl" placeholder="https://brulosophy.com/2025/10/13/the-hop-chronicles-harlequin-2023-pale-ale/">
@@ -312,6 +359,7 @@
 
       <div class="panel" style="margin-top:16px;">
         <h2 id="mgmtHeading">Your Hop Library</h2>
+        <input type="search" id="mgmtSearch" placeholder="Filter by name…" aria-label="Filter your library by name" autocomplete="off">
         <div id="mgmtList" class="mgmt-list"></div>
       </div>
 
@@ -571,6 +619,19 @@ const colors = ["#e6a817","#7fae42","#5aa9e6","#e65f5f","#c07fe6"];
 /** Line pattern per selected hop; the blend keeps [6,4] in white for itself. */
 const dashes = [[], [2,3], [10,4,2,4], [1,3], [8,3,1,3]];
 
+/** "2016 crop · USA · tested in Pale Ale · published 2017-11-02", or "" for a hop with no article. */
+function articleLine(h){
+  const c = h && h.chron;
+  if(!c) return "";
+  return [c.cropYear ? `${c.cropYear} crop` : "crop year not stated", c.origin, c.series ? `tested in ${c.series}` : "", c.published ? `published ${c.published}` : ""]
+    .filter(Boolean).join(" \u00b7 ");
+}
+/** Midpoint of a printed alpha range for sorting; hops without one sort last. */
+const alphaMid = (h) => { const r = parseNumericRange(h && h.aa); return r ? r.mid : -1; };
+/** Everything a library search should look through for one entry. */
+const searchText = (name, h) => [name, h.chron && h.chron.origin, h.chron && h.chron.notes, ...(h.styles || [])]
+  .filter(Boolean).join(" ").toLowerCase();
+
 /** Text nodes only — hop names and styles are user/imported data. */
 function el(tag, text, className){
   const n = document.createElement(tag);
@@ -595,22 +656,33 @@ function renderHopList(filter=""){
   const onlyScored = document.getElementById("scoredOnly").checked;
   const onlyVerified = document.getElementById("verifiedOnly").checked;
   list.innerHTML = "";
+  const q = filter.trim().toLowerCase();
+  const sortBy = document.getElementById("hopSort").value;
+  const axisIdx = sortBy.startsWith("axis:") ? Number(sortBy.slice(5)) : -1;
   const names = Object.keys(HOPS)
-    .filter(n => n.toLowerCase().includes(filter.toLowerCase()))
+    .filter(n => !q || searchText(n, HOPS[n]).includes(q))
     .filter(n => !onlyScored || scored(n))
     .filter(n => !onlyVerified || verified(n))
     // The series is the beer the hop was tested in, not a style the hop suits,
     // so it is a filter on the article rather than a tag on the hop.
     .filter(n => activeSeries === "all" || (HOPS[n].chron && HOPS[n].chron.series === activeSeries))
     .filter(n => activeSource === "all" || sourceGroup(HOPS[n]) === activeSource)
-    .sort();
+    .sort((a, b) => {
+      if(sortBy === "aa"){ const d = alphaMid(HOPS[b]) - alphaMid(HOPS[a]); if(d) return d; }
+      if(axisIdx >= 0){ const va = scored(a) ? HOPS[a].d[axisIdx] : -1, vb = scored(b) ? HOPS[b].d[axisIdx] : -1; if(vb !== va) return vb - va; }
+      return a.localeCompare(b);
+    });
 
   names.forEach(name => {
+    const h = HOPS[name];
     const item = el("button", null, "hop-item" + (selected.includes(name) ? " selected" : "") + (scored(name) ? "" : " unscored"));
     item.type = "button";
     item.setAttribute("aria-pressed", selected.includes(name) ? "true" : "false");
+    item.title = [articleLine(h), h.chron && h.chron.notes].filter(Boolean).join("\n");
     item.appendChild(el("span", name));
     const meta = el("span", null, "hop-meta");
+    meta.appendChild(el("span", SRC_LABEL[h.src] === "from post" ? "post" : (SRC_LABEL[h.src] || "yours"), "badge tier" + (h.src === "chronicle" ? " parsed" : "")));
+    if(axisIdx >= 0 && scored(name)) meta.appendChild(el("span", `${DESCRIPTORS[axisIdx]} ${h.d[axisIdx]} \u00b7 `));
     if(verified(name)){
       const v = el("span", "\u2713", "badge verified");
       v.setAttribute("aria-label", "verified");
@@ -848,6 +920,9 @@ function renderTable(){
     return `~${f.mid.toFixed(digits)}${unit}` + (f.n < f.of ? ` (${f.n} of ${f.of})` : "");
   };
 
+  const caption = el("caption", `Descriptor scores and chemistry for ${selected.join(", ")}`, "sr-only");
+  table.appendChild(caption);
+  const thead = document.createElement("thead");
   const head = document.createElement("tr");
   head.appendChild(el("th", "Descriptor"));
   if(blend) head.appendChild(el("th", "Blend", "blend-col"));
@@ -856,7 +931,9 @@ function renderTable(){
     th.style.color = colors[i];
     head.appendChild(th);
   });
-  table.appendChild(head);
+  [...head.children].forEach(th => th.setAttribute("scope", "col"));
+  thead.appendChild(head);
+  table.appendChild(thead);
 
   DESCRIPTORS.forEach((desc,i) => {
     const tr = document.createElement("tr");
@@ -950,6 +1027,28 @@ function renderTable(){
   });
   table.appendChild(verRow);
 
+  // Which article, and what it said about the variety.
+  if(selected.some(n => (HOPS[n] || {}).chron)){
+    const artRow = document.createElement("tr");
+    artRow.appendChild(el("td", "Article"));
+    if(blend) artRow.appendChild(blendCell(null));
+    selected.forEach(n => {
+      const line = articleLine(HOPS[n]);
+      artRow.appendChild(el("td", line || "\u2014", line ? "wrap" : ""));
+    });
+    table.appendChild(artRow);
+  }
+  if(selected.some(n => (HOPS[n] || {}).chron && HOPS[n].chron.notes)){
+    const bgRow = document.createElement("tr");
+    bgRow.appendChild(el("td", "Background"));
+    if(blend) bgRow.appendChild(blendCell(null));
+    selected.forEach(n => {
+      const note = (HOPS[n] || {}).chron && HOPS[n].chron.notes;
+      bgRow.appendChild(el("td", note || "\u2014", note ? "wrap" : ""));
+    });
+    table.appendChild(bgRow);
+  }
+
   const srcRow = document.createElement("tr");
   srcRow.appendChild(el("td", "Profile source"));
   if(blend) srcRow.appendChild(blendCell(null));
@@ -971,6 +1070,158 @@ function renderTable(){
     srcRow.appendChild(td);
   });
   table.appendChild(srcRow);
+
+  // Row labels are headers for their row.
+  [...table.querySelectorAll("tr")].slice(1).forEach(tr => {
+    const first = tr.firstElementChild;
+    if(!first || first.tagName !== "TD") return;
+    const th = el("th", first.textContent, "rowhead");
+    th.setAttribute("scope", "row");
+    tr.replaceChild(th, first);
+  });
+  document.getElementById("compareTools").classList.toggle("hidden", selected.length === 0);
+}
+
+/**
+ * The five scored entries whose profiles sit closest to each selected hop --
+ * the "what can I use instead" question. Plain Euclidean distance over the
+ * ten axes; ties broken by how close the alpha ranges are. Another crop or
+ * article of the same variety is left out, since that is the same hop.
+ */
+function renderNearest(){
+  const box = document.getElementById("nearest");
+  box.innerHTML = "";
+  const base = (n) => n.replace(/\s*\(.*\)\s*$/, "").toLowerCase();
+  selected.filter(scored).forEach(name => {
+    const me = HOPS[name];
+    const ranked = Object.keys(HOPS)
+      .filter(n => n !== name && scored(n) && base(n) !== base(name))
+      .map(n => {
+        const d = Math.sqrt(DESCRIPTORS.reduce((s, _, i) => s + (HOPS[n].d[i] - me.d[i]) ** 2, 0));
+        const da = Math.abs(alphaMid(HOPS[n]) - alphaMid(me));
+        return {n, d, da};
+      })
+      .sort((a, b) => a.d - b.d || a.da - b.da || a.n.localeCompare(b.n))
+      .slice(0, 5);
+    if(!ranked.length) return;
+    const p = el("p");
+    p.appendChild(el("strong", `Closest profiles to ${name}: `));
+    box.appendChild(p);
+    ranked.forEach(r => {
+      const b = el("button", `${r.n} (d ${r.d.toFixed(1)}, AA ${HOPS[r.n].aa})`, "small-btn");
+      b.type = "button";
+      b.title = selected.includes(r.n) ? "Already in the comparison" : "Add to the comparison";
+      b.disabled = selected.includes(r.n);
+      b.onclick = () => toggleHop(r.n);
+      box.appendChild(b);
+    });
+  });
+  if(box.children.length){
+    box.appendChild(el("p", "Distance is over the ten descriptor axes; 0 is an identical profile, 10 is far apart. A composite and a post-derived profile are on different scales, so a short distance across that line means less.", "note"));
+  }
+}
+
+/**
+ * The selection lives in the URL (#compare=Citra:3,Mosaic) so a comparison can
+ * be bookmarked or sent, and in localStorage so it survives a reload here.
+ */
+function selectionHash(){
+  return selected.length
+    ? "#compare=" + selected.map(n => encodeURIComponent(n) + (partsOf(n) > 1 ? ":" + partsOf(n) : "")).join(",")
+    : "";
+}
+function rememberSelection(){
+  try{ localStorage.setItem("hopCalculusSelected", JSON.stringify({selected, parts: hopParts})); }catch(e){}
+  try{ history.replaceState(null, "", selectionHash() || location.pathname + location.search); }catch(e){}
+}
+function restoreSelection(){
+  let names = [], parts = {};
+  const m = location.hash.match(/^#compare=(.+)$/);
+  if(m){
+    m[1].split(",").forEach(tok => {
+      const [raw, p] = tok.split(":");
+      const n = decodeURIComponent(raw);
+      names.push(n);
+      if(p) parts[n] = Number(p);
+    });
+  }else{
+    try{
+      const saved = JSON.parse(localStorage.getItem("hopCalculusSelected") || "null");
+      if(saved && Array.isArray(saved.selected)){ names = saved.selected; parts = saved.parts || {}; }
+    }catch(e){}
+  }
+  // Only hops that exist and are scored can be compared; anything else is dropped quietly.
+  selected = [...new Set(names)].filter(n => HOPS[n] && scored(n)).slice(0, 5);
+  hopParts = {};
+  selected.forEach(n => { hopParts[n] = Math.max(1, Math.min(20, Number(parts[n]) || 1)); });
+}
+
+/** The compare table as tab-separated text, for a brew log or a message. */
+function compareAsText(){
+  return [...document.querySelectorAll("#compareTable tr")]
+    .map(tr => [...tr.children].map(c => c.textContent.replace(/\s+/g, " ").trim()).join("\t"))
+    .join("\n");
+}
+async function copyToClipboard(text, done){
+  const status = document.getElementById("copyStatus");
+  try{
+    await navigator.clipboard.writeText(text);
+    status.textContent = done;
+  }catch(e){
+    // No clipboard permission (or no secure context): show it for manual copying.
+    window.prompt("Copy this:", text);
+    status.textContent = "";
+  }
+  setTimeout(() => { status.textContent = ""; }, 2500);
+}
+
+/** The whole article index as a table the reader can filter and act on. */
+function renderBrowse(){
+  const q = document.getElementById("browseSearch").value.trim().toLowerCase();
+  const table = document.getElementById("browseTable");
+  table.innerHTML = "";
+  const rows = CHRONICLE_INDEX
+    .filter(e => !q || [e.variety, e.cropYear, e.origin, e.series, e.published, e.notes].join(" ").toLowerCase().includes(q))
+    .sort((a, b) => (b.published || "").localeCompare(a.published || "") || a.variety.localeCompare(b.variety));
+  const thead = document.createElement("thead");
+  const head = document.createElement("tr");
+  ["Hop", "Crop", "Origin", "Tested in", "Published", "Background", ""].forEach(t => { const th = el("th", t); th.setAttribute("scope", "col"); head.appendChild(th); });
+  thead.appendChild(head);
+  table.appendChild(thead);
+  const tbody = document.createElement("tbody");
+  rows.forEach(e => {
+    const key = chronicleKey(e);
+    const tr = document.createElement("tr");
+    const nameTh = el("th", e.variety, "rowhead");
+    nameTh.setAttribute("scope", "row");
+    tr.appendChild(nameTh);
+    tr.appendChild(el("td", e.cropYear || "\u2014"));
+    tr.appendChild(el("td", e.origin || "\u2014"));
+    tr.appendChild(el("td", e.series || "\u2014"));
+    tr.appendChild(el("td", e.published || "\u2014"));
+    tr.appendChild(el("td", e.notes || "\u2014", e.notes ? "wrap" : ""));
+    const act = document.createElement("td");
+    act.style.whiteSpace = "nowrap";
+    const open = el("a", "post \u2197", "src-link");
+    open.href = e.url; open.target = "_blank"; open.rel = "noopener noreferrer";
+    act.appendChild(open);
+    const cmp = el("button", selected.includes(key) ? "In comparison" : "Compare", "small-btn");
+    cmp.type = "button";
+    cmp.disabled = selected.includes(key) || !scored(key);
+    cmp.title = scored(key) ? `Add ${key} to the comparison` : `${key} has no profile yet`;
+    cmp.onclick = () => toggleHop(key);
+    act.appendChild(cmp);
+    const look = el("button", "Look up", "small-btn");
+    look.type = "button";
+    look.title = "Fill the URL field below and look this post up";
+    look.onclick = () => { document.getElementById("chronUrl").value = e.url; lookupChronicle(); document.getElementById("chronUrl").scrollIntoView({block: "center"}); };
+    act.appendChild(look);
+    tr.appendChild(act);
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  document.getElementById("browseCount").textContent =
+    `${rows.length} of ${CHRONICLE_INDEX.length} articles` + (q ? ` match "${q}"` : "") + ". Newest first.";
 }
 
 function renderBlend(){
@@ -1008,14 +1259,18 @@ function renderBlend(){
 function renderStyleSelect(){
   const sel = document.getElementById("styleSelect");
   const current = sel.value;
+  const counts = {};
+  Object.values(HOPS).forEach(h => (h.styles || []).forEach(s => { counts[s] = (counts[s] || 0) + 1; }));
   const styles = getStyles();
   sel.innerHTML = "";
   styles.forEach(s => {
-    const opt = el("option", s);
+    const opt = el("option", `${s} (${counts[s]})`);
     opt.value = s;
     sel.appendChild(opt);
   });
+  // Default to the most-tagged style rather than whatever sorts first.
   if(styles.includes(current)) sel.value = current;
+  else if(styles.length) sel.value = styles.slice().sort((a, b) => counts[b] - counts[a] || a.localeCompare(b))[0];
   renderStyleResults();
 }
 
@@ -1070,25 +1325,41 @@ function renderTargetResults(){
     return;
   }
   const idxs = [...activeDescs].map(d => DESCRIPTORS.indexOf(d));
-  const ranked = Object.entries(HOPS)
+  const rest = DESCRIPTORS.map((_, i) => i).filter(i => !idxs.includes(i));
+  // The post-derived scale saturates: a hop's top descriptor is always 9, so
+  // over a hundred entries tie on "Citrus". Within a tier, a hop whose other
+  // axes stay low is the more single-minded choice, so that breaks the tie,
+  // then the name -- and the tie is named rather than passed off as a ranking.
+  const all = Object.entries(HOPS)
     .filter(([name]) => scored(name))
-    .map(([name,h]) => ({name, score: idxs.reduce((s,i) => s + h.d[i], 0) / idxs.length, styles: h.styles, src: h.src}))
-    .sort((a,b) => b.score - a.score)
-    .slice(0,8);
+    .map(([name,h]) => ({
+      name, styles: h.styles, src: h.src,
+      score: idxs.reduce((s,i) => s + h.d[i], 0) / idxs.length,
+      focus: rest.length ? rest.reduce((s,i) => s + h.d[i], 0) / rest.length : 0,
+    }))
+    .sort((a,b) => b.score - a.score || a.focus - b.focus || a.name.localeCompare(b.name));
 
-  if(!ranked.length){
+  if(!all.length){
     box.appendChild(el("p", "No scored entries yet.", "note"));
     return;
+  }
+  const top = all[0].score;
+  const tied = all.filter(s => s.score === top).length;
+  const limit = showAllTargets ? all.length : 15;
+  const ranked = all.slice(0, limit);
+  if(tied > 1){
+    box.appendChild(el("p", `${tied} hops share the top score of ${top.toFixed(1)}. Within a tier the order is by how low the rest of the profile stays, then by name; it is not a ranking of intensity.`, "tie-note"));
   }
 
   const table = document.createElement("table");
   const head = document.createElement("tr");
-  ["Hop","Match score","Source","Typical styles"].forEach(h => head.appendChild(el("th", h)));
+  ["Hop","Match score","Rest of profile","Source","Typical styles",""].forEach(h => head.appendChild(el("th", h)));
   table.appendChild(head);
   ranked.forEach(s => {
     const tr = document.createElement("tr");
     tr.appendChild(el("td", s.name));
     tr.appendChild(el("td", `${s.score.toFixed(1)}/10`));
+    tr.appendChild(el("td", rest.length ? `${s.focus.toFixed(1)}/10` : "\u2014"));
     const srcTd = document.createElement("td");
     srcTd.appendChild(el("span", SRC_LABEL[s.src] || "yours",
       "badge" + (s.src === "chronicle" ? " parsed" : s.src === "reported" ? " unscored" : "")));
@@ -1096,10 +1367,24 @@ function renderTargetResults(){
     const stTd = document.createElement("td");
     (s.styles || []).forEach(st => stTd.appendChild(el("span", st, "tag")));
     tr.appendChild(stTd);
+    const actTd = document.createElement("td");
+    const cmp = el("button", selected.includes(s.name) ? "In comparison" : "Compare", "small-btn");
+    cmp.type = "button";
+    cmp.disabled = selected.includes(s.name);
+    cmp.onclick = () => toggleHop(s.name);
+    actTd.appendChild(cmp);
+    tr.appendChild(actTd);
     table.appendChild(tr);
   });
   box.appendChild(table);
+  if(all.length > limit){
+    const more = el("button", `Show all ${all.length}`, "link-btn");
+    more.type = "button";
+    more.onclick = () => { showAllTargets = true; renderTargetResults(); };
+    box.appendChild(more);
+  }
 }
+let showAllTargets = false;
 
 function renderSliders(values){
   const container = document.getElementById("sliderContainer");
@@ -1241,7 +1526,8 @@ function renderMgmtList(){
   const box = document.getElementById("mgmtList");
   document.getElementById("mgmtHeading").textContent = `Your Hop Library (${Object.keys(HOPS).length} entries)`;
   box.innerHTML = "";
-  Object.keys(HOPS).sort().forEach(name => {
+  const q = document.getElementById("mgmtSearch").value.trim().toLowerCase();
+  Object.keys(HOPS).filter(n => !q || n.toLowerCase().includes(q)).sort().forEach(name => {
     const row = el("div", null, "mgmt-list-item");
     const left = document.createElement("span");
     left.appendChild(el("span", name));
@@ -1545,6 +1831,12 @@ async function fetchChronicle(){
 /* ---------- wiring ---------- */
 
 document.getElementById("hopSearch").addEventListener("input", e => renderHopList(e.target.value));
+document.getElementById("hopSort").addEventListener("change", () => renderHopList(document.getElementById("hopSearch").value));
+document.getElementById("browseSearch").addEventListener("input", renderBrowse);
+document.getElementById("mgmtSearch").addEventListener("input", renderMgmtList);
+document.getElementById("copyLinkBtn").onclick = () => copyToClipboard(location.href.replace(/#.*$/, "") + selectionHash(), "Link copied.");
+document.getElementById("copyTextBtn").onclick = () => copyToClipboard(compareAsText(), "Table copied.");
+window.addEventListener("hashchange", () => { restoreSelection(); renderAll(); });
 document.getElementById("scoredOnly").addEventListener("change", () => renderHopList(document.getElementById("hopSearch").value));
 document.getElementById("verifiedOnly").addEventListener("change", () => renderHopList(document.getElementById("hopSearch").value));
 document.querySelectorAll("#seriesPills .pill-btn").forEach(b => b.addEventListener("click", () => {
@@ -1605,13 +1897,23 @@ function renderAll(){
   drawRadar();
   renderTable();
   renderBlend();
+  renderNearest();
   renderStyleSelect();
   renderTargetResults();
   renderMgmtList();
+  renderBrowse();
+  rememberSelection();
 }
 
+// One sort option per descriptor axis, after the fixed two.
+DESCRIPTORS.forEach((d, i) => {
+  const opt = el("option", `${d} ↓`);
+  opt.value = "axis:" + i;
+  document.getElementById("hopSort").appendChild(opt);
+});
 renderSliders(null);
 renderDescToggles();
+restoreSelection();
 renderAll();
 </script>
 </body>

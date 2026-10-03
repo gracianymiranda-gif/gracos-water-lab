@@ -168,7 +168,7 @@ const html = template
   .replace('/* INJECT:CHRONICLES */', () =>
     `const DATA_VERSION = ${JSON.stringify(dataVersion)};\n`
     + `const CHRONICLE_INDEX = ${embed(withProfiles)};`)
-  .replace('<!-- INJECT:COUNT -->', () => String(entries.length));
+  .replaceAll('<!-- INJECT:COUNT -->', () => String(entries.length));   // the count appears more than once
 
 if (html.includes('INJECT:')) throw new Error('An injection marker was left unreplaced');
 return {html, entries: entries.length, scored};

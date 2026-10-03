@@ -275,12 +275,13 @@ function browser() {
   const p = b.boot();
   p.ev('toggleHop("Citra"); toggleHop("Mosaic")');            // composites with known vectors
   eq("legend: one swatch per hop plus the blend", p.doc.querySelectorAll("#radarLegend .radar-legend-item").length, 3);
-  eq("blend: equal parts to start", p.$("#compareTable tr:nth-child(2) td.blend-col").textContent, "7.5/10");  // Citrus (9+6)/2
+  const rowCell = (label) => [...p.doc.querySelectorAll("#compareTable tr")].find((tr) => tr.firstElementChild.textContent === label).querySelector("td.blend-col").textContent;
+  eq("blend: equal parts to start", rowCell("Citrus"), "7.5/10");  // Citrus (9+6)/2
   p.ev('adjustParts("Citra", 2)');                            // 3:1
-  eq("blend: parts weight the mean", p.$("#compareTable tr:nth-child(2) td.blend-col").textContent, "8.3/10");  // (27+6)/4
+  eq("blend: parts weight the mean", rowCell("Citrus"), "8.3/10");  // (27+6)/4
   ok("blend: the recipe line shows the ratio", /3 parts Citra \(75%\) \+ 1 part Mosaic \(25%\)/.test(p.$("#blendNote").textContent));
   ok("blend: shared style tags are listed", /Styles every hop here is tagged for: .*American IPA/.test(p.$("#blendNote").textContent));
-  const chemCell = (row) => [...p.doc.querySelectorAll("#compareTable tr")].find((tr) => tr.firstChild.textContent === row).querySelector("td.blend-col").textContent;
+  const chemCell = (row) => [...p.doc.querySelectorAll("#compareTable tr")].find((tr) => tr.firstElementChild.textContent === row).querySelector("td.blend-col").textContent;
   eq("blend: alpha averaged from the printed ranges", chemCell("Alpha / Beta"), "~12.5% / \u2014");   // both 11-14%, no betas on composites
   eq("blend: rows with nothing to average show a dash", chemCell("Verified"), "\u2014");
   // Rename a selected hop: its share travels with it.
@@ -295,7 +296,7 @@ function browser() {
   const chron = p.ev('Object.keys(HOPS).find(k => HOPS[k].src === "chronicle" && HOPS[k].beta && HOPS[k].oils)');
   p.ev(`toggleHop(${JSON.stringify(chron)})`);
   ok("blend: a missing figure is skipped, not counted as zero", /\(1 of 3\)/.test(chemCell("Alpha / Beta")));
-  ok("oil breakdown: shown when the entry has one", [...p.doc.querySelectorAll("#compareTable tr")].some((tr) => tr.firstChild.textContent === "Oil breakdown" && /myrcene/i.test(tr.textContent)));
+  ok("oil breakdown: shown when the entry has one", [...p.doc.querySelectorAll("#compareTable tr")].some((tr) => tr.firstElementChild.textContent === "Oil breakdown" && /myrcene/i.test(tr.textContent)));
 }
 
 // ---- Set L: library filters ----
@@ -317,8 +318,8 @@ function browser() {
   const b = browser();
   const p = b.boot();
   p.ev('toggleHop("Amarillo (2016 PA)"); toggleHop("Amarillo (2021 PL)"); toggleHop("Citra")');
-  const row = (label) => [...p.doc.querySelectorAll("#compareTable tr")].find((tr) => tr.firstChild.textContent === label);
-  const cells = [...row("Figures from").querySelectorAll("td")].slice(1);   // skip label; blend col is first
+  const row = (label) => [...p.doc.querySelectorAll("#compareTable tr")].find((tr) => tr.firstElementChild.textContent === label);
+  const cells = [...row("Figures from").querySelectorAll("td")];   // [blend, hop 1, hop 2, hop 3]; the label is a <th>
   ok("figures: the entry whose article was not used names the one that was", /the 2021 PL article/.test(cells[1].textContent));
   ok("figures: and links to it", cells[1].querySelector("a").href.includes("amarillo-2021-pale-lager"));
   eq("figures: the article that was used says so", cells[2].querySelector("a").textContent.trim(), "this article \u2197");
@@ -358,6 +359,65 @@ function browser() {
   ok("manage: edit and delete buttons name their hop", p.$('#mgmtList button[aria-label="Delete Citra"]') !== null);
   ok("radar: has a text alternative pointing at the table", p.$("#radar").getAttribute("aria-describedby") === "compareTable");
   ok("search: descriptor toggles reachable", p.$("#descToggles button") !== null);
+}
+
+// ---- Set O: finding a hop ----
+{
+  const b = browser();
+  const p = b.boot();
+  p.set("hopSearch", "new zealand"); p.ev('renderHopList("new zealand")');
+  ok("search: origin matches", p.doc.querySelectorAll("#hopList .hop-item").length >= 15);
+  p.set("hopSearch", ""); p.$("#hopSort").value = "aa"; p.ev('renderHopList("")');
+  const first = p.$("#hopList .hop-item").textContent;
+  ok("sort: alpha descending puts a high-alpha hop first", /AA (1[6-9]|2\d)/.test(first), first);
+  p.$("#hopSort").value = "axis:8"; p.ev('renderHopList("")');          // Spicy/Noble
+  ok("sort: by an axis shows that axis's score", /Spicy\/Noble 9/.test(p.$("#hopList .hop-item").textContent));
+  ok("list: each row names its tier", p.$("#hopList .hop-item .badge.tier") !== null);
+  ok("list: the article line is the tooltip", /crop/.test(p.$('#hopList .hop-item[title*="tested in"]').title));
+  // Browse table on the Hop Chronicles tab.
+  eq("browse: every article listed", p.doc.querySelectorAll("#browseTable tbody tr").length, 138);
+  p.set("browseSearch", "czech"); p.ev("renderBrowse()");
+  ok("browse: filter narrows", p.doc.querySelectorAll("#browseTable tbody tr").length < 10 && p.doc.querySelectorAll("#browseTable tbody tr").length > 0);
+  const cmp = [...p.doc.querySelectorAll("#browseTable tbody button")].find((x) => x.textContent === "Compare");
+  cmp.click();
+  eq("browse: Compare adds the article's entry", p.ev("selected.length"), 1);
+  // Nearest profiles.
+  ok("nearest: suggestions appear for a selected hop", /Closest profiles to/.test(p.$("#nearest").textContent));
+  ok("nearest: another crop of the same variety is not offered as a substitute", ![...p.doc.querySelectorAll("#nearest button")].some((x) => x.textContent.startsWith(p.ev("selected[0]").replace(/ \(.*$/, "") + " (")));
+  // Characteristic Search ties.
+  p.ev('activeDescs = new Set(["Citrus"]); renderTargetResults()');
+  ok("search: a tie is named, not passed off as a ranking", /hops share the top score of 9\.0/.test(p.$("#targetResults .tie-note").textContent));
+  eq("search: fifteen shown, then a button for the rest", p.doc.querySelectorAll("#targetResults table tr").length, 16);
+  p.$("#targetResults .link-btn").click();
+  ok("search: show all shows all", p.doc.querySelectorAll("#targetResults table tr").length > 100);
+  const rowBtn = [...p.doc.querySelectorAll("#targetResults table button")].find((x) => x.textContent === "Compare");
+  rowBtn.click();
+  eq("search: a result row can be added to the comparison", p.ev("selected.length"), 2);
+  // Style select: counts, and the default is the most-tagged style.
+  ok("style: options carry counts", /\(\d+\)$/.test(p.$("#styleSelect option").textContent));
+  eq("style: defaults to the most common tag", p.$("#styleSelect").value, "American IPA");
+  // Manage filter.
+  p.set("mgmtSearch", "citra"); p.ev("renderMgmtList()");
+  ok("manage: the list filters by name", p.doc.querySelectorAll("#mgmtList .mgmt-list-item").length < 10);
+}
+
+// ---- Set P: a comparison you can keep ----
+{
+  const b = browser();
+  let p = b.boot();
+  p.ev('toggleHop("Citra"); toggleHop("Mosaic"); adjustParts("Citra", 2)');
+  eq("url: the selection is in the hash", p.win.location.hash, "#compare=Citra:3,Mosaic");
+  ok("tools: copy buttons appear with a selection", !p.$("#compareTools").classList.contains("hidden"));
+  ok("copy: the table serialises to tab-separated text", /Descriptor\tBlend\t1\. Citra\t2\. Mosaic\n/.test(p.ev("compareAsText()")));
+  p.persist();
+  p = b.boot();
+  eq("reload: the selection comes back", p.ev("selected.join()"), "Citra,Mosaic");
+  eq("reload: and so do the parts", p.ev('partsOf("Citra")'), 3);
+  // A link someone sent.
+  const dom2 = new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: true, url: "http://localhost/hops/hop-calculus.html#compare=Simcoe,Nope%20Hop,Galaxy:2",
+    beforeParse(win) { win.HTMLCanvasElement.prototype.getContext = () => null; } });
+  eq("link: names in the hash are selected, unknown ones dropped", dom2.window.eval("selected.join()"), "Simcoe,Galaxy");
+  eq("link: parts carried", dom2.window.eval('partsOf("Galaxy")'), 2);
 }
 
 console.log(`\n${pass} passed, ${fail} failed (${pass + fail} total)`);
