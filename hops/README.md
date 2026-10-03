@@ -16,7 +16,7 @@ articles. Like the rest of this repo it is a static page: open
 | `csv.js` | The one CSV reader the build and the tests share. |
 | `build-hops.mjs` | Rebuilds the HTML from the template + CSVs. Deterministic. |
 | `data/hop-profiles.csv` | One row per variety: chemistry, 10 descriptor axes, styles. |
-| `data/hop-chronicles.csv` | One row per article: variety, crop year, origin, series, URL. |
+| `data/hop-chronicles.csv` | One row per article: variety, crop year, origin, series (the test beer), publication date, URL and a one-line background note. The page names each article's entry `Variety (YYYY PA)` or `(YYYY PL)`; a bare name is a composite. |
 
 No build step to *use* the page. To *change* it, edit the template, the parser
 or either CSV and rebuild:
@@ -42,6 +42,8 @@ Every comparison shows where each number came from:
 | **Figures from** | The Brülosophy article the chemistry and the ranking were read out of. For the eleven varieties with two articles (a different crop year or test beer) the two entries share one profile; the entry whose article was not the source says so and links the one that was. A composite has no article. |
 | **Notes** | Anything the extraction flagged about that entry — a descriptor with no axis, or the Enigma/Pekko warning below. |
 | **Verified** | Nothing ships verified. Only you can tick it, under Manage Hops, and only by naming what you checked against (a spec sheet, a lab report, your lot's COA). A verified entry is never overwritten by a later data update. |
+| **Article** | Crop year, origin, the beer it was tested in and the publication date — Hop Chronicles entries only. |
+| **Background** | The one-line variety note from the article index; also the tooltip on each library row and a column of the article table on the Hop Chronicles tab. |
 | **Profile source** | `from post` (138): first-hand, from the article. `composite` (20): a hand-tuned general character for a well-known variety. `yours`: whatever you entered. |
 
 Earlier builds carried `estimate` and `reported` tiers for profiles drawn from

@@ -384,6 +384,10 @@ function browser() {
   const p = b.boot();
   p.set("hopSearch", "new zealand"); p.ev('renderHopList("new zealand")');
   ok("search: origin matches", p.doc.querySelectorAll("#hopList .hop-item").length >= 15);
+  p.ev('renderHopList("pale lager")');
+  ok("search: the series matches (the 16 lager-tested hops, plus any note that mentions it)", p.doc.querySelectorAll("#hopList .hop-item").length >= 16);
+  p.ev('renderHopList("2016")');
+  ok("search: the crop year matches", p.doc.querySelectorAll("#hopList .hop-item").length >= 5);
   p.set("hopSearch", ""); p.$("#hopSort").value = "aa"; p.ev('renderHopList("")');
   const first = p.$("#hopList .hop-item").textContent;
   ok("sort: alpha descending puts a high-alpha hop first", /AA (1[6-9]|2\d)/.test(first), first);

@@ -194,7 +194,7 @@
   <div class="panel">
     <h2>Hop Library</h2>
     <div class="search-row">
-      <input type="search" id="hopSearch" placeholder="Search name, origin, style, notes…" aria-label="Search hops by name, origin, style or background" autocomplete="off">
+      <input type="search" id="hopSearch" placeholder="Search name, origin, year, series, style, notes…" aria-label="Search hops by name, origin, crop year, series, style or background" autocomplete="off">
       <select id="hopSort" aria-label="Sort the library">
         <option value="name">Name</option>
         <option value="aa">Alpha acid ↓</option>
@@ -645,7 +645,7 @@ function articleLine(h){
 /** Midpoint of a printed alpha range for sorting; hops without one sort last. */
 const alphaMid = (h) => { const r = parseNumericRange(h && h.aa); return r ? r.mid : -1; };
 /** Everything a library search should look through for one entry. */
-const searchText = (name, h) => [name, h.chron && h.chron.origin, h.chron && h.chron.notes, ...(h.styles || [])]
+const searchText = (name, h) => [name, h.chron && h.chron.origin, h.chron && h.chron.series, h.chron && h.chron.cropYear, h.chron && h.chron.notes, ...(h.styles || [])]
   .filter(Boolean).join(" ").toLowerCase();
 
 /** Text nodes only — hop names and styles are user/imported data. */
