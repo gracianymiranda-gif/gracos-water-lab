@@ -157,7 +157,7 @@
   <div class="panel">
     <h2>Hop Library</h2>
     <input type="text" id="hopSearch" placeholder="Search hop variety...">
-    <label style="margin-bottom:8px;">
+    <label style="margin-bottom:8px;" id="scoredOnlyLabel">
       <input type="checkbox" id="scoredOnly" style="width:auto; margin:0 6px 0 0; vertical-align:-1px;">
       Scored entries only
     </label>
@@ -211,7 +211,7 @@
         <h2>Pick Descriptors You Want</h2>
         <div id="descToggles"></div>
         <div id="targetResults" class="table-scroll" style="margin-top:14px;"></div>
-        <p class="note">Only scored entries can be ranked. Unscored Hop Chronicles entries are excluded until you fill them in from the Hop Chronicles tab.</p>
+        <p class="note">Only scored entries can be ranked; an entry saved as unscored is left out until it has a profile.</p>
       </div>
     </div>
 
@@ -243,13 +243,13 @@
         <p class="note" style="margin-top:0;">The series uses a consistent results sentence, so scores come from the post's own ranking rather than a guess:</p>
         <table>
           <tr><th>Where the descriptor appears</th><th>Score</th></tr>
-          <tr><td>1st in the "most prominent" list</td><td>9/10</td></tr>
-          <tr><td>2nd / 3rd / 4th+</td><td>8 / 7 / 6</td></tr>
-          <tr><td>Mentioned elsewhere in the post</td><td>5/10</td></tr>
+          <tr><td>1st / 2nd / 3rd in a "most prominent" list</td><td>9 / 8 / 7</td></tr>
+          <tr><td>4th or later in that list</td><td>6/10</td></tr>
+          <tr><td>Mentioned elsewhere in the post (pasted articles only)</td><td>5/10</td></tr>
           <tr><td>Never mentioned</td><td>2/10</td></tr>
-          <tr><td>Named among the "lowest rated"</td><td>1/10</td></tr>
+          <tr><td>Named among the "lowest rated" (pasted articles only)</td><td>1/10</td></tr>
         </table>
-        <p class="note">This is a ranking translated to a scale, not a measurement — Brülosophy publishes descriptor votes, not oil analysis. Two hops both scoring 9 on citrus were each their post's top descriptor; it does not mean they are equally citrusy. Descriptors the series tracks but this tool has no axis for (onion/garlic, apple/pear) are reported as notes instead of being folded into a neighbouring axis.</p>
+        <p class="note">Many posts rank aroma and flavour separately; an axis keeps its best rank across the two lists, which is why two or three axes on one hop can all read 9. The shipped entries were built from those ranked lists alone — the 5 for a passing mention and the 1 for lowest-rated appear only when you paste a whole article, because that is when the rest of the text is available. This is a ranking translated to a scale, not a measurement — Brülosophy publishes descriptor votes, not oil analysis. Two hops both scoring 9 on citrus were each their post's top descriptor; it does not mean they are equally citrusy. Descriptors the series tracks but this tool has no axis for (onion/garlic, apple/pear) are reported as notes instead of being folded into a neighbouring axis.</p>
       </div>
     </div>
 
@@ -330,7 +330,7 @@
 <span class="badge">yours</span> is whatever you typed under Manage Hops.
 <span class="badge unscored">unscored</span> means no profile exists; the entry is excluded from the radar, the blend average and the ranking.
 <span class="badge">estimate</span> and <span class="badge unscored">reported</span> no longer ship. They marked profiles drawn from search-engine summaries rather than the posts, and were replaced when all 138 articles were parsed directly. If you used an earlier version of this page, your saved copy may still carry a few; they are the weakest tier here and worth re-pulling from the article.</p>
-<p class="note"><strong>Cross-checked vs verified.</strong> <em>Cross-checked</em> means the alpha and beta figures were reconciled against a second hop database and the entry names which record it matched — a real citation, but still someone else's compiled figures rather than a measurement of your lot. <em>Verified</em> is the stronger claim and only you can set it. A hop can be cross-checked and still unverified.</p>
+<p class="note"><strong>Figures from, and shared profiles.</strong> <em>Figures from</em> links the article the chemistry and the ranking were read out of. Eleven varieties have two articles (a different crop year or test beer); they share one profile, and the entry whose article it did not come from says so and links the one it did. That is a citation, not a measurement of your lot. <em>Verified</em> is the stronger claim and only you can set it.</p>
 <p class="note"><strong>Verified vs assumed.</strong> Nothing ships verified — only you can attest to a source. When you check a hop against a spec sheet, a lab report or your own lot, tick <em>verified</em> under Manage Hops and name what you checked it against; the entry is then marked <span class="badge verified">✓</span> everywhere it appears, and a later data update will never overwrite it with an estimate. The library panel tracks how much of your library is confirmed rather than assumed.</p>
 <p class="note">Alpha-acid figures are variety-typical ranges. <strong>Always confirm alpha acid on your actual lot</strong> before any bittering calculation — this tool covers flavour and aroma character only, not IBU math. Your edits are saved to this browser's local storage, so they persist here on reload but will not sync across devices unless you export/import the JSON.</p>
 
@@ -828,7 +828,7 @@ function parseProminentCharacteristics(text) {
 }
 
 /* ---- Hop Chronicles index (generated from data/hop-chronicles/hop-chronicles.csv) ---- */
-const DATA_VERSION = "81696d9af814";
+const DATA_VERSION = "c857ab0ed1f3";
 const CHRONICLE_INDEX = [
  {
   "variety": "007 Golden Hop",
@@ -860,7 +860,10 @@ const CHRONICLE_INDEX = [
    "Hazy IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/01/04/the-hop-chronicles-007-golden-hop/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/01/04/the-hop-chronicles-007-golden-hop/",
+  "figures": "https://brulosophy.com/2018/01/04/the-hop-chronicles-007-golden-hop/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "African Queen",
@@ -893,7 +896,10 @@ const CHRONICLE_INDEX = [
    "Fruited Sour"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2024/08/05/the-hop-chronicles-african-queen-2021-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2024/08/05/the-hop-chronicles-african-queen-2021-pale-ale/",
+  "figures": "https://brulosophy.com/2024/08/05/the-hop-chronicles-african-queen-2021-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Altus",
@@ -901,7 +907,7 @@ const CHRONICLE_INDEX = [
   "origin": "USA",
   "series": "Pale Ale",
   "published": "2016-07-07",
-  "notes": "Lately, it seems every great new hop variety is an attempt to capture that fruit explosion that swept palates everywhere when Citra, Mosaic, and certain New Zealand varietals descended upon us.",
+  "notes": "",
   "url": "https://brulosophy.com/2016/07/07/the-hop-chronicles-experimental-07270/",
   "aa": "15 - 18.5%",
   "beta": "4 - 5.2%",
@@ -925,7 +931,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2016/07/07/the-hop-chronicles-experimental-07270/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2016/07/07/the-hop-chronicles-experimental-07270/",
+  "figures": "https://brulosophy.com/2016/07/07/the-hop-chronicles-experimental-07270/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Amarillo",
@@ -955,10 +964,13 @@ const CHRONICLE_INDEX = [
   "styles": [
    "Pale Ale",
    "American IPA",
-   "Wheat"
+   "American Wheat"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/11/03/the-hop-chronicles-amarillo-2021-pale-lager/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/11/03/the-hop-chronicles-amarillo-2021-pale-lager/",
+  "figures": "https://brulosophy.com/2022/11/03/the-hop-chronicles-amarillo-2021-pale-lager/",
+  "caveats": "",
+  "profileFrom": "Amarillo (2021 PL)"
  },
  {
   "variety": "Amarillo",
@@ -988,10 +1000,13 @@ const CHRONICLE_INDEX = [
   "styles": [
    "Pale Ale",
    "American IPA",
-   "Wheat"
+   "American Wheat"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/11/03/the-hop-chronicles-amarillo-2021-pale-lager/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/11/03/the-hop-chronicles-amarillo-2021-pale-lager/",
+  "figures": "https://brulosophy.com/2022/11/03/the-hop-chronicles-amarillo-2021-pale-lager/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Amarillo LUPOMAX",
@@ -1023,7 +1038,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/06/03/the-hop-chronicles-amarillo-lupomax-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/06/03/the-hop-chronicles-amarillo-lupomax-2020/",
+  "figures": "https://brulosophy.com/2021/06/03/the-hop-chronicles-amarillo-lupomax-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Aramis",
@@ -1055,7 +1073,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/10/07/the-hop-chronicles-aramis-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/10/07/the-hop-chronicles-aramis-2020/",
+  "figures": "https://brulosophy.com/2021/10/07/the-hop-chronicles-aramis-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Armadillo",
@@ -1063,7 +1084,7 @@ const CHRONICLE_INDEX = [
   "origin": "USA",
   "series": "Pale Ale",
   "published": "2015-12-17",
-  "notes": "Back in August, while going over the recipe Greg used for his yeast blending xBmt, I noticed a simple misspelling and made the edit.",
+  "notes": "",
   "url": "https://brulosophy.com/2015/12/17/the-hop-chronicles-armadillo/",
   "aa": "5.9%",
   "beta": "3.2%",
@@ -1087,7 +1108,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2015/12/17/the-hop-chronicles-armadillo/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2015/12/17/the-hop-chronicles-armadillo/",
+  "figures": "https://brulosophy.com/2015/12/17/the-hop-chronicles-armadillo/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Azacca",
@@ -1120,7 +1144,10 @@ const CHRONICLE_INDEX = [
    "Saison"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/06/15/the-hop-chronicles-azacca/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/06/15/the-hop-chronicles-azacca/",
+  "figures": "https://brulosophy.com/2017/06/15/the-hop-chronicles-azacca/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Azacca LUPOMAX",
@@ -1152,7 +1179,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/08/05/the-hop-chronicles-azacca-lupomax-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/08/05/the-hop-chronicles-azacca-lupomax-2020/",
+  "figures": "https://brulosophy.com/2021/08/05/the-hop-chronicles-azacca-lupomax-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Barbe Rouge",
@@ -1184,7 +1214,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/01/21/the-hop-chronicles-barbe-rouge-2019/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/01/21/the-hop-chronicles-barbe-rouge-2019/",
+  "figures": "https://brulosophy.com/2021/01/21/the-hop-chronicles-barbe-rouge-2019/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Belma",
@@ -1213,11 +1246,14 @@ const CHRONICLE_INDEX = [
   ],
   "styles": [
    "Blonde Ale",
-   "Wheat",
+   "American Wheat",
    "Cream Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/10/05/the-hop-chronicles-belma-2022-pale-ale/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/10/05/the-hop-chronicles-belma-2022-pale-ale/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/10/05/the-hop-chronicles-belma-2022-pale-ale/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Bravo",
@@ -1249,7 +1285,10 @@ const CHRONICLE_INDEX = [
    "Amber Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/04/13/the-hop-chronicles-bravo/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/04/13/the-hop-chronicles-bravo/",
+  "figures": "https://brulosophy.com/2017/04/13/the-hop-chronicles-bravo/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Brewer’s Gold",
@@ -1281,7 +1320,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/12/02/the-hop-chronicles-brewers-gold-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/12/02/the-hop-chronicles-brewers-gold-2020/",
+  "figures": "https://brulosophy.com/2021/12/02/the-hop-chronicles-brewers-gold-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Bru-1",
@@ -1309,12 +1351,15 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "NEIPA",
+   "Hazy IPA",
    "Pale Ale",
-   "Wheat"
+   "American Wheat"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/03/02/the-hop-chronicles-bru-1/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/03/02/the-hop-chronicles-bru-1/",
+  "figures": "https://brulosophy.com/2017/03/02/the-hop-chronicles-bru-1/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "BRU-1 LUPOMAX",
@@ -1342,11 +1387,13 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Hazy IPA",
-   "NEIPA"
+   "Hazy IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/05/06/the-hop-chronicles-bru-1-lupomax-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/05/06/the-hop-chronicles-bru-1-lupomax-2020/",
+  "figures": "https://brulosophy.com/2021/05/06/the-hop-chronicles-bru-1-lupomax-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Caliente",
@@ -1378,7 +1425,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/02/18/the-hop-chronicles-caliente-2019/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/02/18/the-hop-chronicles-caliente-2019/",
+  "figures": "https://brulosophy.com/2021/02/18/the-hop-chronicles-caliente-2019/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "California Cascade",
@@ -1410,7 +1460,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/12/13/the-hop-chronicles-california-cascade-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/12/13/the-hop-chronicles-california-cascade-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2018/12/13/the-hop-chronicles-california-cascade-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "California Chinook",
@@ -1442,7 +1495,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/09/13/the-hop-chronicles-california-chinook-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/09/13/the-hop-chronicles-california-chinook-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2018/09/13/the-hop-chronicles-california-chinook-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Callista",
@@ -1470,11 +1526,14 @@ const CHRONICLE_INDEX = [
    8
   ],
   "styles": [
-   "Modern German Lager",
+   "Hoppy Lager",
    "Summer Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/11/17/the-hop-chronicles-callista-2020-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/11/17/the-hop-chronicles-callista-2020-pale-ale/",
+  "figures": "https://brulosophy.com/2022/11/17/the-hop-chronicles-callista-2020-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Cascade",
@@ -1502,11 +1561,14 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "American Pale Ale",
+   "Pale Ale",
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2016/11/03/the-hop-chronicles-cascade/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2016/11/03/the-hop-chronicles-cascade/",
+  "figures": "https://brulosophy.com/2016/11/03/the-hop-chronicles-cascade/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Cascade LUPOMAX",
@@ -1534,11 +1596,14 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "American Pale Ale",
+   "Pale Ale",
    "Amber Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/12/01/the-hop-chronicles-cascade-lupomax-2021-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/12/01/the-hop-chronicles-cascade-lupomax-2021-pale-ale/",
+  "figures": "https://brulosophy.com/2022/12/01/the-hop-chronicles-cascade-lupomax-2021-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Cashmere",
@@ -1571,7 +1636,10 @@ const CHRONICLE_INDEX = [
    "Sour"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2019/10/03/the-hop-chronicles-cashmere-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2019/10/03/the-hop-chronicles-cashmere-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2019/10/03/the-hop-chronicles-cashmere-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Centennial",
@@ -1603,7 +1671,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2016/12/01/the-hop-chronicles-centennial/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2016/12/01/the-hop-chronicles-centennial/",
+  "figures": "https://brulosophy.com/2016/12/01/the-hop-chronicles-centennial/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Centennial LUPOMAX",
@@ -1635,7 +1706,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/05/19/the-hop-chronicles-centennial-lupomax-2021-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/05/19/the-hop-chronicles-centennial-lupomax-2021-pale-ale/",
+  "figures": "https://brulosophy.com/2023/05/19/the-hop-chronicles-centennial-lupomax-2021-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Chinook",
@@ -1667,7 +1741,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/04/15/the-hop-chronicles-chinook-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/04/15/the-hop-chronicles-chinook-2020/",
+  "figures": "https://brulosophy.com/2021/04/15/the-hop-chronicles-chinook-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Citra",
@@ -1700,7 +1777,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/04/05/the-hop-chronicals-citra-2017/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/04/05/the-hop-chronicals-citra-2017/",
+  "figures": "https://brulosophy.com/2018/04/05/the-hop-chronicals-citra-2017/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Citra LUPOMAX",
@@ -1732,7 +1812,10 @@ const CHRONICLE_INDEX = [
    "Hazy IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/06/09/the-hop-chronicles-citra-lupomax-2021/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/06/09/the-hop-chronicles-citra-lupomax-2021/",
+  "figures": "https://brulosophy.com/2022/06/09/the-hop-chronicles-citra-lupomax-2021/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Citra LupuLN2 Cryo Hops",
@@ -1764,7 +1847,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/07/05/the-hop-chronicles-citra-lupuln2-cryo-hops-2017/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/07/05/the-hop-chronicles-citra-lupuln2-cryo-hops-2017/",
+  "figures": "https://brulosophy.com/2018/07/05/the-hop-chronicles-citra-lupuln2-cryo-hops-2017/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Columbus LUPOMAX",
@@ -1796,7 +1882,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/08/19/the-hop-chronicles-columbus-lupomax-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/08/19/the-hop-chronicles-columbus-lupomax-2020/",
+  "figures": "https://brulosophy.com/2021/08/19/the-hop-chronicles-columbus-lupomax-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Comet",
@@ -1828,7 +1917,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2019/12/05/the-hop-chronicles-comet-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2019/12/05/the-hop-chronicles-comet-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2019/12/05/the-hop-chronicles-comet-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Contessa",
@@ -1860,7 +1952,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/09/07/the-hop-chronicles-experimental-04190/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/09/07/the-hop-chronicles-experimental-04190/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2017/09/07/the-hop-chronicles-experimental-04190/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Crystal",
@@ -1889,11 +1984,14 @@ const CHRONICLE_INDEX = [
   ],
   "styles": [
    "Pilsner",
-   "Kolsch",
+   "Kölsch",
    "Altbier"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2019/07/04/the-hop-chronicles-crystal-2017/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2019/07/04/the-hop-chronicles-crystal-2017/",
+  "figures": "https://brulosophy.com/2019/07/04/the-hop-chronicles-crystal-2017/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "CTZ",
@@ -1925,7 +2023,10 @@ const CHRONICLE_INDEX = [
    "IPL"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/12/28/the-hop-chronicles-ctz-2022-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/12/28/the-hop-chronicles-ctz-2022-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/12/28/the-hop-chronicles-ctz-2022-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": "CTZ (2022 PL)"
  },
  {
   "variety": "CTZ",
@@ -1957,7 +2058,10 @@ const CHRONICLE_INDEX = [
    "IPL"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/12/28/the-hop-chronicles-ctz-2022-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/12/28/the-hop-chronicles-ctz-2022-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/12/28/the-hop-chronicles-ctz-2022-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Czech Saaz",
@@ -1965,7 +2069,7 @@ const CHRONICLE_INDEX = [
   "origin": "Czech Republic",
   "series": "Pale Ale",
   "published": "2016-08-04",
-  "notes": "Most of the hops reviewed so far for The Hop Chronicles have been fairly new varieties, many of which were in the experimental phase, and perhaps unsurprisingly, tasters have noted they would go well in hoppy styles such as American Pale Ale and IPA.",
+  "notes": "",
   "url": "https://brulosophy.com/2016/08/04/the-hop-chronicles-czech-saaz/",
   "aa": "4%",
   "beta": "3 - 5%",
@@ -1989,7 +2093,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2016/08/04/the-hop-chronicles-czech-saaz/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2016/08/04/the-hop-chronicles-czech-saaz/",
+  "figures": "https://brulosophy.com/2016/08/04/the-hop-chronicles-czech-saaz/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Delta",
@@ -1997,7 +2104,7 @@ const CHRONICLE_INDEX = [
   "origin": "USA",
   "series": "Pale Ale",
   "published": "2015-10-15",
-  "notes": "Following the last edition of The Hop Chronicles looking at Eureka hops, I was contacted by Bill Elkins from Hopsteiner who said he had a relatively new variety he thought homebrewers would enjoy called Delta and asked if we’d be interested in putting it to the test.",
+  "notes": "",
   "url": "https://brulosophy.com/2015/10/15/the-hop-chronicles-delta/",
   "aa": "5.5 - 7.0%",
   "beta": "5.5 - 7.0%",
@@ -2021,7 +2128,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2015/10/15/the-hop-chronicles-delta/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2015/10/15/the-hop-chronicles-delta/",
+  "figures": "https://brulosophy.com/2015/10/15/the-hop-chronicles-delta/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Denali",
@@ -2053,7 +2163,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2016/02/25/the-hop-chronicles-denali-aka-hopsteiner-06277/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2016/02/25/the-hop-chronicles-denali-aka-hopsteiner-06277/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2016/02/25/the-hop-chronicles-denali-aka-hopsteiner-06277/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Dr. Rudi",
@@ -2082,10 +2195,13 @@ const CHRONICLE_INDEX = [
   ],
   "styles": [
    "Pacific Pale Ale",
-   "Bittering"
+   "Bittering (any style)"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/02/03/the-hop-chronicles-dr-rudi-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/02/03/the-hop-chronicles-dr-rudi-2020/",
+  "figures": "https://brulosophy.com/2022/02/03/the-hop-chronicles-dr-rudi-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "East Kent Golding",
@@ -2118,7 +2234,10 @@ const CHRONICLE_INDEX = [
    "Porter"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2020/11/19/the-hop-chronicles-east-kent-golding-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2020/11/19/the-hop-chronicles-east-kent-golding-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2020/11/19/the-hop-chronicles-east-kent-golding-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Eclipse",
@@ -2150,7 +2269,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/11/04/the-hop-chronicles-eclipse-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/11/04/the-hop-chronicles-eclipse-2020/",
+  "figures": "https://brulosophy.com/2021/11/04/the-hop-chronicles-eclipse-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Ekuanot",
@@ -2182,7 +2304,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2016/09/01/the-hop-chronicles-hbc-366-formerly-equinox/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2016/09/01/the-hop-chronicles-hbc-366-formerly-equinox/",
+  "figures": "https://brulosophy.com/2016/09/01/the-hop-chronicles-hbc-366-formerly-equinox/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Ekuanot LUPOMAX",
@@ -2214,7 +2339,10 @@ const CHRONICLE_INDEX = [
    "Double IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/05/20/the-hop-chronicles-ekuanot-lupomax-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/05/20/the-hop-chronicles-ekuanot-lupomax-2020/",
+  "figures": "https://brulosophy.com/2021/05/20/the-hop-chronicles-ekuanot-lupomax-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "El Dorado",
@@ -2246,7 +2374,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/12/07/the-hop-chronicles-el-dorado-2016/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/12/07/the-hop-chronicles-el-dorado-2016/",
+  "figures": "https://brulosophy.com/2017/12/07/the-hop-chronicles-el-dorado-2016/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "El Dorado LUPOMAX",
@@ -2278,7 +2409,10 @@ const CHRONICLE_INDEX = [
    "Double IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/10/20/the-hop-chronicles-el-dorado-lupomax-2021-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/10/20/the-hop-chronicles-el-dorado-lupomax-2021-pale-ale/",
+  "figures": "https://brulosophy.com/2022/10/20/the-hop-chronicles-el-dorado-lupomax-2021-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Elani",
@@ -2306,11 +2440,14 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Modern Pale Ale",
+   "Pale Ale",
    "Session IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2024/09/16/the-hop-chronicles-elani-2023-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2024/09/16/the-hop-chronicles-elani-2023-pale-ale/",
+  "figures": "https://brulosophy.com/2024/09/16/the-hop-chronicles-elani-2023-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Elixir",
@@ -2342,7 +2479,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/02/17/the-hop-chronicles-elixir-2020/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/02/17/the-hop-chronicles-elixir-2020/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2022/02/17/the-hop-chronicles-elixir-2020/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Ella",
@@ -2374,7 +2514,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2019/11/14/the-hop-chronicles-ella-2018/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2019/11/14/the-hop-chronicles-ella-2018/",
+  "figures": "https://brulosophy.com/2019/11/14/the-hop-chronicles-ella-2018/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Enigma",
@@ -2406,7 +2549,10 @@ const CHRONICLE_INDEX = [
    "Saison"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/06/07/the-hop-chronicles-enigma-2017/ | WARNING: this article publishes chemistry identical to the other of Enigma/Pekko, including parentage text. One of the two carries the wrong hop's figures at source. Verify against a merchant spec sheet before use."
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/06/07/the-hop-chronicles-enigma-2017/ | WARNING: this article publishes chemistry identical to the other of Enigma/Pekko, including parentage text. One of the two carries the wrong hop's figures at source. Verify against a merchant spec sheet before use.",
+  "figures": "https://brulosophy.com/2018/06/07/the-hop-chronicles-enigma-2017/",
+  "caveats": "WARNING: this article publishes chemistry identical to the other of Enigma/Pekko, including parentage text. One of the two carries the wrong hop's figures at source. Verify against a merchant spec sheet before use.",
+  "profileFrom": ""
  },
  {
   "variety": "Eureka",
@@ -2414,7 +2560,7 @@ const CHRONICLE_INDEX = [
   "origin": "USA",
   "series": "Pale Ale",
   "published": "2015-08-20",
-  "notes": "For the first foray into this project, I used a relatively new hop variety that, at the time of purchase was referred to as Experimental Pine Fruit, though recently adopted the name Eureka.",
+  "notes": "",
   "url": "https://brulosophy.com/2015/08/20/the-hop-chronicles-eureka-aka-experimental-pine-fruit/",
   "aa": "18.0 - 19.0%",
   "beta": "5.0 - 6.0%",
@@ -2438,7 +2584,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2015/08/20/the-hop-chronicles-eureka-aka-experimental-pine-fruit/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2015/08/20/the-hop-chronicles-eureka-aka-experimental-pine-fruit/",
+  "figures": "https://brulosophy.com/2015/08/20/the-hop-chronicles-eureka-aka-experimental-pine-fruit/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Experimental #09326",
@@ -2446,7 +2595,7 @@ const CHRONICLE_INDEX = [
   "origin": "USA",
   "series": "Pale Ale",
   "published": "2016-05-19",
-  "notes": "In the quest for the next best hop, growers around the world continue breeding new varieties designed to impart unique flavors and aroma in our beer.",
+  "notes": "",
   "url": "https://brulosophy.com/2016/05/19/the-hop-chronicles-experimental-09326/",
   "aa": "3 - 7%",
   "beta": "5 - 7.5%",
@@ -2470,7 +2619,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2016/05/19/the-hop-chronicles-experimental-09326/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2016/05/19/the-hop-chronicles-experimental-09326/",
+  "figures": "https://brulosophy.com/2016/05/19/the-hop-chronicles-experimental-09326/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "French Fuggle",
@@ -2503,7 +2655,10 @@ const CHRONICLE_INDEX = [
    "Sweet Stout"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/04/07/the-hop-chronicles-french-fuggle-2021-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/04/07/the-hop-chronicles-french-fuggle-2021-pale-ale/",
+  "figures": "https://brulosophy.com/2023/04/07/the-hop-chronicles-french-fuggle-2021-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Galaxy",
@@ -2535,7 +2690,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/11/02/the-hop-chronicles-galaxy-2022-pale-lager/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/11/02/the-hop-chronicles-galaxy-2022-pale-lager/",
+  "figures": "https://brulosophy.com/2023/11/02/the-hop-chronicles-galaxy-2022-pale-lager/",
+  "caveats": "",
+  "profileFrom": "Galaxy (2022 PL)"
  },
  {
   "variety": "Galaxy",
@@ -2567,7 +2725,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/11/02/the-hop-chronicles-galaxy-2022-pale-lager/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/11/02/the-hop-chronicles-galaxy-2022-pale-lager/",
+  "figures": "https://brulosophy.com/2023/11/02/the-hop-chronicles-galaxy-2022-pale-lager/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "German Northern Brewer",
@@ -2595,11 +2756,14 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "German Dark Lager",
+   "Dunkel",
    "Baltic Porter"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/10/06/the-hop-chronicles-german-northern-brewer-2021-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/10/06/the-hop-chronicles-german-northern-brewer-2021-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2022/10/06/the-hop-chronicles-german-northern-brewer-2021-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "German Perle",
@@ -2632,7 +2796,10 @@ const CHRONICLE_INDEX = [
    "Dunkel"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/05/03/the-hop-chronicles-german-perle-2017/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/05/03/the-hop-chronicles-german-perle-2017/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2018/05/03/the-hop-chronicles-german-perle-2017/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "German Tettnanger",
@@ -2664,7 +2831,10 @@ const CHRONICLE_INDEX = [
    "Helles"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/09/16/the-hop-chronicles-german-tettnanger-2019/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/09/16/the-hop-chronicles-german-tettnanger-2019/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2021/09/16/the-hop-chronicles-german-tettnanger-2019/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": "German Tettnanger (2019 PA)"
  },
  {
   "variety": "German Tettnanger",
@@ -2696,7 +2866,10 @@ const CHRONICLE_INDEX = [
    "Helles"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/09/16/the-hop-chronicles-german-tettnanger-2019/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/09/16/the-hop-chronicles-german-tettnanger-2019/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2021/09/16/the-hop-chronicles-german-tettnanger-2019/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Green Bullet",
@@ -2728,7 +2901,10 @@ const CHRONICLE_INDEX = [
    "English Strong Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/05/05/the-hop-chronicles-green-bullet-2021-pale-ale/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/05/05/the-hop-chronicles-green-bullet-2021-pale-ale/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/05/05/the-hop-chronicles-green-bullet-2021-pale-ale/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Hallertau Blanc",
@@ -2756,11 +2932,14 @@ const CHRONICLE_INDEX = [
    9
   ],
   "styles": [
-   "Modern German Lager",
+   "Hoppy Lager",
    "Saison"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2019/04/04/the-hop-chronicles-hallertau-blanc-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2019/04/04/the-hop-chronicles-hallertau-blanc-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2019/04/04/the-hop-chronicles-hallertau-blanc-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Hallertau Mittelfrüh",
@@ -2793,7 +2972,10 @@ const CHRONICLE_INDEX = [
    "Vienna Lager"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/07/15/the-hop-chronicles-hallertau-mittelfruh-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/07/15/the-hop-chronicles-hallertau-mittelfruh-2020/",
+  "figures": "https://brulosophy.com/2021/07/15/the-hop-chronicles-hallertau-mittelfruh-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Harlequin",
@@ -2821,12 +3003,15 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Juicy Pale Ale",
+   "Hazy Pale Ale",
    "Modern English IPA",
-   "NEIPA"
+   "Hazy IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2025/10/13/the-hop-chronicles-harlequin-2023-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2025/10/13/the-hop-chronicles-harlequin-2023-pale-ale/",
+  "figures": "https://brulosophy.com/2025/10/13/the-hop-chronicles-harlequin-2023-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "HBC 586 LUPOMAX",
@@ -2858,7 +3043,10 @@ const CHRONICLE_INDEX = [
    "Tropical IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/05/19/the-hop-chronicles-hbc-586-lupomax-2021/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/05/19/the-hop-chronicles-hbc-586-lupomax-2021/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2022/05/19/the-hop-chronicles-hbc-586-lupomax-2021/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Hersbrucker",
@@ -2886,11 +3074,14 @@ const CHRONICLE_INDEX = [
    7
   ],
   "styles": [
-   "Munich Helles",
+   "Helles",
    "Dortmunder"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/03/03/the-hop-chronicles-hersbrucker-2021-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/03/03/the-hop-chronicles-hersbrucker-2021-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/03/03/the-hop-chronicles-hersbrucker-2021-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": "Hersbrucker (2021 PL)"
  },
  {
   "variety": "Hersbrucker",
@@ -2918,11 +3109,14 @@ const CHRONICLE_INDEX = [
    7
   ],
   "styles": [
-   "Munich Helles",
+   "Helles",
    "Dortmunder"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/03/03/the-hop-chronicles-hersbrucker-2021-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/03/03/the-hop-chronicles-hersbrucker-2021-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/03/03/the-hop-chronicles-hersbrucker-2021-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Huell Melon",
@@ -2951,10 +3145,13 @@ const CHRONICLE_INDEX = [
   ],
   "styles": [
    "Summer Ale",
-   "Wheat"
+   "American Wheat"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/01/05/the-hop-chronicles-huell-melon/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/01/05/the-hop-chronicles-huell-melon/",
+  "figures": "https://brulosophy.com/2017/01/05/the-hop-chronicles-huell-melon/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Idaho 7",
@@ -2986,7 +3183,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/06/23/the-hop-chronicles-idaho-7-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/06/23/the-hop-chronicles-idaho-7-2020/",
+  "figures": "https://brulosophy.com/2022/06/23/the-hop-chronicles-idaho-7-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Idaho Gem",
@@ -3018,7 +3218,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/03/04/the-hop-chronicles-idaho-gem-2020/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/03/04/the-hop-chronicles-idaho-gem-2020/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2021/03/04/the-hop-chronicles-idaho-gem-2020/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Kazbek",
@@ -3046,11 +3249,14 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Bohemian Pilsner",
+   "Czech Pilsner",
    "Saison"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/07/21/the-hop-chronicles-kazbek-2021-pale-lager/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/07/21/the-hop-chronicles-kazbek-2021-pale-lager/",
+  "figures": "https://brulosophy.com/2023/07/21/the-hop-chronicles-kazbek-2021-pale-lager/",
+  "caveats": "",
+  "profileFrom": "Kazbek (2021 PL)"
  },
  {
   "variety": "Kazbek",
@@ -3078,11 +3284,14 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Bohemian Pilsner",
+   "Czech Pilsner",
    "Saison"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/07/21/the-hop-chronicles-kazbek-2021-pale-lager/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/07/21/the-hop-chronicles-kazbek-2021-pale-lager/",
+  "figures": "https://brulosophy.com/2023/07/21/the-hop-chronicles-kazbek-2021-pale-lager/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Kohatu",
@@ -3114,7 +3323,10 @@ const CHRONICLE_INDEX = [
    "NZ Pilsner"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/10/21/the-hop-chronicles-kohatu-2020/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/10/21/the-hop-chronicles-kohatu-2020/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2021/10/21/the-hop-chronicles-kohatu-2020/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Lemondrop",
@@ -3142,12 +3354,15 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Wheat",
+   "American Wheat",
    "Blonde Ale",
    "Session IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/06/01/the-hop-chronicles-lemondrop/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/06/01/the-hop-chronicles-lemondrop/",
+  "figures": "https://brulosophy.com/2017/06/01/the-hop-chronicles-lemondrop/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Loral",
@@ -3180,7 +3395,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/03/23/the-hop-chronicles-loral/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/03/23/the-hop-chronicles-loral/",
+  "figures": "https://brulosophy.com/2017/03/23/the-hop-chronicles-loral/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Mackinac",
@@ -3212,7 +3430,10 @@ const CHRONICLE_INDEX = [
    "Blonde Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/07/07/the-hop-chronicles-mackinac-2021-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/07/07/the-hop-chronicles-mackinac-2021-pale-ale/",
+  "figures": "https://brulosophy.com/2023/07/07/the-hop-chronicles-mackinac-2021-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Magnum",
@@ -3240,10 +3461,13 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Any (clean bittering)"
+   "Bittering (any style)"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/02/02/the-hop-chronicles-magnum/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/02/02/the-hop-chronicles-magnum/",
+  "figures": "https://brulosophy.com/2017/02/02/the-hop-chronicles-magnum/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Mandarina Bavaria",
@@ -3271,12 +3495,15 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Wheat",
-   "Modern Lager",
+   "American Wheat",
+   "Hoppy Lager",
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2020/03/05/the-hop-chronicles-mandarina-bavaria-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2020/03/05/the-hop-chronicles-mandarina-bavaria-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2020/03/05/the-hop-chronicles-mandarina-bavaria-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "McKenzie",
@@ -3308,7 +3535,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/04/07/the-hop-chronicles-mckenzie-2021/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/04/07/the-hop-chronicles-mckenzie-2021/",
+  "figures": "https://brulosophy.com/2022/04/07/the-hop-chronicles-mckenzie-2021/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "McKenzie LUPOMAX",
@@ -3340,7 +3570,10 @@ const CHRONICLE_INDEX = [
    "Double IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2025/08/18/the-hop-chronicles-mckenzie-lupomax-2023-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2025/08/18/the-hop-chronicles-mckenzie-lupomax-2023-pale-ale/",
+  "figures": "https://brulosophy.com/2025/08/18/the-hop-chronicles-mckenzie-lupomax-2023-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Medusa",
@@ -3372,7 +3605,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/08/03/the-hop-chronicles-medusa/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/08/03/the-hop-chronicles-medusa/",
+  "figures": "https://brulosophy.com/2017/08/03/the-hop-chronicles-medusa/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Melba",
@@ -3401,10 +3637,13 @@ const CHRONICLE_INDEX = [
   ],
   "styles": [
    "Australian Pale Ale",
-   "IPA"
+   "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/10/05/the-hop-chronicles-melba/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/10/05/the-hop-chronicles-melba/",
+  "figures": "https://brulosophy.com/2017/10/05/the-hop-chronicles-melba/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Mistral",
@@ -3436,7 +3675,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/07/01/the-hop-chronicles-mistral-2019/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/07/01/the-hop-chronicles-mistral-2019/",
+  "figures": "https://brulosophy.com/2021/07/01/the-hop-chronicles-mistral-2019/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Mosaic",
@@ -3469,7 +3711,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/02/16/the-hop-chronicles-mosaic/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/02/16/the-hop-chronicles-mosaic/",
+  "figures": "https://brulosophy.com/2017/02/16/the-hop-chronicles-mosaic/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Mosaic LUPOMAX",
@@ -3501,7 +3746,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2020/11/05/the-hop-chronicles-mosaic-lupomax-2019/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2020/11/05/the-hop-chronicles-mosaic-lupomax-2019/",
+  "figures": "https://brulosophy.com/2020/11/05/the-hop-chronicles-mosaic-lupomax-2019/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Motueka",
@@ -3534,7 +3782,10 @@ const CHRONICLE_INDEX = [
    "Hazy IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/09/01/the-hop-chronicles-motueka-2021-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/09/01/the-hop-chronicles-motueka-2021-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2022/09/01/the-hop-chronicles-motueka-2021-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": "Motueka (2021 PL)"
  },
  {
   "variety": "Motueka",
@@ -3567,7 +3818,10 @@ const CHRONICLE_INDEX = [
    "Hazy IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/09/01/the-hop-chronicles-motueka-2021-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/09/01/the-hop-chronicles-motueka-2021-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2022/09/01/the-hop-chronicles-motueka-2021-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Moutere",
@@ -3599,7 +3853,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2020/04/09/the-hop-chronicles-moutere-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2020/04/09/the-hop-chronicles-moutere-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2020/04/09/the-hop-chronicles-moutere-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Mt. Hood",
@@ -3632,7 +3889,10 @@ const CHRONICLE_INDEX = [
    "American Wheat"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2025/03/31/the-hop-chronicles-mt-hood-2024-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2025/03/31/the-hop-chronicles-mt-hood-2024-pale-ale/",
+  "figures": "https://brulosophy.com/2025/03/31/the-hop-chronicles-mt-hood-2024-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Mystic",
@@ -3665,7 +3925,10 @@ const CHRONICLE_INDEX = [
    "ESB"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2024/12/23/the-hop-chronicles-mystic-2020-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2024/12/23/the-hop-chronicles-mystic-2020-pale-ale/",
+  "figures": "https://brulosophy.com/2024/12/23/the-hop-chronicles-mystic-2020-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Nectaron",
@@ -3694,11 +3957,14 @@ const CHRONICLE_INDEX = [
   ],
   "styles": [
    "Hazy IPA",
-   "Dry-hopped Pilsner",
-   "IPA"
+   "Hoppy Lager",
+   "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/09/07/the-hop-chronicles-nectaron-2022-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/09/07/the-hop-chronicles-nectaron-2022-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/09/07/the-hop-chronicles-nectaron-2022-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": "Nectaron (2022 PL)"
  },
  {
   "variety": "Nectaron",
@@ -3727,11 +3993,14 @@ const CHRONICLE_INDEX = [
   ],
   "styles": [
    "Hazy IPA",
-   "Dry-hopped Pilsner",
-   "IPA"
+   "Hoppy Lager",
+   "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/09/07/the-hop-chronicles-nectaron-2022-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/09/07/the-hop-chronicles-nectaron-2022-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/09/07/the-hop-chronicles-nectaron-2022-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Nelson Sauvin",
@@ -3764,7 +4033,10 @@ const CHRONICLE_INDEX = [
    "Saison"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2019/08/01/the-hop-chronicles-nelson-sauvin-2018/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2019/08/01/the-hop-chronicles-nelson-sauvin-2018/",
+  "figures": "https://brulosophy.com/2019/08/01/the-hop-chronicles-nelson-sauvin-2018/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "New Jersey Cascade",
@@ -3796,7 +4068,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/10/04/the-hop-chronicles-new-jersey-cascade-2018/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/10/04/the-hop-chronicles-new-jersey-cascade-2018/",
+  "figures": "https://brulosophy.com/2018/10/04/the-hop-chronicles-new-jersey-cascade-2018/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Northern Brewer",
@@ -3829,7 +4104,10 @@ const CHRONICLE_INDEX = [
    "Brown Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2024/02/05/the-hop-chronicles-northern-brewer-2021-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2024/02/05/the-hop-chronicles-northern-brewer-2021-pale-ale/",
+  "figures": "https://brulosophy.com/2024/02/05/the-hop-chronicles-northern-brewer-2021-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Nugget",
@@ -3861,7 +4139,10 @@ const CHRONICLE_INDEX = [
    "Barleywine"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/09/21/the-hop-chronicles-nugget/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/09/21/the-hop-chronicles-nugget/",
+  "figures": "https://brulosophy.com/2017/09/21/the-hop-chronicles-nugget/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Pacific Jade",
@@ -3893,7 +4174,10 @@ const CHRONICLE_INDEX = [
    "Porter"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2024/04/15/the-hop-chronicles-pacific-jade-2022-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2024/04/15/the-hop-chronicles-pacific-jade-2022-pale-ale/",
+  "figures": "https://brulosophy.com/2024/04/15/the-hop-chronicles-pacific-jade-2022-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Pacifica",
@@ -3925,7 +4209,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/01/20/the-hop-chronicles-pacifica-2020/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/01/20/the-hop-chronicles-pacifica-2020/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2022/01/20/the-hop-chronicles-pacifica-2020/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Pekko",
@@ -3957,7 +4244,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/11/01/the-hop-chronicles-pekko-2016/ | WARNING: this article publishes chemistry identical to the other of Enigma/Pekko, including parentage text. One of the two carries the wrong hop's figures at source. Verify against a merchant spec sheet before use."
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/11/01/the-hop-chronicles-pekko-2016/ | WARNING: this article publishes chemistry identical to the other of Enigma/Pekko, including parentage text. One of the two carries the wrong hop's figures at source. Verify against a merchant spec sheet before use.",
+  "figures": "https://brulosophy.com/2018/11/01/the-hop-chronicles-pekko-2016/",
+  "caveats": "WARNING: this article publishes chemistry identical to the other of Enigma/Pekko, including parentage text. One of the two carries the wrong hop's figures at source. Verify against a merchant spec sheet before use.",
+  "profileFrom": ""
  },
  {
   "variety": "Perle",
@@ -3988,10 +4278,13 @@ const CHRONICLE_INDEX = [
    "Vienna Lager",
    "Bock",
    "Dunkel",
-   "Kolsch"
+   "Kölsch"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2026/02/02/the-hop-chronicles-perle-2022-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2026/02/02/the-hop-chronicles-perle-2022-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2026/02/02/the-hop-chronicles-perle-2022-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Rakau",
@@ -4020,10 +4313,13 @@ const CHRONICLE_INDEX = [
   ],
   "styles": [
    "NZ Pale Ale",
-   "IPA"
+   "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2019/06/06/the-hop-chronicles-rakau-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2019/06/06/the-hop-chronicles-rakau-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2019/06/06/the-hop-chronicles-rakau-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Riwaka",
@@ -4055,11 +4351,14 @@ const CHRONICLE_INDEX = [
    "Hazy IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/04/21/the-hop-chronicles-riwaka-2021-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/04/21/the-hop-chronicles-riwaka-2021-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/04/21/the-hop-chronicles-riwaka-2021-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": "Riwaka (2021 PL)"
  },
  {
   "variety": "Riwaka",
-  "cropYear": "2022",
+  "cropYear": "2021",
   "origin": "New Zealand",
   "series": "Pale Lager",
   "published": "2023-04-21",
@@ -4087,7 +4386,10 @@ const CHRONICLE_INDEX = [
    "Hazy IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/04/21/the-hop-chronicles-riwaka-2021-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/04/21/the-hop-chronicles-riwaka-2021-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/04/21/the-hop-chronicles-riwaka-2021-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Saaz",
@@ -4115,11 +4417,13 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Czech Pilsner",
-   "Bohemian Lager"
+   "Czech Pilsner"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/01/06/the-hop-chronicles-saaz-2020-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/01/06/the-hop-chronicles-saaz-2020-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/01/06/the-hop-chronicles-saaz-2020-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Sabro",
@@ -4151,7 +4455,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2019/05/02/the-hop-chronicles-sabro-2018/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2019/05/02/the-hop-chronicles-sabro-2018/",
+  "figures": "https://brulosophy.com/2019/05/02/the-hop-chronicles-sabro-2018/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Sabro LUPOMAX",
@@ -4183,7 +4490,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/09/02/the-hop-chronicles-sabro-lupomax/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/09/02/the-hop-chronicles-sabro-lupomax/",
+  "figures": "https://brulosophy.com/2021/09/02/the-hop-chronicles-sabro-lupomax/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Saphir",
@@ -4211,11 +4521,14 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Munich Helles",
+   "Helles",
    "Witbier"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/08/18/the-hop-chronicles-saphir-2020-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/08/18/the-hop-chronicles-saphir-2020-pale-ale/",
+  "figures": "https://brulosophy.com/2022/08/18/the-hop-chronicles-saphir-2020-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Simcoe",
@@ -4247,7 +4560,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/03/01/the-hop-chronicles-simcoe-2016/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/03/01/the-hop-chronicles-simcoe-2016/",
+  "figures": "https://brulosophy.com/2018/03/01/the-hop-chronicles-simcoe-2016/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Sonnet",
@@ -4279,7 +4595,10 @@ const CHRONICLE_INDEX = [
    "Blonde Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/05/05/the-hop-chronicles-sonnet-2020/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/05/05/the-hop-chronicles-sonnet-2020/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2022/05/05/the-hop-chronicles-sonnet-2020/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Sorachi Ace",
@@ -4311,7 +4630,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/02/04/the-hop-chronicles-sorachi-ace-2019/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/02/04/the-hop-chronicles-sorachi-ace-2019/",
+  "figures": "https://brulosophy.com/2021/02/04/the-hop-chronicles-sorachi-ace-2019/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Southern Star",
@@ -4343,7 +4665,10 @@ const CHRONICLE_INDEX = [
    "Red IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/04/21/the-hop-chronicles-southern-star-2019/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/04/21/the-hop-chronicles-southern-star-2019/",
+  "figures": "https://brulosophy.com/2022/04/21/the-hop-chronicles-southern-star-2019/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Spalter Select",
@@ -4371,12 +4696,15 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Kolsch",
+   "Kölsch",
    "Altbier",
    "Helles"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/06/02/the-hop-chronicles-spalter-select-2022-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/06/02/the-hop-chronicles-spalter-select-2022-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/06/02/the-hop-chronicles-spalter-select-2022-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Sterling",
@@ -4408,7 +4736,10 @@ const CHRONICLE_INDEX = [
    "Belgian Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2020/02/06/the-hop-chronicles-sterling-2018/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2020/02/06/the-hop-chronicles-sterling-2018/",
+  "figures": "https://brulosophy.com/2020/02/06/the-hop-chronicles-sterling-2018/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Strata",
@@ -4440,7 +4771,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2019/09/05/the-hop-chronicles-strata-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2019/09/05/the-hop-chronicles-strata-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2019/09/05/the-hop-chronicles-strata-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Styrian Wolf",
@@ -4473,7 +4807,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2024/06/24/the-hop-chronicles-styrian-wolf-2021-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2024/06/24/the-hop-chronicles-styrian-wolf-2021-pale-ale/",
+  "figures": "https://brulosophy.com/2024/06/24/the-hop-chronicles-styrian-wolf-2021-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Summit",
@@ -4502,10 +4839,13 @@ const CHRONICLE_INDEX = [
   ],
   "styles": [
    "West Coast IPA",
-   "Bittering"
+   "Bittering (any style)"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/08/02/the-hop-chronicles-summit-2017/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/08/02/the-hop-chronicles-summit-2017/",
+  "figures": "https://brulosophy.com/2018/08/02/the-hop-chronicles-summit-2017/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Superdelic",
@@ -4533,11 +4873,13 @@ const CHRONICLE_INDEX = [
    7
   ],
   "styles": [
-   "Hazy IPA",
-   "Juicy IPA"
+   "Hazy IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2025/06/23/the-hop-chronicles-superdelic-2024-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2025/06/23/the-hop-chronicles-superdelic-2024-pale-ale/",
+  "figures": "https://brulosophy.com/2025/06/23/the-hop-chronicles-superdelic-2024-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Superdelic",
@@ -4565,11 +4907,13 @@ const CHRONICLE_INDEX = [
    7
   ],
   "styles": [
-   "Hazy IPA",
-   "Juicy IPA"
+   "Hazy IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2025/06/23/the-hop-chronicles-superdelic-2024-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2025/06/23/the-hop-chronicles-superdelic-2024-pale-ale/",
+  "figures": "https://brulosophy.com/2025/06/23/the-hop-chronicles-superdelic-2024-pale-ale/",
+  "caveats": "",
+  "profileFrom": "Superdelic (2024 PA)"
  },
  {
   "variety": "Tahoma",
@@ -4601,7 +4945,10 @@ const CHRONICLE_INDEX = [
    "Pilsner"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2019/02/07/the-hop-chronicles-tahoma-2017/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2019/02/07/the-hop-chronicles-tahoma-2017/",
+  "figures": "https://brulosophy.com/2019/02/07/the-hop-chronicles-tahoma-2017/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Taiheke",
@@ -4633,7 +4980,10 @@ const CHRONICLE_INDEX = [
    "Session IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/03/10/the-hop-chronicles-taiheke-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/03/10/the-hop-chronicles-taiheke-2020/",
+  "figures": "https://brulosophy.com/2022/03/10/the-hop-chronicles-taiheke-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Talus",
@@ -4665,7 +5015,10 @@ const CHRONICLE_INDEX = [
    "American Wheat"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/01/07/the-hop-chronicles-talus-2019/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/01/07/the-hop-chronicles-talus-2019/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2021/01/07/the-hop-chronicles-talus-2019/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Talus LUPOMAX",
@@ -4697,7 +5050,10 @@ const CHRONICLE_INDEX = [
    "Double IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/12/15/the-hop-chronicles-talus-lupomax-2021-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/12/15/the-hop-chronicles-talus-lupomax-2021-pale-ale/",
+  "figures": "https://brulosophy.com/2022/12/15/the-hop-chronicles-talus-lupomax-2021-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Target",
@@ -4725,11 +5081,14 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "English Bitter",
+   "Bitter",
    "Dry Stout"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/11/30/the-hop-chronicles-target-2021-pale-ale/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/11/30/the-hop-chronicles-target-2021-pale-ale/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/11/30/the-hop-chronicles-target-2021-pale-ale/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Tettnanger",
@@ -4762,7 +5121,10 @@ const CHRONICLE_INDEX = [
    "Oktoberfest"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2023/06/16/the-hop-chronicles-tettnanger-2022-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2023/06/16/the-hop-chronicles-tettnanger-2022-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2023/06/16/the-hop-chronicles-tettnanger-2022-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Topaz",
@@ -4794,7 +5156,10 @@ const CHRONICLE_INDEX = [
    "Dark IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/03/24/the-hop-chronicles-topaz-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/03/24/the-hop-chronicles-topaz-2020/",
+  "figures": "https://brulosophy.com/2022/03/24/the-hop-chronicles-topaz-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Triumph",
@@ -4823,10 +5188,13 @@ const CHRONICLE_INDEX = [
   ],
   "styles": [
    "Pale Ale",
-   "IPA"
+   "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2020/12/03/the-hop-chronicles-triumph-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2020/12/03/the-hop-chronicles-triumph-2020/",
+  "figures": "https://brulosophy.com/2020/12/03/the-hop-chronicles-triumph-2020/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "US Goldings",
@@ -4859,7 +5227,10 @@ const CHRONICLE_INDEX = [
    "Mild"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2022/09/15/the-hop-chronicles-us-goldings-2020-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2022/09/15/the-hop-chronicles-us-goldings-2020-pale-ale/",
+  "figures": "https://brulosophy.com/2022/09/15/the-hop-chronicles-us-goldings-2020-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "US ProvOAK",
@@ -4891,7 +5262,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2020/03/26/the-hop-chronicles-us-provoak-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2020/03/26/the-hop-chronicles-us-provoak-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2020/03/26/the-hop-chronicles-us-provoak-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "US Saaz",
@@ -4923,7 +5297,10 @@ const CHRONICLE_INDEX = [
    "Light Lager"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2024/10/28/the-hop-chronicles-us-saaz-2022-pale-lager/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2024/10/28/the-hop-chronicles-us-saaz-2022-pale-lager/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2024/10/28/the-hop-chronicles-us-saaz-2022-pale-lager/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "USDA 008",
@@ -4931,7 +5308,7 @@ const CHRONICLE_INDEX = [
   "origin": "USA",
   "series": "Pale Ale",
   "published": "2016-01-07",
-  "notes": "As hinted at previously, Steven from Oregon State University’s Hops Breeding Program provided two different varieties to evaluate for The Hop Chronicles.",
+  "notes": "",
   "url": "https://brulosophy.com/2016/01/07/the-hop-chronicles-usda-008/",
   "aa": "10.09%",
   "beta": "3.34%",
@@ -4955,7 +5332,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2016/01/07/the-hop-chronicles-usda-008/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2016/01/07/the-hop-chronicles-usda-008/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2016/01/07/the-hop-chronicles-usda-008/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "USDA 074",
@@ -4963,7 +5343,7 @@ const CHRONICLE_INDEX = [
   "origin": "USA",
   "series": "Pale Ale",
   "published": "2015-12-03",
-  "notes": "We were recently contacted by Oregon State University graduate student, Steven Hill, who works in the hop breeding program with Dr.",
+  "notes": "",
   "url": "https://brulosophy.com/2015/12/03/the-hop-chronicles-usda-074/",
   "aa": "12.36%",
   "beta": "2.68%",
@@ -4987,7 +5367,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2015/12/03/the-hop-chronicles-usda-074/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2015/12/03/the-hop-chronicles-usda-074/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2015/12/03/the-hop-chronicles-usda-074/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Vic Secret",
@@ -5019,7 +5402,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2018/02/01/the-hop-chronicles-vic-secret-2017/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2018/02/01/the-hop-chronicles-vic-secret-2017/",
+  "figures": "https://brulosophy.com/2018/02/01/the-hop-chronicles-vic-secret-2017/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Vinnie Special Experimental",
@@ -5051,7 +5437,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2016/01/28/the-hop-chronicles-vinnie-special-experimental/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2016/01/28/the-hop-chronicles-vinnie-special-experimental/",
+  "figures": "https://brulosophy.com/2016/01/28/the-hop-chronicles-vinnie-special-experimental/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Vista",
@@ -5079,12 +5468,15 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Modern West Coast IPA",
+   "West Coast IPA",
    "Hazy IPA",
    "Hoppy Lager"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2025/11/10/the-hop-chronicles-vista-2023-pale-lager/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2025/11/10/the-hop-chronicles-vista-2023-pale-lager/",
+  "figures": "https://brulosophy.com/2025/11/10/the-hop-chronicles-vista-2023-pale-lager/",
+  "caveats": "",
+  "profileFrom": "Vista (2023 PL)"
  },
  {
   "variety": "Vista",
@@ -5112,12 +5504,15 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "Modern West Coast IPA",
+   "West Coast IPA",
    "Hazy IPA",
    "Hoppy Lager"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2025/11/10/the-hop-chronicles-vista-2023-pale-lager/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2025/11/10/the-hop-chronicles-vista-2023-pale-lager/",
+  "figures": "https://brulosophy.com/2025/11/10/the-hop-chronicles-vista-2023-pale-lager/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Waimea",
@@ -5149,7 +5544,10 @@ const CHRONICLE_INDEX = [
    "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2020/01/16/the-hop-chronicles-waimea-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2020/01/16/the-hop-chronicles-waimea-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2020/01/16/the-hop-chronicles-waimea-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Warrior",
@@ -5177,10 +5575,13 @@ const CHRONICLE_INDEX = [
    2
   ],
   "styles": [
-   "American IPA (bittering)"
+   "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2020/02/20/the-hop-chronicles-warrior-2018/ | no axis: apple/pear"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2020/02/20/the-hop-chronicles-warrior-2018/ | no axis: apple/pear",
+  "figures": "https://brulosophy.com/2020/02/20/the-hop-chronicles-warrior-2018/",
+  "caveats": "no axis: apple/pear",
+  "profileFrom": ""
  },
  {
   "variety": "Willamette",
@@ -5208,12 +5609,15 @@ const CHRONICLE_INDEX = [
    8
   ],
   "styles": [
-   "English Ale",
+   "English Pale Ale",
    "Porter",
    "Brown Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2017/05/04/the-hop-chronicles-willamette/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2017/05/04/the-hop-chronicles-willamette/",
+  "figures": "https://brulosophy.com/2017/05/04/the-hop-chronicles-willamette/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Zamba",
@@ -5242,10 +5646,13 @@ const CHRONICLE_INDEX = [
   ],
   "styles": [
    "Hazy IPA",
-   "Fruit-forward Pale Ale"
+   "Pale Ale"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2024/03/04/the-hop-chronicles-zamba-2021-pale-ale/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2024/03/04/the-hop-chronicles-zamba-2021-pale-ale/",
+  "figures": "https://brulosophy.com/2024/03/04/the-hop-chronicles-zamba-2021-pale-ale/",
+  "caveats": "",
+  "profileFrom": ""
  },
  {
   "variety": "Zappa",
@@ -5277,7 +5684,10 @@ const CHRONICLE_INDEX = [
    "American IPA"
   ],
   "basis": "post",
-  "xcheck": "Brulosophy article: https://brulosophy.com/2021/03/18/the-hop-chronicles-zappa-2020/"
+  "xcheck": "Brulosophy article: https://brulosophy.com/2021/03/18/the-hop-chronicles-zappa-2020/",
+  "figures": "https://brulosophy.com/2021/03/18/the-hop-chronicles-zappa-2020/",
+  "caveats": "",
+  "profileFrom": ""
  }
 ];
 
@@ -5301,8 +5711,8 @@ const CURATED_HOPS = {
   "Mosaic":       {aa:"11-14%", d:[6,8,6,7,4,6,3,2,1,2], styles:["Hazy IPA","American IPA","Pale Ale"]},
   "Simcoe":       {aa:"11-14%", d:[5,4,2,1,7,8,2,1,1,3], styles:["American IPA","West Coast IPA"]},
   "Amarillo":     {aa:"7-9%",   d:[8,6,3,2,3,3,4,1,1,1], styles:["American IPA","Pale Ale"]},
-  "Centennial":   {aa:"9-11%",  d:[7,3,1,1,5,4,5,1,1,1], styles:["American IPA","Pale Ale","APA"]},
-  "Cascade":      {aa:"5-7%",   d:[6,2,1,1,3,2,7,2,1,1], styles:["American Pale Ale","American IPA"]},
+  "Centennial":   {aa:"9-11%",  d:[7,3,1,1,5,4,5,1,1,1], styles:["American IPA","Pale Ale"]},
+  "Cascade":      {aa:"5-7%",   d:[6,2,1,1,3,2,7,2,1,1], styles:["Pale Ale","American IPA"]},
   "Nelson Sauvin":{aa:"12-13%", d:[5,9,3,7,1,2,2,3,1,1], styles:["Hazy IPA","American IPA","Saison"]},
   "Galaxy":       {aa:"13-15%", d:[6,9,7,3,1,3,1,1,1,1], styles:["Hazy IPA","American IPA"]},
   "El Dorado":    {aa:"14-16%", d:[5,8,7,3,2,4,1,1,1,1], styles:["Hazy IPA","American IPA"]},
@@ -5321,9 +5731,10 @@ const CURATED_HOPS = {
 
 /** Library key for a chronicle entry: unique across crop years and series. */
 function chronicleKey(e){
-  return e.cropYear || e.series
-    ? `${e.variety} (${[e.cropYear, e.series === "Pale Lager" ? "PL" : "PA"].filter(Boolean).join(" ")})`
-    : e.variety;
+  if(!e.cropYear && !e.series) return e.variety;
+  const series = e.series === "Pale Lager" ? "PL" : "PA";
+  // One article states no crop year; the gap is marked rather than left to look like a typo.
+  return e.cropYear ? `${e.variety} (${e.cropYear} ${series})` : `${e.variety} (${series}, crop n/a)`;
 }
 
 function buildDefaults(){
@@ -5333,12 +5744,12 @@ function buildDefaults(){
   }
   for(const e of CHRONICLE_INDEX){
     // `basis` marks how the profile was derived; absent means none exists yet.
-    const styles = [...new Set((e.styles && e.styles.length ? e.styles : [])
-      .concat(e.series ? [e.series] : []))];
+    // The series (Pale Ale / Pale Lager) is the beer the hop was tested in,
+    // not a style it suits, so it stays on `chron` and out of the tags.
     lib[chronicleKey(e)] = {
       aa: e.aa || "n/a",
       d: Array.isArray(e.d) ? e.d.slice() : null,
-      styles: styles.length ? styles : ["Uncategorized"],
+      styles: e.styles && e.styles.length ? e.styles.slice() : ["Uncategorized"],
       // "post" is first-hand, read off the article itself; "chronicle" here
       // means a search summary of it, which is a weaker claim.
       src: e.basis === "post" ? "chronicle"
@@ -5349,9 +5760,13 @@ function buildDefaults(){
       coh: e.coh || "",
       oil: e.oil || "",
       oils: e.oils || "",
-      // What this entry's figures were cross-checked against. Not the same as
-      // verified: a second database agreeing is not the reader attesting.
       xcheck: e.xcheck || "",
+      // The article the figures were read from, anything the extraction
+      // flagged about them, and -- for a variety with two articles -- the
+      // sibling entry whose article the shared profile actually came from.
+      figures: e.figures || "",
+      caveats: e.caveats || "",
+      profileFrom: e.profileFrom || "",
       chron: {cropYear:e.cropYear, origin:e.origin, series:e.series, published:e.published, notes:e.notes},
       verified: null          // only a reader can attest to a source
     };
@@ -5383,6 +5798,9 @@ function normalizeEntry(h){
     oil: typeof h.oil === "string" ? h.oil : "",
     oils: typeof h.oils === "string" ? h.oils : "",
     xcheck: typeof h.xcheck === "string" ? h.xcheck : "",
+    figures: typeof h.figures === "string" ? h.figures : "",
+    caveats: typeof h.caveats === "string" ? h.caveats : "",
+    profileFrom: typeof h.profileFrom === "string" ? h.profileFrom : "",
     d: Array.isArray(h.d) ? h.d.slice() : null,
     styles: Array.isArray(h.styles) && h.styles.length ? h.styles.slice() : ["Uncategorized"],
     src: h.src || "manual",
@@ -5551,8 +5969,11 @@ function renderHopList(filter=""){
   const scoredCount = Object.keys(HOPS).filter(scored).length;
   const counts = document.getElementById("libraryCounts");
   const verifiedCount = Object.keys(HOPS).filter(verified).length;
-  counts.textContent =
-    `${total} entries — ${scoredCount} scored, ${total - scoredCount} awaiting a profile. Showing ${names.length}.`;
+  counts.textContent = total === scoredCount
+    ? `${total} entries, all scored. Showing ${names.length}.`
+    : `${total} entries — ${scoredCount} scored, ${total - scoredCount} awaiting a profile. Showing ${names.length}.`;
+  // The "scored only" filter has nothing to do until an unscored entry exists.
+  document.getElementById("scoredOnlyLabel").classList.toggle("hidden", total === scoredCount && !onlyScored);
   counts.appendChild(document.createElement("br"));
   counts.appendChild(el("span",
     verifiedCount
@@ -5817,16 +6238,38 @@ function renderTable(){
   });
   table.appendChild(oilsRow);
 
-  const xcRow = document.createElement("tr");
-  xcRow.appendChild(el("td", "Cross-checked"));
-  if(blend) xcRow.appendChild(blendCell(null));
+  // Where the numbers were read from. Every shipped citation is a Brulosophy
+  // article; eleven varieties have two, sharing one profile, and then the
+  // link names the article it actually came from.
+  const figRow = document.createElement("tr");
+  figRow.appendChild(el("td", "Figures from"));
+  if(blend) figRow.appendChild(blendCell(null));
   selected.forEach(n => {
     const td = document.createElement("td");
-    const x = (HOPS[n] || {}).xcheck;
-    td.appendChild(x ? el("span", x, "badge") : el("span", "\u2014", "badge unscored"));
-    xcRow.appendChild(td);
+    const h = HOPS[n] || {};
+    const url = h.figures || ((h.xcheck || "").match(/https?:\/\/\S+/) || [""])[0];
+    if(url){
+      const own = !h.profileFrom;
+      const a = el("a", (own ? "this article" : `the ${h.profileFrom.replace(/^.*\((.*)\)$/, "$1")} article`) + " \u2197", "src-link");
+      a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer";
+      td.appendChild(a);
+    }else{
+      td.appendChild(el("span", h.src === "curated" ? "composite judgement" : "\u2014", "badge unscored"));
+    }
+    figRow.appendChild(td);
   });
-  table.appendChild(xcRow);
+  table.appendChild(figRow);
+
+  if(selected.some(n => (HOPS[n] || {}).caveats)){
+    const noteRow = document.createElement("tr");
+    noteRow.appendChild(el("td", "Notes"));
+    if(blend) noteRow.appendChild(blendCell(null));
+    selected.forEach(n => {
+      const c = (HOPS[n] || {}).caveats;
+      noteRow.appendChild(el("td", c || "\u2014", c ? "wrap" : ""));
+    });
+    table.appendChild(noteRow);
+  }
 
   const verRow = document.createElement("tr");
   verRow.appendChild(el("td", "Verified"));
@@ -5856,6 +6299,10 @@ function renderTable(){
       a.href = h.url; a.target = "_blank"; a.rel = "noopener noreferrer";
       td.appendChild(document.createTextNode(" "));
       td.appendChild(a);
+    }
+    if(h.profileFrom){
+      td.appendChild(document.createElement("br"));
+      td.appendChild(el("span", `profile shared with ${h.profileFrom}`, "note"));
     }
     srcRow.appendChild(td);
   });
@@ -6089,6 +6536,9 @@ function saveHopFromForm(){
     oil: field("mOil"),
     oils: field("mOils"),
     xcheck: prev.xcheck || "",
+    figures: prev.figures || "",
+    caveats: prev.caveats || "",
+    profileFrom: prev.profileFrom || "",
     d: unscored ? null : getSliderValues(),
     styles: styles.length ? styles : ["Uncategorized"],
     // A profile read off the post itself outranks whatever was there before.
@@ -6299,10 +6749,9 @@ function sendChronicleToForm(parsed){
 
   editingName = existing ? key : null;
   document.getElementById("mName").value = key;
-  // Keep the entry's own style tags; the series is one of them, not a replacement.
+  // Keep the entry's own style tags. The series is the test beer, not a tag.
   const existingStyles = existing && Array.isArray(existing.styles) ? existing.styles : [];
-  document.getElementById("mStyles").value = [...new Set(existingStyles.concat(entry.series ? [entry.series] : []))]
-    .filter(st => st !== "Uncategorized").join(", ");
+  document.getElementById("mStyles").value = existingStyles.filter(st => st !== "Uncategorized").join(", ");
   document.getElementById("mUrl").value = entry.url;
   // The verified controls follow the entry, or whatever the form last held
   // would be saved onto this hop -- another hop's attestation, or none.
@@ -6329,7 +6778,7 @@ function sendChronicleToForm(parsed){
   pendingSeed = {
     key,
     fromPost: Boolean(parsed && parsed.scores),
-    entry: existing || {aa:"n/a", d:null, styles:[entry.series || "Uncategorized"], src:"chronicle", url:entry.url,
+    entry: existing || {aa:"n/a", d:null, styles:["Uncategorized"], src:"chronicle", url:entry.url,
       chron:{cropYear:entry.cropYear, origin:entry.origin, series:entry.series, published:entry.published, notes:entry.notes}}
   };
 

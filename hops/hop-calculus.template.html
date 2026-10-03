@@ -157,7 +157,7 @@
   <div class="panel">
     <h2>Hop Library</h2>
     <input type="text" id="hopSearch" placeholder="Search hop variety...">
-    <label style="margin-bottom:8px;">
+    <label style="margin-bottom:8px;" id="scoredOnlyLabel">
       <input type="checkbox" id="scoredOnly" style="width:auto; margin:0 6px 0 0; vertical-align:-1px;">
       Scored entries only
     </label>
@@ -211,7 +211,7 @@
         <h2>Pick Descriptors You Want</h2>
         <div id="descToggles"></div>
         <div id="targetResults" class="table-scroll" style="margin-top:14px;"></div>
-        <p class="note">Only scored entries can be ranked. Unscored Hop Chronicles entries are excluded until you fill them in from the Hop Chronicles tab.</p>
+        <p class="note">Only scored entries can be ranked; an entry saved as unscored is left out until it has a profile.</p>
       </div>
     </div>
 
@@ -243,13 +243,13 @@
         <p class="note" style="margin-top:0;">The series uses a consistent results sentence, so scores come from the post's own ranking rather than a guess:</p>
         <table>
           <tr><th>Where the descriptor appears</th><th>Score</th></tr>
-          <tr><td>1st in the "most prominent" list</td><td>9/10</td></tr>
-          <tr><td>2nd / 3rd / 4th+</td><td>8 / 7 / 6</td></tr>
-          <tr><td>Mentioned elsewhere in the post</td><td>5/10</td></tr>
+          <tr><td>1st / 2nd / 3rd in a "most prominent" list</td><td>9 / 8 / 7</td></tr>
+          <tr><td>4th or later in that list</td><td>6/10</td></tr>
+          <tr><td>Mentioned elsewhere in the post (pasted articles only)</td><td>5/10</td></tr>
           <tr><td>Never mentioned</td><td>2/10</td></tr>
-          <tr><td>Named among the "lowest rated"</td><td>1/10</td></tr>
+          <tr><td>Named among the "lowest rated" (pasted articles only)</td><td>1/10</td></tr>
         </table>
-        <p class="note">This is a ranking translated to a scale, not a measurement — Brülosophy publishes descriptor votes, not oil analysis. Two hops both scoring 9 on citrus were each their post's top descriptor; it does not mean they are equally citrusy. Descriptors the series tracks but this tool has no axis for (onion/garlic, apple/pear) are reported as notes instead of being folded into a neighbouring axis.</p>
+        <p class="note">Many posts rank aroma and flavour separately; an axis keeps its best rank across the two lists, which is why two or three axes on one hop can all read 9. The shipped entries were built from those ranked lists alone — the 5 for a passing mention and the 1 for lowest-rated appear only when you paste a whole article, because that is when the rest of the text is available. This is a ranking translated to a scale, not a measurement — Brülosophy publishes descriptor votes, not oil analysis. Two hops both scoring 9 on citrus were each their post's top descriptor; it does not mean they are equally citrusy. Descriptors the series tracks but this tool has no axis for (onion/garlic, apple/pear) are reported as notes instead of being folded into a neighbouring axis.</p>
       </div>
     </div>
 
@@ -330,7 +330,7 @@
 <span class="badge">yours</span> is whatever you typed under Manage Hops.
 <span class="badge unscored">unscored</span> means no profile exists; the entry is excluded from the radar, the blend average and the ranking.
 <span class="badge">estimate</span> and <span class="badge unscored">reported</span> no longer ship. They marked profiles drawn from search-engine summaries rather than the posts, and were replaced when all 138 articles were parsed directly. If you used an earlier version of this page, your saved copy may still carry a few; they are the weakest tier here and worth re-pulling from the article.</p>
-<p class="note"><strong>Cross-checked vs verified.</strong> <em>Cross-checked</em> means the alpha and beta figures were reconciled against a second hop database and the entry names which record it matched — a real citation, but still someone else's compiled figures rather than a measurement of your lot. <em>Verified</em> is the stronger claim and only you can set it. A hop can be cross-checked and still unverified.</p>
+<p class="note"><strong>Figures from, and shared profiles.</strong> <em>Figures from</em> links the article the chemistry and the ranking were read out of. Eleven varieties have two articles (a different crop year or test beer); they share one profile, and the entry whose article it did not come from says so and links the one it did. That is a citation, not a measurement of your lot. <em>Verified</em> is the stronger claim and only you can set it.</p>
 <p class="note"><strong>Verified vs assumed.</strong> Nothing ships verified — only you can attest to a source. When you check a hop against a spec sheet, a lab report or your own lot, tick <em>verified</em> under Manage Hops and name what you checked it against; the entry is then marked <span class="badge verified">✓</span> everywhere it appears, and a later data update will never overwrite it with an estimate. The library panel tracks how much of your library is confirmed rather than assumed.</p>
 <p class="note">Alpha-acid figures are variety-typical ranges. <strong>Always confirm alpha acid on your actual lot</strong> before any bittering calculation — this tool covers flavour and aroma character only, not IBU math. Your edits are saved to this browser's local storage, so they persist here on reload but will not sync across devices unless you export/import the JSON.</p>
 
@@ -361,8 +361,8 @@ const CURATED_HOPS = {
   "Mosaic":       {aa:"11-14%", d:[6,8,6,7,4,6,3,2,1,2], styles:["Hazy IPA","American IPA","Pale Ale"]},
   "Simcoe":       {aa:"11-14%", d:[5,4,2,1,7,8,2,1,1,3], styles:["American IPA","West Coast IPA"]},
   "Amarillo":     {aa:"7-9%",   d:[8,6,3,2,3,3,4,1,1,1], styles:["American IPA","Pale Ale"]},
-  "Centennial":   {aa:"9-11%",  d:[7,3,1,1,5,4,5,1,1,1], styles:["American IPA","Pale Ale","APA"]},
-  "Cascade":      {aa:"5-7%",   d:[6,2,1,1,3,2,7,2,1,1], styles:["American Pale Ale","American IPA"]},
+  "Centennial":   {aa:"9-11%",  d:[7,3,1,1,5,4,5,1,1,1], styles:["American IPA","Pale Ale"]},
+  "Cascade":      {aa:"5-7%",   d:[6,2,1,1,3,2,7,2,1,1], styles:["Pale Ale","American IPA"]},
   "Nelson Sauvin":{aa:"12-13%", d:[5,9,3,7,1,2,2,3,1,1], styles:["Hazy IPA","American IPA","Saison"]},
   "Galaxy":       {aa:"13-15%", d:[6,9,7,3,1,3,1,1,1,1], styles:["Hazy IPA","American IPA"]},
   "El Dorado":    {aa:"14-16%", d:[5,8,7,3,2,4,1,1,1,1], styles:["Hazy IPA","American IPA"]},
@@ -381,9 +381,10 @@ const CURATED_HOPS = {
 
 /** Library key for a chronicle entry: unique across crop years and series. */
 function chronicleKey(e){
-  return e.cropYear || e.series
-    ? `${e.variety} (${[e.cropYear, e.series === "Pale Lager" ? "PL" : "PA"].filter(Boolean).join(" ")})`
-    : e.variety;
+  if(!e.cropYear && !e.series) return e.variety;
+  const series = e.series === "Pale Lager" ? "PL" : "PA";
+  // One article states no crop year; the gap is marked rather than left to look like a typo.
+  return e.cropYear ? `${e.variety} (${e.cropYear} ${series})` : `${e.variety} (${series}, crop n/a)`;
 }
 
 function buildDefaults(){
@@ -393,12 +394,12 @@ function buildDefaults(){
   }
   for(const e of CHRONICLE_INDEX){
     // `basis` marks how the profile was derived; absent means none exists yet.
-    const styles = [...new Set((e.styles && e.styles.length ? e.styles : [])
-      .concat(e.series ? [e.series] : []))];
+    // The series (Pale Ale / Pale Lager) is the beer the hop was tested in,
+    // not a style it suits, so it stays on `chron` and out of the tags.
     lib[chronicleKey(e)] = {
       aa: e.aa || "n/a",
       d: Array.isArray(e.d) ? e.d.slice() : null,
-      styles: styles.length ? styles : ["Uncategorized"],
+      styles: e.styles && e.styles.length ? e.styles.slice() : ["Uncategorized"],
       // "post" is first-hand, read off the article itself; "chronicle" here
       // means a search summary of it, which is a weaker claim.
       src: e.basis === "post" ? "chronicle"
@@ -409,9 +410,13 @@ function buildDefaults(){
       coh: e.coh || "",
       oil: e.oil || "",
       oils: e.oils || "",
-      // What this entry's figures were cross-checked against. Not the same as
-      // verified: a second database agreeing is not the reader attesting.
       xcheck: e.xcheck || "",
+      // The article the figures were read from, anything the extraction
+      // flagged about them, and -- for a variety with two articles -- the
+      // sibling entry whose article the shared profile actually came from.
+      figures: e.figures || "",
+      caveats: e.caveats || "",
+      profileFrom: e.profileFrom || "",
       chron: {cropYear:e.cropYear, origin:e.origin, series:e.series, published:e.published, notes:e.notes},
       verified: null          // only a reader can attest to a source
     };
@@ -443,6 +448,9 @@ function normalizeEntry(h){
     oil: typeof h.oil === "string" ? h.oil : "",
     oils: typeof h.oils === "string" ? h.oils : "",
     xcheck: typeof h.xcheck === "string" ? h.xcheck : "",
+    figures: typeof h.figures === "string" ? h.figures : "",
+    caveats: typeof h.caveats === "string" ? h.caveats : "",
+    profileFrom: typeof h.profileFrom === "string" ? h.profileFrom : "",
     d: Array.isArray(h.d) ? h.d.slice() : null,
     styles: Array.isArray(h.styles) && h.styles.length ? h.styles.slice() : ["Uncategorized"],
     src: h.src || "manual",
@@ -611,8 +619,11 @@ function renderHopList(filter=""){
   const scoredCount = Object.keys(HOPS).filter(scored).length;
   const counts = document.getElementById("libraryCounts");
   const verifiedCount = Object.keys(HOPS).filter(verified).length;
-  counts.textContent =
-    `${total} entries — ${scoredCount} scored, ${total - scoredCount} awaiting a profile. Showing ${names.length}.`;
+  counts.textContent = total === scoredCount
+    ? `${total} entries, all scored. Showing ${names.length}.`
+    : `${total} entries — ${scoredCount} scored, ${total - scoredCount} awaiting a profile. Showing ${names.length}.`;
+  // The "scored only" filter has nothing to do until an unscored entry exists.
+  document.getElementById("scoredOnlyLabel").classList.toggle("hidden", total === scoredCount && !onlyScored);
   counts.appendChild(document.createElement("br"));
   counts.appendChild(el("span",
     verifiedCount
@@ -877,16 +888,38 @@ function renderTable(){
   });
   table.appendChild(oilsRow);
 
-  const xcRow = document.createElement("tr");
-  xcRow.appendChild(el("td", "Cross-checked"));
-  if(blend) xcRow.appendChild(blendCell(null));
+  // Where the numbers were read from. Every shipped citation is a Brulosophy
+  // article; eleven varieties have two, sharing one profile, and then the
+  // link names the article it actually came from.
+  const figRow = document.createElement("tr");
+  figRow.appendChild(el("td", "Figures from"));
+  if(blend) figRow.appendChild(blendCell(null));
   selected.forEach(n => {
     const td = document.createElement("td");
-    const x = (HOPS[n] || {}).xcheck;
-    td.appendChild(x ? el("span", x, "badge") : el("span", "\u2014", "badge unscored"));
-    xcRow.appendChild(td);
+    const h = HOPS[n] || {};
+    const url = h.figures || ((h.xcheck || "").match(/https?:\/\/\S+/) || [""])[0];
+    if(url){
+      const own = !h.profileFrom;
+      const a = el("a", (own ? "this article" : `the ${h.profileFrom.replace(/^.*\((.*)\)$/, "$1")} article`) + " \u2197", "src-link");
+      a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer";
+      td.appendChild(a);
+    }else{
+      td.appendChild(el("span", h.src === "curated" ? "composite judgement" : "\u2014", "badge unscored"));
+    }
+    figRow.appendChild(td);
   });
-  table.appendChild(xcRow);
+  table.appendChild(figRow);
+
+  if(selected.some(n => (HOPS[n] || {}).caveats)){
+    const noteRow = document.createElement("tr");
+    noteRow.appendChild(el("td", "Notes"));
+    if(blend) noteRow.appendChild(blendCell(null));
+    selected.forEach(n => {
+      const c = (HOPS[n] || {}).caveats;
+      noteRow.appendChild(el("td", c || "\u2014", c ? "wrap" : ""));
+    });
+    table.appendChild(noteRow);
+  }
 
   const verRow = document.createElement("tr");
   verRow.appendChild(el("td", "Verified"));
@@ -916,6 +949,10 @@ function renderTable(){
       a.href = h.url; a.target = "_blank"; a.rel = "noopener noreferrer";
       td.appendChild(document.createTextNode(" "));
       td.appendChild(a);
+    }
+    if(h.profileFrom){
+      td.appendChild(document.createElement("br"));
+      td.appendChild(el("span", `profile shared with ${h.profileFrom}`, "note"));
     }
     srcRow.appendChild(td);
   });
@@ -1149,6 +1186,9 @@ function saveHopFromForm(){
     oil: field("mOil"),
     oils: field("mOils"),
     xcheck: prev.xcheck || "",
+    figures: prev.figures || "",
+    caveats: prev.caveats || "",
+    profileFrom: prev.profileFrom || "",
     d: unscored ? null : getSliderValues(),
     styles: styles.length ? styles : ["Uncategorized"],
     // A profile read off the post itself outranks whatever was there before.
@@ -1359,10 +1399,9 @@ function sendChronicleToForm(parsed){
 
   editingName = existing ? key : null;
   document.getElementById("mName").value = key;
-  // Keep the entry's own style tags; the series is one of them, not a replacement.
+  // Keep the entry's own style tags. The series is the test beer, not a tag.
   const existingStyles = existing && Array.isArray(existing.styles) ? existing.styles : [];
-  document.getElementById("mStyles").value = [...new Set(existingStyles.concat(entry.series ? [entry.series] : []))]
-    .filter(st => st !== "Uncategorized").join(", ");
+  document.getElementById("mStyles").value = existingStyles.filter(st => st !== "Uncategorized").join(", ");
   document.getElementById("mUrl").value = entry.url;
   // The verified controls follow the entry, or whatever the form last held
   // would be saved onto this hop -- another hop's attestation, or none.
@@ -1389,7 +1428,7 @@ function sendChronicleToForm(parsed){
   pendingSeed = {
     key,
     fromPost: Boolean(parsed && parsed.scores),
-    entry: existing || {aa:"n/a", d:null, styles:[entry.series || "Uncategorized"], src:"chronicle", url:entry.url,
+    entry: existing || {aa:"n/a", d:null, styles:["Uncategorized"], src:"chronicle", url:entry.url,
       chron:{cropYear:entry.cropYear, origin:entry.origin, series:entry.series, published:entry.published, notes:entry.notes}}
   };
 

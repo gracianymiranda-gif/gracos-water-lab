@@ -81,7 +81,7 @@ function browser() {
   const p = b.boot();
   eq("boot: library has every shipped entry", p.ev("Object.keys(HOPS).length"), 158);
   eq("boot: list shows every entry", p.doc.querySelectorAll("#hopList .hop-item").length, 158);
-  ok("boot: counts line is right", /158 entries — 158 scored, 0 awaiting a profile/.test(p.$("#libraryCounts").textContent));
+  ok("boot: counts line is right", /158 entries, all scored\. Showing 158\./.test(p.$("#libraryCounts").textContent));
   p.ev('toggleHop("Citra"); toggleHop("Mosaic")');
   eq("compare: two selected", p.ev("selected.length"), 2);
   eq("compare: label column, blend column, one column per hop", p.doc.querySelectorAll("#compareTable tr:first-child th").length, 4);
@@ -310,6 +310,28 @@ function browser() {
   eq("filter: composites are the twenty curated entries", p.doc.querySelectorAll("#hopList .hop-item").length, 20);
   click('#sourcePills [data-source="chronicle"]');
   eq("filter: from post is the 138 articles", p.doc.querySelectorAll("#hopList .hop-item").length, 138);
+}
+
+// ---- Set M: where the numbers come from ----
+{
+  const b = browser();
+  const p = b.boot();
+  p.ev('toggleHop("Amarillo (2016 PA)"); toggleHop("Amarillo (2021 PL)"); toggleHop("Citra")');
+  const row = (label) => [...p.doc.querySelectorAll("#compareTable tr")].find((tr) => tr.firstChild.textContent === label);
+  const cells = [...row("Figures from").querySelectorAll("td")].slice(1);   // skip label; blend col is first
+  ok("figures: the entry whose article was not used names the one that was", /the 2021 PL article/.test(cells[1].textContent));
+  ok("figures: and links to it", cells[1].querySelector("a").href.includes("amarillo-2021-pale-lager"));
+  eq("figures: the article that was used says so", cells[2].querySelector("a").textContent.trim(), "this article \u2197");
+  eq("figures: a composite has no article", cells[3].textContent.trim(), "composite judgement");
+  ok("figures: the shared profile is declared on the source row", /profile shared with Amarillo \(2021 PL\)/.test(row("Profile source").textContent));
+  ok("figures: no cell is a 100-character badge", [...p.doc.querySelectorAll("#compareTable .badge")].every((b) => b.textContent.length < 40));
+  // The series is not a style any more.
+  p.$("#styleSelect").value = "Pale Ale"; p.ev("renderStyleResults()");
+  ok("style match: Pale Ale is the tagged hops, not every Pale Ale-tested article", p.doc.querySelectorAll("#styleResults .tag").length < 100 && p.doc.querySelectorAll("#styleResults .tag").length > 30);
+  ok("style match: no alias spelling in the dropdown", ![...p.doc.querySelectorAll("#styleSelect option")].some((o) => ["APA", "NEIPA", "IPA", "Kolsch"].includes(o.value)));
+  ok("key: an article without a crop year says so", p.ev('Boolean(HOPS["Sabro LUPOMAX (PA, crop n/a)"])'));
+  ok("counts: no 'awaiting a profile' when nothing is", /158 entries, all scored/.test(p.$("#libraryCounts").textContent));
+  ok("counts: the scored-only filter is hidden with nothing to filter", p.$("#scoredOnlyLabel").classList.contains("hidden"));
 }
 
 console.log(`\n${pass} passed, ${fail} failed (${pass + fail} total)`);

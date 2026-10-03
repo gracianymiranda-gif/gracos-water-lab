@@ -215,6 +215,27 @@ idx.shift();
 ok("index: every row cites a Brulosophy URL",
   idx.every((r) => /^https:\/\/brulosophy\.com\//.test(r[6])), "a Source URL is missing or off-site");
 
+// ---- Set E2: index hygiene ----
+// The slug carries the crop year and series; the columns must agree with it,
+// or the entry's key names a crop the article is not about (Riwaka once did).
+const disagree = idx.filter((r) => {
+  const m = r[6].toLowerCase().match(/-((?:19|20)\d{2})(?:-pale-(ale|lager))?\/?$/);
+  if (!m) return false;
+  return m[1] !== r[1] || (m[2] && (m[2] === "lager" ? "Pale Lager" : "Pale Ale") !== r[3]);
+});
+eq("index: slug year and series agree with the columns", disagree.map((r) => r[0]).join(), "");
+// A note is variety background, not the article's opening line.
+const openers = /^(?:We |Back in|Lately|Following the last|For the first foray|In the quest|As hinted|Most of the hops reviewed)/;
+const badNotes = idx.filter((r) => r[5] && (openers.test(r[5]) || /(?:\bDr|\bMr|,)$/.test(r[5].trim())));
+eq("index: notes are background, not article openers", badNotes.map((r) => r[0]).join(), "");
+// Shipped scores come from ranked lists: 9/8/7/6 by rank, 2 for absent, and
+// 5 or 1 only when a whole article was read. Anything else is a typo.
+const offScale = prof.filter((r) => {
+  const d = AXES.map((a) => Number(r[col[a]]));
+  return d.some((v) => ![1, 2, 5, 6, 7, 8, 9].includes(v)) || !d.includes(9);
+});
+eq("profiles: every score is on the ranked-list scale with a top descriptor", offScale.map((r) => r[0]).join(), "");
+
 // ---- Set F: the built page is in step with the CSVs ----
 const built = readFileSync(join(hops, "hop-calculus.html"), "utf8");
 ok("built page: has no unreplaced build marker", !built.includes("INJECT:"));
@@ -233,6 +254,21 @@ ok("built page: no JS unicode escape left in HTML prose",
   strayEscapes.length === 0,
   `renders literally: ${strayEscapes.join(", ")}`);
 
+// Style tags on the page are the controlled vocabulary, never a series, and a
+// shared profile points at an entry that exists.
+{
+  const start = built.indexOf("const CHRONICLE_INDEX = [");
+  const end = built.indexOf("\n];", start);
+  const index = JSON.parse(built.slice(start + "const CHRONICLE_INDEX = ".length, end + 2));
+  const tags = new Set(index.flatMap((e) => e.styles || []));
+  ok("built page: no alias spellings survive the build", !["APA", "NEIPA", "IPA", "Kolsch", "Bohemian Pilsner", "Munich Helles"].some((t) => tags.has(t)),
+    [...tags].filter((t) => ["APA", "NEIPA", "IPA", "Kolsch"].includes(t)).join());
+  const keys = new Set(index.map((e) => e.cropYear ? `${e.variety} (${e.cropYear} ${e.series === "Pale Lager" ? "PL" : "PA"})` : `${e.variety} (${e.series === "Pale Lager" ? "PL" : "PA"}, crop n/a)`));
+  const shared = index.filter((e) => e.profileFrom);
+  eq("built page: eleven entries share a sibling's profile", shared.length, 11);
+  ok("built page: every shared profile names an entry that exists", shared.every((e) => keys.has(e.profileFrom)), shared.filter((e) => !keys.has(e.profileFrom)).map((e) => e.profileFrom).join());
+  ok("built page: a shared profile's figures link is the sibling's article", shared.every((e) => e.figures && e.figures !== e.url));
+}
 ok("built page: entry count matches the CSV",
   (built.match(/"variety":/g) || []).length === idx.length,
   `page has ${(built.match(/"variety":/g) || []).length}, CSV has ${idx.length} -- re-run node hops/build-hops.mjs`);
