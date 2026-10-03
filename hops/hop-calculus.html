@@ -252,7 +252,7 @@
         <h2>Match Hops to a Style</h2>
         <select id="styleSelect" aria-label="Beer style"></select>
         <div id="styleResults"></div>
-        <p class="note">Style tags are approximate flavor associations, not official BJCP hop requirements — cross&#8209;check against BJCP guidelines for competition recipes. Hop Chronicles entries are tagged with the base recipe they were brewed in (Pale Ale or Pale Lager), which is a test vehicle, not a style recommendation.</p>
+        <p class="note">Style tags are approximate flavor associations, not official BJCP hop requirements — cross&#8209;check against BJCP guidelines for competition recipes. Hop Chronicles entries carry the style tags from the data file; the beer each was tested in (Pale Ale or Pale Lager) is shown under Tested in and is not a style tag.</p>
       </div>
     </div>
 
@@ -384,7 +384,7 @@
 
 <p class="note"><strong>Where each profile comes from.</strong> Every comparison shows a badge.
 <span class="badge parsed">from post</span> is first-hand: the chemistry and the ranked descriptors were read out of the Brülosophy article itself. Every Hop Chronicles entry that ships with this tool is this tier, and pasting an article into the Hop Chronicles tab marks anything you add the same way.
-<span class="badge">composite</span> is a generalized variety character — informed judgement about how a hop reads across sources, not a measurement. The twenty non-Chronicles varieties are this tier.
+<span class="badge">composite</span> is a generalized variety character — informed judgement about how a hop reads across sources, not a measurement. Twenty well-known varieties ship with a composite as well as their Hop Chronicles entries, so they appear twice in the library; the two are on different scales, and a blend, a ranking or a nearest-profile list that mixes them says so. The Source pill in the library panel shows one tier at a time — in the list, in Style Match and in Characteristic Search.
 <span class="badge">yours</span> is whatever you typed under Manage Hops.
 <span class="badge unscored">unscored</span> means no profile exists; the entry is excluded from the radar, the blend average and the ranking.
 <span class="badge">estimate</span> and <span class="badge unscored">reported</span> no longer ship. They marked profiles drawn from search-engine summaries rather than the posts, and were replaced when all 138 articles were parsed directly. If you used an earlier version of this page, your saved copy may still carry a few; they are the weakest tier here and worth re-pulling from the article.</p>
@@ -5968,6 +5968,9 @@ function adjustParts(name, delta){
 }
 /** Which Source pill an entry belongs under: first-hand, composite, or the reader's own. */
 const sourceGroup = (h) => h.src === "chronicle" ? "chronicle" : h.src === "curated" ? "curated" : "manual";
+/** The Tested-in and Source pills, as one predicate shared by the list, Style Match and Characteristic Search. */
+const passesPills = (h) => (activeSeries === "all" || (h.chron && h.chron.series === activeSeries))
+  && (activeSource === "all" || sourceGroup(h) === activeSource);
 function setPill(groupId, attr, value){
   document.querySelectorAll(`#${groupId} .pill-btn`).forEach(b => {
     const on = b.dataset[attr] === value;
@@ -6028,8 +6031,7 @@ function renderHopList(filter=""){
     .filter(n => !onlyVerified || verified(n))
     // The series is the beer the hop was tested in, not a style the hop suits,
     // so it is a filter on the article rather than a tag on the hop.
-    .filter(n => activeSeries === "all" || (HOPS[n].chron && HOPS[n].chron.series === activeSeries))
-    .filter(n => activeSource === "all" || sourceGroup(HOPS[n]) === activeSource)
+    .filter(n => passesPills(HOPS[n]))
     .sort((a, b) => {
       if(sortBy === "aa"){ const d = alphaMid(HOPS[b]) - alphaMid(HOPS[a]); if(d) return d; }
       if(axisIdx >= 0){ const va = scored(a) ? HOPS[a].d[axisIdx] : -1, vb = scored(b) ? HOPS[b].d[axisIdx] : -1; if(vb !== va) return vb - va; }
@@ -6642,13 +6644,13 @@ function renderStyleResults(){
   const style = document.getElementById("styleSelect").value;
   const box = document.getElementById("styleResults");
   box.innerHTML = "";
-  const matches = Object.entries(HOPS)
-    .filter(([_,h]) => Array.isArray(h.styles) && h.styles.includes(style))
-    .map(([n]) => n)
-    .sort();
+  const tagged = Object.entries(HOPS).filter(([_,h]) => Array.isArray(h.styles) && h.styles.includes(style));
+  const matches = tagged.filter(([_,h]) => passesPills(h)).map(([n]) => n).sort();
 
   if(!matches.length){
-    box.appendChild(el("p", "No matches in this library yet.", "note"));
+    box.appendChild(el("p", tagged.length
+      ? `All ${tagged.length} hops tagged for ${style} are hidden by the Tested in / Source filter in the library panel.`
+      : "No matches in this library yet.", "note"));
     return;
   }
   const p = document.createElement("p");
@@ -6662,6 +6664,9 @@ function renderStyleResults(){
     if(!scored(m)) tag.style.opacity = "0.6";
     box.appendChild(tag);
   });
+  if(matches.length < tagged.length){
+    box.appendChild(el("p", `${tagged.length - matches.length} more tagged for ${style} are hidden by the Tested in / Source filter in the library panel.`, "note"));
+  }
 }
 
 let activeDescs = new Set();
@@ -6699,14 +6704,17 @@ function renderTargetResults(){
   // descriptors is what actually separates the field.
   const all = Object.entries(HOPS)
     .filter(([name]) => scored(name))
+    .filter(([_,h]) => passesPills(h))
     .map(([name,h]) => ({
       name, styles: h.styles, src: h.src,
       score: idxs.reduce((s,i) => s + h.d[i], 0) / idxs.length,
     }))
     .sort((a,b) => b.score - a.score || a.name.localeCompare(b.name));
 
+  const hidden = Object.keys(HOPS).filter(scored).length - all.length;
+  if(hidden > 0) box.appendChild(el("p", `${hidden} scored hops are hidden by the Tested in / Source filter in the library panel.`, "tie-note"));
   if(!all.length){
-    box.appendChild(el("p", "No scored entries yet.", "note"));
+    box.appendChild(el("p", "No scored entries under the current library filters.", "note"));
     return;
   }
   const top = all[0].score;
@@ -6716,6 +6724,10 @@ function renderTargetResults(){
   if(tied > 1){
     box.appendChild(el("p", `${tied} hops share the top score of ${top.toFixed(1)}/10 on ${[...activeDescs].join(" + ")}. They are listed alphabetically, not ranked against each other — each was a top descriptor in its own tasting.`
       + (tied > 15 ? " Pick two or three descriptors to narrow this down." : ""), "tie-note"));
+    // A 9 from a tasting and a 9 from a composite are not the same claim.
+    if(new Set(all.filter(s => s.score === top).map(s => sourceGroup({src: s.src}))).size > 1){
+      box.appendChild(el("p", "This tier mixes composites and post-derived profiles, which are on different scales; the Source pill in the library panel shows one kind at a time.", "tie-note"));
+    }
   }
 
   const table = document.createElement("table");
@@ -7207,11 +7219,11 @@ document.getElementById("scoredOnly").addEventListener("change", () => renderHop
 document.getElementById("verifiedOnly").addEventListener("change", () => renderHopList(document.getElementById("hopSearch").value));
 document.querySelectorAll("#seriesPills .pill-btn").forEach(b => b.addEventListener("click", () => {
   activeSeries = b.dataset.series; setPill("seriesPills", "series", activeSeries);
-  renderHopList(document.getElementById("hopSearch").value);
+  renderHopList(document.getElementById("hopSearch").value); renderStyleResults(); renderTargetResults();
 }));
 document.querySelectorAll("#sourcePills .pill-btn").forEach(b => b.addEventListener("click", () => {
   activeSource = b.dataset.source; setPill("sourcePills", "source", activeSource);
-  renderHopList(document.getElementById("hopSearch").value);
+  renderHopList(document.getElementById("hopSearch").value); renderStyleResults(); renderTargetResults();
 }));
 document.getElementById("saveHopBtn").onclick = saveHopFromForm;
 document.getElementById("clearFormBtn").onclick = clearForm;

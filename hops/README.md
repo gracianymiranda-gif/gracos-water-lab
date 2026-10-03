@@ -67,9 +67,11 @@ neighbouring axis. It is a ranking translated to a scale, not a measurement.
 The twenty composites are informed judgement about how a variety usually
 reads, on a 0–10 scale that uses the whole range; the post-derived profiles
 are ranks. A blend that mixes the two says so, and the nearest-profile
-distances across that line mean less. Nineteen of the twenty varieties also
-have a Hop Chronicles entry; the Source filter in the library shows one tier
-at a time.
+distances across that line mean less. Every one of the twenty varieties also
+has at least one Hop Chronicles entry (Columbus/CTZ as CTZ, Tettnang as
+Tettnanger, Idaho 7 also as 007 Golden Hop), so each appears twice in the
+library. The Source pill in the library panel applies to the list, Style Match
+and Characteristic Search, so you can see one tier at a time.
 
 ## Accuracy
 

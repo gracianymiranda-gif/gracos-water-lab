@@ -246,6 +246,11 @@ ok("built page: byte-identical to a fresh build", built === build().html, "run n
   ok("composites: every vector is ten scores in 0-10",
     names.every((n) => Array.isArray(curated[n].d) && curated[n].d.length === AXES.length && curated[n].d.every((v) => Number.isInteger(v) && v >= 0 && v <= 10)));
   ok("composites: every entry has an alpha range and a style", names.every((n) => /\d/.test(curated[n].aa) && curated[n].styles.length > 0));
+  // The page says every composite also has a Hop Chronicles entry; hold it to that.
+  const fold = (t) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const varieties = idx.map((r) => fold(r[0]));
+  const orphans = names.filter((n) => { const stem = fold(n.split("/").pop()); return !varieties.some((v) => v.includes(stem)); });
+  eq("composites: each has a Hop Chronicles counterpart", orphans.join(), "");
 }
 ok("built page: has no unreplaced build marker", !built.includes("INJECT:"));
 // Any non-empty version works — it only has to differ between builds so a

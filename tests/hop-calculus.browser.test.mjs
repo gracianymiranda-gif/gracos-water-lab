@@ -311,6 +311,23 @@ function browser() {
   eq("filter: composites are the twenty curated entries", p.doc.querySelectorAll("#hopList .hop-item").length, 20);
   click('#sourcePills [data-source="chronicle"]');
   eq("filter: from post is the 138 articles", p.doc.querySelectorAll("#hopList .hop-item").length, 138);
+  // The pills reach the two ranking tabs too.
+  click('#sourcePills [data-source="curated"]');
+  p.ev('activeDescs = new Set(["Spicy/Noble"]); renderTargetResults()');
+  ok("filter: Characteristic Search obeys Source", [...p.doc.querySelectorAll("#targetResults table tr")].slice(1).every((tr) => /composite/.test(tr.textContent)));
+  ok("filter: and says how many are hidden", /138 scored hops are hidden/.test(p.$("#targetResults").textContent));
+  p.$("#styleSelect").value = "German Pilsner"; p.ev("renderStyleResults()");
+  eq("filter: Style Match obeys Source", [...p.doc.querySelectorAll("#styleResults .tag")].map((t) => t.textContent).join(", "), "Hallertau Mittelfrüh, Saaz, Tettnang");
+  ok("filter: and says how many are hidden", /more tagged for German Pilsner are hidden/.test(p.$("#styleResults").textContent));
+  click('#sourcePills [data-source="all"]'); click('#seriesPills [data-series="Pale Lager"]');
+  p.ev('activeDescs = new Set(["Citrus"]); renderTargetResults()');
+  ok("filter: Characteristic Search obeys Tested in", [...p.doc.querySelectorAll("#targetResults table tr")].slice(1).every((tr) => /PL\)/.test(tr.firstElementChild.textContent)));
+  click('#seriesPills [data-series="all"]');
+  p.ev('activeDescs = new Set(["Spicy/Noble"]); renderTargetResults()');
+  ok("filter: a tie that mixes tiers says so", /mixes composites and post-derived profiles/.test(p.$("#targetResults").textContent));
+  click('#sourcePills [data-source="chronicle"]'); p.ev("renderTargetResults()");
+  ok("filter: and not once one tier is shown", !/mixes composites/.test(p.$("#targetResults").textContent));
+  ok("legend: composites are not called non-Chronicles", !/non-Chronicles/.test(p.doc.body.textContent));
 }
 
 // ---- Set M: where the numbers come from ----
