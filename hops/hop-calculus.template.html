@@ -8,6 +8,8 @@
   :root{
     --bg:#12100e; --panel:#1c1815; --accent:#e6a817; --accent2:#7fae42;
     --text:#f2ede4; --muted:#a89f92; --border:#332d27;
+    /* Controls need a 3:1 boundary; the panel hairline (--border) is 1.2:1 on a field. */
+    --border-ui:#746860;
   }
   *{box-sizing:border-box;}
   body{
@@ -35,8 +37,9 @@
   .hop-item:last-child{border-bottom:none;}
   .hop-item:hover{background:#241f1a;}
   .hop-item:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
-  .hop-item.selected{background:#332a17; color:var(--accent);}
-  .hop-item.unscored{opacity:0.72;}
+  .hop-item{border-left:3px solid transparent;}
+  .hop-item.selected{background:#332a17; color:var(--accent); border-left-color:var(--accent); font-weight:600;}
+  .hop-item.unscored{color:var(--muted); font-style:italic;}
   .hop-meta{color:var(--muted); font-size:0.75rem; white-space:nowrap;}
   /* Selected hops: the left border is the hop's radar colour, so chip, polygon, legend and column match. */
   .chip-card{
@@ -45,7 +48,7 @@
     padding:5px 8px; margin-bottom:6px; font-size:0.82rem;
   }
   .chip-name{font-weight:600; flex:1; min-width:0; overflow-wrap:anywhere;}
-  .chip-remove{background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.95rem; line-height:1; padding:2px 4px;}
+  .chip-remove{background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.95rem; line-height:1; padding:6px 7px; min-width:28px; min-height:28px; border-radius:999px;}
   .chip-remove:hover, .chip-remove:focus-visible{color:var(--accent); outline:none;}
   .ratio-ctrl{display:inline-flex; align-items:center; gap:2px; background:#1a1612; border:1px solid var(--border); border-radius:4px; padding:1px 3px;}
   .ratio-btn{background:none; border:none; color:var(--muted); cursor:pointer; font-weight:700; font-size:0.95rem; line-height:1; padding:2px 6px; font-family:inherit;}
@@ -67,10 +70,11 @@
   .pill-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
   .pill-btn.active{background:var(--accent); color:#1a1400; border-color:var(--accent); font-weight:600;}
   td.wrap{white-space:normal; font-size:0.78rem; color:var(--muted);}
-  select, input[type=text], input[type=number], textarea{
-    width:100%; padding:8px; background:#241f1a; border:1px solid var(--border); color:var(--text);
+  select, input[type=text], input[type=search], input[type=number], textarea{
+    width:100%; padding:8px; background:#241f1a; border:1px solid var(--border-ui); color:var(--text);
     border-radius:6px; font-size:0.86rem; margin-bottom:10px; font-family:inherit;
   }
+  select:focus-visible, input:focus-visible, textarea:focus-visible, button:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
   textarea{resize:vertical; min-height:90px;}
   label{font-size:0.78rem; color:var(--muted); display:block; margin-bottom:3px;}
   .field-row{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
@@ -125,8 +129,8 @@
   }
   .mgmt-list{max-height:340px; overflow-y:auto;}
   .small-btn{
-    background:#241f1a; color:var(--muted); border:1px solid var(--border); border-radius:5px;
-    padding:3px 8px; font-size:0.75rem; cursor:pointer; margin-left:6px;
+    background:#241f1a; color:var(--muted); border:1px solid var(--border-ui); border-radius:5px;
+    padding:5px 10px; min-height:28px; font-size:0.75rem; cursor:pointer; margin-left:6px; font-family:inherit;
   }
   .status{font-size:0.8rem; margin-top:8px; color:var(--muted); line-height:1.45;}
   .status.ok{color:var(--accent2);}
@@ -145,18 +149,18 @@
 <h1>Hop Calculus — Homebrew Edition</h1>
 <p class="sub">Compare hop varieties, predict blend flavor profiles, match hops to a style, and manage your own hop library. Built for a 3&#8209;vessel RIMS setup, 6&nbsp;gal batches, 72–75% efficiency.</p>
 
-<div class="tabs">
-  <button class="tab-btn active" data-tab="compare">Compare Hops</button>
-  <button class="tab-btn" data-tab="style">Style Match</button>
-  <button class="tab-btn" data-tab="target">Characteristic Search</button>
-  <button class="tab-btn" data-tab="chronicles">Hop Chronicles</button>
-  <button class="tab-btn" data-tab="manage">Manage Hops</button>
+<div class="tabs" role="tablist" aria-label="Sections">
+  <button class="tab-btn active" role="tab" id="tabbtn-compare" aria-controls="tab-compare" aria-selected="true" data-tab="compare">Compare Hops</button>
+  <button class="tab-btn" role="tab" id="tabbtn-style" aria-controls="tab-style" aria-selected="false" tabindex="-1" data-tab="style">Style Match</button>
+  <button class="tab-btn" role="tab" id="tabbtn-target" aria-controls="tab-target" aria-selected="false" tabindex="-1" data-tab="target">Characteristic Search</button>
+  <button class="tab-btn" role="tab" id="tabbtn-chronicles" aria-controls="tab-chronicles" aria-selected="false" tabindex="-1" data-tab="chronicles">Hop Chronicles</button>
+  <button class="tab-btn" role="tab" id="tabbtn-manage" aria-controls="tab-manage" aria-selected="false" tabindex="-1" data-tab="manage">Manage Hops</button>
 </div>
 
 <div class="layout">
   <div class="panel">
     <h2>Hop Library</h2>
-    <input type="text" id="hopSearch" placeholder="Search hop variety...">
+    <input type="search" id="hopSearch" placeholder="Search hop variety..." aria-label="Search hop variety" autocomplete="off">
     <label style="margin-bottom:8px;" id="scoredOnlyLabel">
       <input type="checkbox" id="scoredOnly" style="width:auto; margin:0 6px 0 0; vertical-align:-1px;">
       Scored entries only
@@ -179,7 +183,7 @@
       <button type="button" class="pill-btn" data-source="manual" aria-pressed="false">Yours</button>
     </div>
     <div class="hop-list" id="hopList"></div>
-    <div id="libraryCounts" class="note" style="margin-top:8px;"></div>
+    <div id="libraryCounts" class="note" style="margin-top:8px;" aria-live="polite"></div>
     <div style="margin-top:12px;">
       <h2 style="margin-bottom:6px;">Selected (max 5)</h2>
       <div id="selectedChips"></div>
@@ -187,26 +191,26 @@
   </div>
 
   <div>
-    <div class="tabpanel active" id="tab-compare">
+    <div class="tabpanel active" id="tab-compare" role="tabpanel" aria-labelledby="tabbtn-compare">
       <div class="panel">
         <h2>Flavor / Aroma Radar</h2>
-        <canvas id="radar" width="480" height="480" role="img" aria-label="Flavour and aroma radar for the selected hops; the table below holds the same numbers"></canvas>
+        <canvas id="radar" width="480" height="480" role="img" aria-describedby="compareTable" aria-label="Flavour and aroma radar for the selected hops; the table below holds the same numbers">Flavour radar — the same scores are in the table below.</canvas>
         <div id="radarLegend" class="radar-legend"></div>
         <div class="table-scroll"><table id="compareTable"></table></div>
         <div id="blendNote" class="note"></div>
       </div>
     </div>
 
-    <div class="tabpanel" id="tab-style">
+    <div class="tabpanel" id="tab-style" role="tabpanel" aria-labelledby="tabbtn-style">
       <div class="panel">
         <h2>Match Hops to a Style</h2>
-        <select id="styleSelect"></select>
+        <select id="styleSelect" aria-label="Beer style"></select>
         <div id="styleResults"></div>
         <p class="note">Style tags are approximate flavor associations, not official BJCP hop requirements — cross&#8209;check against BJCP guidelines for competition recipes. Hop Chronicles entries are tagged with the base recipe they were brewed in (Pale Ale or Pale Lager), which is a test vehicle, not a style recommendation.</p>
       </div>
     </div>
 
-    <div class="tabpanel" id="tab-target">
+    <div class="tabpanel" id="tab-target" role="tabpanel" aria-labelledby="tabbtn-target">
       <div class="panel">
         <h2>Pick Descriptors You Want</h2>
         <div id="descToggles"></div>
@@ -215,21 +219,21 @@
       </div>
     </div>
 
-    <div class="tabpanel" id="tab-chronicles">
+    <div class="tabpanel" id="tab-chronicles" role="tabpanel" aria-labelledby="tabbtn-chronicles">
       <div class="panel">
         <h2>Pull a Hop from The Hop Chronicles</h2>
-        <label>Paste a Hop Chronicles post URL</label>
+        <label for="chronUrl">Paste a Hop Chronicles post URL</label>
         <input type="text" id="chronUrl" placeholder="https://brulosophy.com/2025/10/13/the-hop-chronicles-harlequin-2023-pale-ale/">
         <button class="btn" id="chronLookupBtn">Look up</button>
         <button class="btn secondary" id="chronFetchBtn">Look up &amp; try fetch</button>
-        <div id="chronStatus" class="status"></div>
+        <div id="chronStatus" class="status" role="status" aria-live="polite"></div>
         <div id="chronResult" class="hidden"></div>
 
         <div id="pasteBlock" class="hidden" style="margin-top:14px;">
-          <label>Paste the post text here (select all on the page, copy, paste)</label>
+          <label for="chronPaste">Paste the post text here (select all on the page, copy, paste)</label>
           <textarea id="chronPaste" placeholder="Paste the article text — the parser looks for the results sentence, e.g. &quot;The most prominent aroma and flavor characteristics noted by blind tasters ... were citrus and tropical fruit.&quot;"></textarea>
           <button class="btn" id="chronParseBtn">Parse pasted text</button>
-          <div id="pasteStatus" class="status"></div>
+          <div id="pasteStatus" class="status" role="status" aria-live="polite"></div>
         </div>
 
         <div id="chronPreview" class="preview hidden"></div>
@@ -253,42 +257,42 @@
       </div>
     </div>
 
-    <div class="tabpanel" id="tab-manage">
+    <div class="tabpanel" id="tab-manage" role="tabpanel" aria-labelledby="tabbtn-manage">
       <div class="panel">
         <h2>Add / Edit a Hop</h2>
         <div class="field-row">
           <div>
-            <label>Hop name</label>
+            <label for="mName">Hop name</label>
             <input type="text" id="mName" placeholder="e.g. Talus">
           </div>
           <div>
-            <label>Alpha acid % (e.g. 11-14%)</label>
+            <label for="mAA">Alpha acid % (e.g. 11-14%)</label>
             <input type="text" id="mAA" placeholder="e.g. 12-15%">
           </div>
         </div>
         <div class="field-row">
           <div>
-            <label>Beta acid % (optional)</label>
+            <label for="mBeta">Beta acid % (optional)</label>
             <input type="text" id="mBeta" placeholder="e.g. 3.5-4.5%">
           </div>
           <div>
-            <label>Cohumulone, % of alpha (optional)</label>
+            <label for="mCoh">Cohumulone, % of alpha (optional)</label>
             <input type="text" id="mCoh" placeholder="e.g. 22-24%">
           </div>
         </div>
         <div class="field-row">
           <div>
-            <label>Total oil, mL/100g (optional)</label>
+            <label for="mOil">Total oil, mL/100g (optional)</label>
             <input type="text" id="mOil" placeholder="e.g. 1.5-2.5 mL/100g">
           </div>
           <div>
-            <label>Oil breakdown (optional)</label>
+            <label for="mOils">Oil breakdown (optional)</label>
             <input type="text" id="mOils" placeholder="e.g. myrcene 60%; humulene 12%">
           </div>
         </div>
-        <label>Typical styles (comma-separated)</label>
+        <label for="mStyles">Typical styles (comma-separated)</label>
         <input type="text" id="mStyles" placeholder="e.g. Hazy IPA, American IPA">
-        <label>Source URL (optional)</label>
+        <label for="mUrl">Source URL (optional)</label>
         <input type="text" id="mUrl" placeholder="https://...">
         <label style="margin-top:4px;">Descriptor scores (0-10)</label>
         <div id="sliderContainer"></div>
@@ -300,10 +304,10 @@
           <input type="checkbox" id="mVerified" style="width:auto; margin:0 6px 0 0; vertical-align:-1px;">
           I have verified this against a real source
         </label>
-        <input type="text" id="mVerifiedSrc" placeholder="Verified against what? e.g. Yakima Valley Hops spec sheet 2024, or my lot's COA">
+        <input type="text" id="mVerifiedSrc" aria-label="Verified against what" placeholder="Verified against what? e.g. Yakima Valley Hops spec sheet 2024, or my lot's COA">
         <button class="btn" id="saveHopBtn">Save Hop</button>
         <button class="btn secondary" id="clearFormBtn">Clear Form</button>
-        <div id="mgmtNote" class="note"></div>
+        <div id="mgmtNote" class="note" role="status" aria-live="polite"></div>
       </div>
 
       <div class="panel" style="margin-top:16px;">
@@ -317,7 +321,7 @@
         <button class="btn secondary" id="importBtn">Import JSON file</button>
         <input type="file" id="importFile" accept=".json" class="hidden">
         <button class="btn danger" id="resetBtn">Reset to defaults</button>
-        <div id="importStatus" class="status"></div>
+        <div id="importStatus" class="status" role="status" aria-live="polite"></div>
         <p class="note">Export saves your current library (defaults + your edits, and which shipped hops you deleted) to a JSON file you can back up or share. Import replaces the working library with that file, and rejects one whose entries are malformed rather than half-loading it. Shipped hops the file does not contain stay deleted; hops a later data update adds still arrive.</p>
       </div>
     </div>
@@ -564,6 +568,8 @@ function setPill(groupId, attr, value){
 const scored = (name) => Array.isArray(HOPS[name] && HOPS[name].d);
 const verified = (name) => Boolean(HOPS[name] && HOPS[name].verified);
 const colors = ["#e6a817","#7fae42","#5aa9e6","#e65f5f","#c07fe6"];
+/** Line pattern per selected hop; the blend keeps [6,4] in white for itself. */
+const dashes = [[], [2,3], [10,4,2,4], [1,3], [8,3,1,3]];
 
 /** Text nodes only — hop names and styles are user/imported data. */
 function el(tag, text, className){
@@ -602,9 +608,15 @@ function renderHopList(filter=""){
   names.forEach(name => {
     const item = el("button", null, "hop-item" + (selected.includes(name) ? " selected" : "") + (scored(name) ? "" : " unscored"));
     item.type = "button";
+    item.setAttribute("aria-pressed", selected.includes(name) ? "true" : "false");
     item.appendChild(el("span", name));
     const meta = el("span", null, "hop-meta");
-    if(verified(name)) meta.appendChild(el("span", "\u2713", "badge verified"));
+    if(verified(name)){
+      const v = el("span", "\u2713", "badge verified");
+      v.setAttribute("aria-label", "verified");
+      v.title = HOPS[name].verified.source;
+      meta.appendChild(v);
+    }
     if(scored(name)){
       meta.appendChild(el("span", " AA " + HOPS[name].aa));
     }else{
@@ -727,7 +739,7 @@ function renderLegend(){
     const sw = el("span", null, "legend-swatch");
     sw.style.backgroundColor = colors[i];
     item.appendChild(sw);
-    item.appendChild(el("span", blend && scored(name) ? `${name} (${partsOf(name)})` : name));
+    item.appendChild(el("span", `${i + 1}. ${name}` + (blend && scored(name) ? ` (${partsOf(name)} part${partsOf(name) === 1 ? "" : "s"})` : "")));
     box.appendChild(item);
   });
   if(blend){
@@ -782,7 +794,9 @@ function drawRadar(){
     ctx.strokeStyle = colors[idx];
     ctx.fillStyle = colors[idx]+"33";
     ctx.lineWidth = 2;
+    ctx.setLineDash(dashes[idx] || []);
     ctx.stroke();
+    ctx.setLineDash([]);
     ctx.fill();
     ctx.lineWidth = 1;
   });
@@ -838,7 +852,7 @@ function renderTable(){
   head.appendChild(el("th", "Descriptor"));
   if(blend) head.appendChild(el("th", "Blend", "blend-col"));
   selected.forEach((n,i) => {
-    const th = el("th", n);
+    const th = el("th", `${i + 1}. ${n}`);
     th.style.color = colors[i];
     head.appendChild(th);
   });
@@ -1245,9 +1259,11 @@ function renderMgmtList(){
     const right = document.createElement("span");
     const edit = el("button", "Edit", "small-btn");
     edit.type = "button";
+    edit.setAttribute("aria-label", "Edit " + name);
     edit.onclick = () => loadFormForEdit(name);
     const del = el("button", "Delete", "small-btn");
     del.type = "button";
+    del.setAttribute("aria-label", "Delete " + name);
     del.onclick = () => deleteHop(name);
     right.appendChild(edit); right.appendChild(del);
     row.appendChild(right);
@@ -1560,13 +1576,26 @@ document.getElementById("chronUrl").addEventListener("keydown", e => {
   if(e.key === "Enter"){ e.preventDefault(); lookupChronicle(); }
 });
 
-document.querySelectorAll(".tab-btn").forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tabpanel").forEach(p => p.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
-  };
+const tabButtons = [...document.querySelectorAll(".tab-btn")];
+function showTab(btn, focus){
+  tabButtons.forEach(b => {
+    const on = b === btn;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", on ? "true" : "false");
+    b.tabIndex = on ? 0 : -1;             // one tab stop for the strip; arrows move within it
+  });
+  document.querySelectorAll(".tabpanel").forEach(p => p.classList.remove("active"));
+  document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  if(focus) btn.focus();
+}
+tabButtons.forEach((btn, i) => {
+  btn.onclick = () => showTab(btn, false);
+  btn.addEventListener("keydown", e => {
+    const step = {ArrowRight: 1, ArrowLeft: -1, Home: -i, End: tabButtons.length - 1 - i}[e.key];
+    if(step === undefined) return;
+    e.preventDefault();
+    showTab(tabButtons[(i + step + tabButtons.length) % tabButtons.length], true);
+  });
 });
 
 function renderAll(){

@@ -334,5 +334,31 @@ function browser() {
   ok("counts: the scored-only filter is hidden with nothing to filter", p.$("#scoredOnlyLabel").classList.contains("hidden"));
 }
 
+// ---- Set N: reachable without a mouse or a screen ----
+{
+  const b = browser();
+  const p = b.boot();
+  const tabs = [...p.doc.querySelectorAll('[role="tab"]')];
+  eq("tabs: five tabs in a tablist", tabs.length, 5);
+  eq("tabs: one tab stop", tabs.filter((t) => t.tabIndex === 0).length, 1);
+  tabs[0].dispatchEvent(new p.win.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+  eq("tabs: arrow moves selection", p.$('[role="tab"][aria-selected="true"]').id, "tabbtn-style");
+  ok("tabs: and shows that panel", p.$("#tab-style").classList.contains("active"));
+  tabs[1].dispatchEvent(new p.win.KeyboardEvent("keydown", { key: "End", bubbles: true }));
+  eq("tabs: End reaches the last tab", p.$('[role="tab"][aria-selected="true"]').id, "tabbtn-manage");
+  const unnamed = [...p.doc.querySelectorAll("input, select, textarea")].filter((c) => {
+    if (c.type === "hidden" || c.type === "file" || c.type === "checkbox" || c.type === "range") return false;
+    const byFor = c.id && p.doc.querySelector(`label[for="${c.id}"]`);
+    return !(byFor || c.getAttribute("aria-label") || c.closest("label"));
+  }).map((c) => c.id);
+  eq("forms: every text control has a name", unnamed.join(), "");
+  p.ev('toggleHop("Citra")');
+  eq("list: selection is announced, not just coloured", p.$('#hopList .hop-item[aria-pressed="true"]').textContent.startsWith("Citra"), true);
+  ok("status: outcomes are live regions", ["chronStatus", "pasteStatus", "importStatus", "mgmtNote"].every((id) => p.doc.getElementById(id).getAttribute("aria-live") === "polite"));
+  ok("manage: edit and delete buttons name their hop", p.$('#mgmtList button[aria-label="Delete Citra"]') !== null);
+  ok("radar: has a text alternative pointing at the table", p.$("#radar").getAttribute("aria-describedby") === "compareTable");
+  ok("search: descriptor toggles reachable", p.$("#descToggles button") !== null);
+}
+
 console.log(`\n${pass} passed, ${fail} failed (${pass + fail} total)`);
 process.exit(fail ? 1 : 0);
