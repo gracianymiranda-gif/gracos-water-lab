@@ -33,10 +33,13 @@ This is a static site with no dependencies or build step.
 ## Hop Calculus
 
 A companion tool for comparing hop varieties lives in [`hops/`](hops/) — radar-chart
-flavour profiles, blend prediction, and a library built from Brülosophy's Hop
-Chronicles series. Open `hops/hop-calculus.html` directly; like the water
-calculator it needs no build step. See [`hops/README.md`](hops/README.md) for
-how its data is sourced and how trustworthy each profile is.
+flavour profiles, blends by parts, style matching, nearest-profile substitutes,
+and a library of 158 hops, 138 of them read from Brülosophy's Hop Chronicles
+articles. The masthead links to it. Open `hops/hop-calculus.html` and it works,
+like the water calculator; changing it means editing the template or the CSVs
+and running `node hops/build-hops.mjs` (node built-ins only). See
+[`hops/README.md`](hops/README.md) for how its data is sourced and how far to
+trust each profile.
 
 ## Important Disclaimer
 
@@ -44,7 +47,7 @@ The mash and sparge pH models used in this tool are **heuristic estimates**, not
 
 ## Roadmap / Known Limitations
 
-- The water calculation logic is covered by `tests/bw-calibration.test.mjs`, validated against Bru'n Water 5.5; the hop tool by `tests/hop-calculus.test.mjs`. Both run with plain `node`, no dependencies, and on every push via GitHub Actions.
+- The water calculation logic is covered by `tests/bw-calibration.test.mjs`, validated against Bru'n Water 5.5; the hop tool by `tests/hop-calculus.test.mjs` (parsers, data, build) and `tests/hop-calculus.browser.test.mjs` (the page itself, in jsdom). All run with plain `node` and no dependencies in the repo — CI fetches jsdom into a temp dir for the browser suite — on every push via GitHub Actions, which also fails if the generated hop page is out of step with its sources.
 - `app.js` is currently a single file; a future refactor may split it into focused modules (salts, pH models, BeerXML, UI).
 - Cache-busting for `app.js`/`styles.css` is currently done via manual version query strings in `index.html`.
 
