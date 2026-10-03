@@ -2,47 +2,44 @@
  * Regenerates hops/hop-calculus.html from the template, the shared parser and
  * the two CSVs in hops/data.
  *
- *   node hops/build-hops.mjs
+ *   node hops/build-hops.mjs                    # rebuild
+ *   node hops/build-hops.mjs --allow-unscored   # ship an article with no profile row
  *
  * Zero dependencies — node built-ins only, in keeping with the rest of this
- * repo having no build step or package.json.
+ * repo having no package.json. Deterministic: the same inputs give the same
+ * bytes, which is what lets CI and the tests check the page is a fresh build.
  */
 import {createHash} from 'node:crypto';
 import {readFileSync, writeFileSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {parseCsv} from './csv.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-/** Minimal RFC-4180 reader: handles quoted fields containing commas. */
-function parseCsv(text) {
-  const rows = [];
-  let row = [], field = '', quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (quoted) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; } else { quoted = false; }
-      } else field += c;
-    } else if (c === '"') quoted = true;
-    else if (c === ',') { row.push(field); field = ''; }
-    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-    else if (c !== '\r') field += c;
-  }
-  if (field || row.length) { row.push(field); rows.push(row); }
-  return rows;
-}
-
+/**
+ * Build the page from the template, the parser and the two CSVs.
+ * Pure: reads the inputs, returns the HTML and a few counts, writes nothing.
+ * The test suite calls this to prove the committed page is a fresh build.
+ * @param {{allowUnscored?: boolean}} [opts]
+ * @returns {{html: string, entries: number, scored: number}}
+ */
+export function build(opts = {}) {
 // --- post index -----------------------------------------------------------
 const idxRows = parseCsv(readFileSync(resolve(here, 'data/hop-chronicles.csv'), 'utf8'))
   .filter((r) => r.length > 1);
-const idxHeader = idxRows.shift();
-if (!idxHeader || idxHeader[0] !== 'Hop Variety') {
-  throw new Error('Unexpected header in data/hop-chronicles.csv');
+const idxHeader = idxRows.shift() || [];
+// Columns are found by name, not position: a reordered sheet must fail here,
+// not build a page with crop years where origins should be.
+const icol = Object.fromEntries(idxHeader.map((h, i) => [h, i]));
+for (const col of ['Hop Variety', 'Crop Year', 'Origin', 'Series', 'Published',
+  'Variety Background / Reported Character', 'Source URL']) {
+  if (icol[col] === undefined) throw new Error(`hop-chronicles.csv is missing the "${col}" column`);
 }
 const entries = idxRows.map((r) => ({
-  variety: r[0], cropYear: r[1], origin: r[2], series: r[3],
-  published: r[4], notes: r[5], url: r[6],
+  variety: r[icol['Hop Variety']], cropYear: r[icol['Crop Year']], origin: r[icol['Origin']],
+  series: r[icol['Series']], published: r[icol['Published']],
+  notes: r[icol['Variety Background / Reported Character']], url: r[icol['Source URL']],
 }));
 
 /** Library key for an entry. Mirrors chronicleKey() in the template exactly. */
@@ -125,11 +122,15 @@ for (const r of profRows) {
 }
 
 const scored = entries.filter((e) => profiles.has(key(e.variety))).length;
-process.stdout.write(`  ${scored}/${entries.length} index entries have a descriptor profile\n`);
-if (scored < entries.length && !process.argv.includes('--allow-unscored')) {
+if (scored < entries.length && !opts.allowUnscored) {
   const missing = entries.filter((e) => !profiles.has(key(e.variety))).map((e) => e.variety);
   throw new Error(`${missing.length} index entries have no profile row (${missing.join(', ')}); pass --allow-unscored to ship them unscored`);
 }
+// A profile row that matches no article is a misspelt variety, and would
+// otherwise vanish without a word while its article shipped unscored.
+const indexKeys = new Set(entries.map((e) => key(e.variety)));
+const orphans = profRows.map((r) => r[0]).filter((v) => !indexKeys.has(key(v)));
+if (orphans.length) throw new Error(`Profile rows match no article: ${orphans.join(', ')}`);
 
 const byUrl = new Map(entries.map((e) => [canonUrl(e.url), e]));
 const withProfiles = entries.map((e) => {
@@ -148,17 +149,35 @@ const parserSrc = readFileSync(resolve(here, 'chronicle-parser.js'), 'utf8')
   .replace(/^export /gm, '').trim();
 const template = readFileSync(resolve(here, 'hop-calculus.template.html'), 'utf8');
 
+// The data lands inside a <script>, where JSON is not quite JavaScript: a
+// "</script>" in a note would end the block, and U+2028/9 are line ends to
+// JS. Escaping those characters keeps the JSON valid and the data identical.
+const embed = (value) => JSON.stringify(value, null, 1)
+  .replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')
+  .replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+
+// Hash of the shipped data only. It gates the "library updated" note, not
+// the merge itself, so a template or parser change need not bump it.
+const dataVersion = createHash('sha1').update(JSON.stringify(withProfiles)).digest('hex').slice(0, 12);
+
 // Replacer FUNCTIONS, not strings: a replacement string treats $&, $` and $'
 // as special, and the parser source contains `$` + backtick inside template
 // literals, which would splice the document into itself.
-const out = template
+const html = template
   .replace('/* INJECT:PARSER */', () => parserSrc)
   .replace('/* INJECT:CHRONICLES */', () =>
-    `const DATA_VERSION = ${JSON.stringify(createHash('sha1').update(JSON.stringify(withProfiles)).digest('hex').slice(0, 12))};\n`
-    + `const CHRONICLE_INDEX = ${JSON.stringify(withProfiles, null, 1)};`)
+    `const DATA_VERSION = ${JSON.stringify(dataVersion)};\n`
+    + `const CHRONICLE_INDEX = ${embed(withProfiles)};`)
   .replace('<!-- INJECT:COUNT -->', () => String(entries.length));
 
-if (out.includes('INJECT:')) throw new Error('An injection marker was left unreplaced');
+if (html.includes('INJECT:')) throw new Error('An injection marker was left unreplaced');
+return {html, entries: entries.length, scored};
+}
 
-writeFileSync(resolve(here, 'hop-calculus.html'), out);
-process.stdout.write(`Built hops/hop-calculus.html with ${entries.length} Hop Chronicles entries\n`);
+// Run directly: write the page. Imported (by the tests): only build() is used.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const {html, entries, scored} = build({allowUnscored: process.argv.includes('--allow-unscored')});
+  process.stdout.write(`  ${scored}/${entries} index entries have a descriptor profile\n`);
+  writeFileSync(resolve(here, 'hop-calculus.html'), html);
+  process.stdout.write(`Built hops/hop-calculus.html with ${entries} Hop Chronicles entries\n`);
+}

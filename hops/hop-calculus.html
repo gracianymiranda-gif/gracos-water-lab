@@ -339,7 +339,7 @@
 <p class="note">Alpha-acid figures are variety-typical ranges. <strong>Always confirm alpha acid on your actual lot</strong> before any bittering calculation — this tool covers flavour and aroma character only, not IBU math. Your edits are saved to this browser's local storage, so they persist here on reload but will not sync across devices unless you export/import the JSON.</p>
 
 <script>
-/* ---- Brulosophy post parsers (generated: see tools/hop-calculus/chronicle-parser.js) ---- */
+/* ---- Brulosophy post parsers (injected by build-hops.mjs from hops/chronicle-parser.js) ---- */
 /**
  * Parsers for Brulosophy "The Hop Chronicles" posts.
  *
@@ -831,7 +831,7 @@ function parseProminentCharacteristics(text) {
   return list ? list.terms.map((t) => t.toLowerCase()).filter((t) => t.length < 40) : [];
 }
 
-/* ---- Hop Chronicles index (generated from data/hop-chronicles/hop-chronicles.csv) ---- */
+/* ---- Hop Chronicles index (injected by build-hops.mjs from hops/data/hop-chronicles.csv + hop-profiles.csv) ---- */
 const DATA_VERSION = "c857ab0ed1f3";
 const CHRONICLE_INDEX = [
  {
@@ -2817,7 +2817,7 @@ const CHRONICLE_INDEX = [
   "beta": "3.0 - 5.0%",
   "coh": "22 - 28%",
   "oil": "0.5 - 0.9 mL/100g",
-  "oils": "myrcene 20 - 35%; humulene 22 - 32%; caryophyllene 6 - 11%; farnesene 16 - 24%; linalool > 1%; geraniol > 1%; b-pinene > 1%",
+  "oils": "myrcene 20 - 35%; humulene 22 - 32%; caryophyllene 6 - 11%; farnesene 16 - 24%; linalool \u003e 1%; geraniol \u003e 1%; b-pinene \u003e 1%",
   "d": [
    9,
    9,
@@ -2852,7 +2852,7 @@ const CHRONICLE_INDEX = [
   "beta": "3.0 - 5.0%",
   "coh": "22 - 28%",
   "oil": "0.5 - 0.9 mL/100g",
-  "oils": "myrcene 20 - 35%; humulene 22 - 32%; caryophyllene 6 - 11%; farnesene 16 - 24%; linalool > 1%; geraniol > 1%; b-pinene > 1%",
+  "oils": "myrcene 20 - 35%; humulene 22 - 32%; caryophyllene 6 - 11%; farnesene 16 - 24%; linalool \u003e 1%; geraniol \u003e 1%; b-pinene \u003e 1%",
   "d": [
    9,
    9,
@@ -2887,7 +2887,7 @@ const CHRONICLE_INDEX = [
   "beta": "6.5 - 7%",
   "coh": "38 - 39%",
   "oil": "1 - 1.4 mL/100g",
-  "oils": "myrcene 40 - 50%; humulene 14 - 18%; caryophyllene 2 - 6%; farnesene > 1%; linalool > 1%; geraniol 0.5 - 1%; b-pinene > 1%",
+  "oils": "myrcene 40 - 50%; humulene 14 - 18%; caryophyllene 2 - 6%; farnesene \u003e 1%; linalool \u003e 1%; geraniol 0.5 - 1%; b-pinene \u003e 1%",
   "d": [
    2,
    9,
@@ -2957,7 +2957,7 @@ const CHRONICLE_INDEX = [
   "beta": "3.5 - 4.5%",
   "coh": "20 - 26%",
   "oil": "0.6 - 1.2 mL/100g",
-  "oils": "myrcene 35 - 44%; humulene 30 - 55%; caryophyllene 10 - 15%; farnesene > 1%; linalool 0.7 - 1.1%; geraniol 0 - 2%; b-pinene > 1%",
+  "oils": "myrcene 35 - 44%; humulene 30 - 55%; caryophyllene 10 - 15%; farnesene \u003e 1%; linalool 0.7 - 1.1%; geraniol 0 - 2%; b-pinene \u003e 1%",
   "d": [
    7,
    8,
@@ -3169,7 +3169,7 @@ const CHRONICLE_INDEX = [
   "beta": "3.5 - 5.0%",
   "coh": "30 - 40%",
   "oil": "1.0 - 2.0 mL/100g",
-  "oils": "myrcene 45 - 55%; humulene 10 - 20%; caryophyllene 6 - 10%; farnesene > 1%; linalool > 1%; geraniol > 1%; b-pinene > 1%",
+  "oils": "myrcene 45 - 55%; humulene 10 - 20%; caryophyllene 6 - 10%; farnesene \u003e 1%; linalool \u003e 1%; geraniol \u003e 1%; b-pinene \u003e 1%",
   "d": [
    9,
    9,
@@ -3303,7 +3303,7 @@ const CHRONICLE_INDEX = [
   "origin": "New Zealand",
   "series": "Pale Ale",
   "published": "2021-10-21",
-  "notes": "Released 2011 by NZ Plant & Food Research; intense tropical fruit and pungent pine",
+  "notes": "Released 2011 by NZ Plant \u0026 Food Research; intense tropical fruit and pungent pine",
   "url": "https://brulosophy.com/2021/10/21/the-hop-chronicles-kohatu-2020/",
   "aa": "5 - 7.5%",
   "beta": "4 - 5%",
@@ -3833,7 +3833,7 @@ const CHRONICLE_INDEX = [
   "origin": "New Zealand",
   "series": "Pale Ale",
   "published": "2020-04-09",
-  "notes": "Dual-purpose hop released by NZ Plant & Food Research in 2015",
+  "notes": "Dual-purpose hop released by NZ Plant \u0026 Food Research in 2015",
   "url": "https://brulosophy.com/2020/04/09/the-hop-chronicles-moutere-2018/",
   "aa": "17.5 - 19.5%",
   "beta": "8 - 10%",
@@ -3910,7 +3910,7 @@ const CHRONICLE_INDEX = [
   "beta": "2 - 4%",
   "coh": "30 - 40%",
   "oil": "0.5 - 1.5 mL/100g",
-  "oils": "myrcene 30 - 40%; humulene 30 - 40%; farnesene > 1%",
+  "oils": "myrcene 30 - 40%; humulene 30 - 40%; farnesene \u003e 1%",
   "d": [
    9,
    9,
@@ -3940,7 +3940,7 @@ const CHRONICLE_INDEX = [
   "origin": "New Zealand",
   "series": "Pale Ale",
   "published": "2023-02-03",
-  "notes": "Bred 2004 by NZ Plant & Food Research, released 2020. Top descriptors: tropical fruit, citrus, stone fruit, floral in flavor",
+  "notes": "Bred 2004 by NZ Plant \u0026 Food Research, released 2020. Top descriptors: tropical fruit, citrus, stone fruit, floral in flavor",
   "url": "https://brulosophy.com/2023/02/03/the-hop-chronicles-nectaron-2021-pale-ale/",
   "aa": "10.5 - 11.5%",
   "beta": "4.5 - 5.0%",
@@ -4189,7 +4189,7 @@ const CHRONICLE_INDEX = [
   "origin": "New Zealand",
   "series": "Pale Ale",
   "published": "2022-01-20",
-  "notes": "Developed by New Zealand’s Plant & Food Research and released to the public in 1994, Pacifica was bred through the open pollination of the classic noble variety, Hallertauer Mittelfrüh.",
+  "notes": "Developed by New Zealand’s Plant \u0026 Food Research and released to the public in 1994, Pacifica was bred through the open pollination of the classic noble variety, Hallertauer Mittelfrüh.",
   "url": "https://brulosophy.com/2022/01/20/the-hop-chronicles-pacifica-2020/",
   "aa": "5.0 - 6.0%",
   "beta": "6.0%",
@@ -4686,7 +4686,7 @@ const CHRONICLE_INDEX = [
   "beta": "2 - 5%",
   "coh": "20 - 28%",
   "oil": "0.5 - 1.2 mL/100g",
-  "oils": "myrcene 40 - 50%; humulene 15 - 20%; caryophyllene 6 - 8%; farnesene 10 - 15%; linalool > 1%",
+  "oils": "myrcene 40 - 50%; humulene 15 - 20%; caryophyllene 6 - 8%; farnesene 10 - 15%; linalool \u003e 1%",
   "d": [
    9,
    8,
@@ -5106,7 +5106,7 @@ const CHRONICLE_INDEX = [
   "beta": "3.0 - 5.0%",
   "coh": "22 - 28%",
   "oil": "0.5 - 0.9 mL/100g",
-  "oils": "myrcene 20 - 35%; humulene 22 - 32%; caryophyllene 6 - 11%; farnesene 16 - 24%; linalool > 1%; geraniol > 1%; b-pinene > 1%",
+  "oils": "myrcene 20 - 35%; humulene 22 - 32%; caryophyllene 6 - 11%; farnesene 16 - 24%; linalool \u003e 1%; geraniol \u003e 1%; b-pinene \u003e 1%",
   "d": [
    9,
    2,
@@ -5177,7 +5177,7 @@ const CHRONICLE_INDEX = [
   "beta": "3.34 - 3.95%",
   "coh": "22 - 26%",
   "oil": "1.07 - 1.15 mL/100g",
-  "oils": "myrcene 25 - 40%; humulene 28 - 33.6%; caryophyllene 8.6 - 9.5%; linalool >1%",
+  "oils": "myrcene 25 - 40%; humulene 28 - 33.6%; caryophyllene 8.6 - 9.5%; linalool \u003e1%",
   "d": [
    9,
    9,
@@ -5524,7 +5524,7 @@ const CHRONICLE_INDEX = [
   "origin": "New Zealand",
   "series": "Pale Ale",
   "published": "2020-01-16",
-  "notes": "Hailing from the land of the long white cloud, Waimea was released in 2012 by The New Zealand Institute for Plant & Food Research and developed a reputation as an excellent bittering hop due to its substantial alpha acid content.",
+  "notes": "Hailing from the land of the long white cloud, Waimea was released in 2012 by The New Zealand Institute for Plant \u0026 Food Research and developed a reputation as an excellent bittering hop due to its substantial alpha acid content.",
   "url": "https://brulosophy.com/2020/01/16/the-hop-chronicles-waimea-2018/",
   "aa": "16 - 17%",
   "beta": "7 - 9%",

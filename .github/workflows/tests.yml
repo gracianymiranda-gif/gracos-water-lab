@@ -4,6 +4,15 @@ on:
   push:
   pull_request:
 
+# The job only reads the checkout; it never writes to the repository.
+permissions:
+  contents: read
+
+# A push to a branch with an open pull request fires both events; keep one run.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -38,6 +47,7 @@ jobs:
       # and the next rebuild silently discards one of them. The build is
       # deterministic, so regenerating must be a no-op.
       - name: Built page is in step with its CSVs
+        if: always()
         run: |
           node hops/build-hops.mjs
           if ! git diff --exit-code --stat hops/hop-calculus.html; then

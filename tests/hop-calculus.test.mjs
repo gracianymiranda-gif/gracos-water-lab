@@ -47,6 +47,10 @@ const colWise = parseHopStats("Alpha | Beta | Cohumulone | Total Oil | | 10.5 �
 eq("stats column-wise: alpha", colWise.alpha, "10.5 – 11.5%");
 eq("stats column-wise: beta", colWise.beta, "4.5 – 5.0%");
 eq("stats column-wise: no cross-attribution", parseHopStats("Alpha | Beta | 10.5% | 4.5%").alpha, "10.5%");
+// Vista prints two stats on one line; alpha once swallowed "Beta: 3.5 - 5.5%".
+const oneLine = parseHopStats("Alpha: 7.5 - 9.5% Beta: 3.5 - 5.5% Cohumulone: 25 - 30% of alpha acids Total Oil: 1.2 mL/100g");
+eq("stats one line: alpha does not swallow beta", oneLine.alpha, "7.5 - 9.5%");
+eq("stats one line: beta", oneLine.beta, "3.5 - 5.5%");
 
 // "Alpha Acid (aA)" -- the parenthetical symbol is itself a label synonym and
 // would otherwise sit between a label and its value.
@@ -129,21 +133,13 @@ eq("html: numeric and named entities decoded", htmlToText("9 &#8211; 12% &ndash;
 eq("alpha acid helper", parseAlphaAcid("Alpha Acid: 12.4%"), "12.4%");
 
 // ---- Set E: shipped data integrity ----
-const csv = (p) => {
-  const rows = [];
-  let row = [], f = "", q = false;
-  const t = readFileSync(p, "utf8");
-  for (let i = 0; i < t.length; i++) {
-    const c = t[i];
-    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
-    else if (c === '"') q = true;
-    else if (c === ",") { row.push(f); f = ""; }
-    else if (c === "\n") { row.push(f); rows.push(row); row = []; f = ""; }
-    else if (c !== "\r") f += c;
-  }
-  if (f || row.length) { row.push(f); rows.push(row); }
-  return rows.filter((r) => r.length > 1);
-};
+const {parseCsv} = await import(join(hops, "csv.js"));
+const csv = (p) => parseCsv(readFileSync(p, "utf8")).filter((r) => r.length > 1);
+// The one CSV reader the build and these checks share, on the shapes that bite.
+eq("csv: quoted comma", JSON.stringify(parseCsv('"a,b",c\n')), JSON.stringify([["a,b", "c"]]));
+eq("csv: doubled quote", parseCsv('"he said ""hi"" twice",x\n')[0][0], 'he said "hi" twice');
+eq("csv: a line break inside quotes stays one field, verbatim", parseCsv('"l1\r\nl2",x\n')[0][0], "l1\r\nl2");
+eq("csv: byte-order mark is not part of the header", parseCsv("\ufeffVariety,Alpha\n")[0][0], "Variety");
 
 const prof = csv(join(hops, "data/hop-profiles.csv"));
 const ph = prof.shift();
@@ -238,6 +234,19 @@ eq("profiles: every score is on the ranked-list scale with a top descriptor", of
 
 // ---- Set F: the built page is in step with the CSVs ----
 const built = readFileSync(join(hops, "hop-calculus.html"), "utf8");
+// The strongest form of the check: the committed page IS a fresh build.
+const {build} = await import(join(hops, "build-hops.mjs"));
+ok("built page: byte-identical to a fresh build", built === build().html, "run node hops/build-hops.mjs and commit the result");
+// The twenty composites live in the template, outside the CSV checks above.
+{
+  const m = built.match(/const CURATED_HOPS = (\{[\s\S]*?\n\});/);
+  const curated = m ? new Function("return " + m[1])() : {};
+  const names = Object.keys(curated);
+  eq("composites: twenty of them", names.length, 20);
+  ok("composites: every vector is ten scores in 0-10",
+    names.every((n) => Array.isArray(curated[n].d) && curated[n].d.length === AXES.length && curated[n].d.every((v) => Number.isInteger(v) && v >= 0 && v <= 10)));
+  ok("composites: every entry has an alpha range and a style", names.every((n) => /\d/.test(curated[n].aa) && curated[n].styles.length > 0));
+}
 ok("built page: has no unreplaced build marker", !built.includes("INJECT:"));
 // Any non-empty version works — it only has to differ between builds so a
 // browser holding an older copy can tell. It need not be a hash.
