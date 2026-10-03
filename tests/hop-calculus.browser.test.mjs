@@ -84,7 +84,7 @@ function browser() {
   ok("boot: counts line is right", /158 entries — 158 scored, 0 awaiting a profile/.test(p.$("#libraryCounts").textContent));
   p.ev('toggleHop("Citra"); toggleHop("Mosaic")');
   eq("compare: two selected", p.ev("selected.length"), 2);
-  eq("compare: one column per hop plus the label column", p.doc.querySelectorAll("#compareTable tr:first-child th").length, 3);
+  eq("compare: label column, blend column, one column per hop", p.doc.querySelectorAll("#compareTable tr:first-child th").length, 4);
   ok("compare: blend note names both hops", /Citra/.test(p.$("#blendNote").textContent) && /Mosaic/.test(p.$("#blendNote").textContent));
   p.ev('toggleHop("Citra"); toggleHop("Mosaic")');
   for (let i = 0; i < 6; i++) p.ev(`toggleHop(Object.keys(HOPS).filter(scored)[${i}])`);
@@ -267,6 +267,49 @@ function browser() {
   ok("paste: a post about a different hop asks first", p.win.__confirms.some((m) => /never mentions "Fakehop"/.test(m)));
   eq("paste: and Cancel applies nothing", r, null);
   ok("paste: with a status saying so", /Nothing applied/.test(p.$("#pasteStatus").textContent));
+}
+
+// ---- Set K: blends by parts ----
+{
+  const b = browser();
+  const p = b.boot();
+  p.ev('toggleHop("Citra"); toggleHop("Mosaic")');            // composites with known vectors
+  eq("legend: one swatch per hop plus the blend", p.doc.querySelectorAll("#radarLegend .radar-legend-item").length, 3);
+  eq("blend: equal parts to start", p.$("#compareTable tr:nth-child(2) td.blend-col").textContent, "7.5/10");  // Citrus (9+6)/2
+  p.ev('adjustParts("Citra", 2)');                            // 3:1
+  eq("blend: parts weight the mean", p.$("#compareTable tr:nth-child(2) td.blend-col").textContent, "8.3/10");  // (27+6)/4
+  ok("blend: the recipe line shows the ratio", /3 parts Citra \(75%\) \+ 1 part Mosaic \(25%\)/.test(p.$("#blendNote").textContent));
+  ok("blend: shared style tags are listed", /Styles every hop here is tagged for: .*American IPA/.test(p.$("#blendNote").textContent));
+  const chemCell = (row) => [...p.doc.querySelectorAll("#compareTable tr")].find((tr) => tr.firstChild.textContent === row).querySelector("td.blend-col").textContent;
+  eq("blend: alpha averaged from the printed ranges", chemCell("Alpha / Beta"), "~12.5% / \u2014");   // both 11-14%, no betas on composites
+  eq("blend: rows with nothing to average show a dash", chemCell("Verified"), "\u2014");
+  // Rename a selected hop: its share travels with it.
+  p.ev('loadFormForEdit("Citra")'); p.set("mName", "Citra (mine)"); p.ev("saveHopFromForm()");
+  eq("blend: parts survive a rename", p.ev('partsOf("Citra (mine)")'), 3);
+  eq("blend: the old name holds none", p.ev('hopParts["Citra"]'), undefined);
+  p.ev('toggleHop("Citra (mine)")');
+  eq("blend: deselecting clears the share", p.ev('hopParts["Citra (mine)"]'), undefined);
+  eq("legend: a single hop has no blend entry", p.doc.querySelectorAll("#radarLegend .radar-legend-item").length, 1);
+  // A hop with no figure is left out of the average, and the cell says so.
+  p.ev('toggleHop("Simcoe")');                                 // composite: alpha 11-14%, no beta
+  const chron = p.ev('Object.keys(HOPS).find(k => HOPS[k].src === "chronicle" && HOPS[k].beta && HOPS[k].oils)');
+  p.ev(`toggleHop(${JSON.stringify(chron)})`);
+  ok("blend: a missing figure is skipped, not counted as zero", /\(1 of 3\)/.test(chemCell("Alpha / Beta")));
+  ok("oil breakdown: shown when the entry has one", [...p.doc.querySelectorAll("#compareTable tr")].some((tr) => tr.firstChild.textContent === "Oil breakdown" && /myrcene/i.test(tr.textContent)));
+}
+
+// ---- Set L: library filters ----
+{
+  const b = browser();
+  const p = b.boot();
+  const click = (sel) => p.$(sel).click();
+  click('#seriesPills [data-series="Pale Lager"]');
+  eq("filter: Pale Lager shows the lager-tested hops", p.doc.querySelectorAll("#hopList .hop-item").length, 16);
+  eq("filter: pill reports pressed", p.$('#seriesPills [data-series="Pale Lager"]').getAttribute("aria-pressed"), "true");
+  click('#seriesPills [data-series="all"]'); click('#sourcePills [data-source="curated"]');
+  eq("filter: composites are the twenty curated entries", p.doc.querySelectorAll("#hopList .hop-item").length, 20);
+  click('#sourcePills [data-source="chronicle"]');
+  eq("filter: from post is the 138 articles", p.doc.querySelectorAll("#hopList .hop-item").length, 138);
 }
 
 console.log(`\n${pass} passed, ${fail} failed (${pass + fail} total)`);

@@ -38,11 +38,35 @@
   .hop-item.selected{background:#332a17; color:var(--accent);}
   .hop-item.unscored{opacity:0.72;}
   .hop-meta{color:var(--muted); font-size:0.75rem; white-space:nowrap;}
-  .chip{
-    display:inline-flex; align-items:center; gap:6px; background:#241f1a; border:1px solid var(--border);
-    border-radius:999px; padding:4px 10px; margin:3px 4px 3px 0; font-size:0.82rem;
+  /* Selected hops: the left border is the hop's radar colour, so chip, polygon, legend and column match. */
+  .chip-card{
+    display:flex; align-items:center; justify-content:space-between; gap:8px; background:#241f1a;
+    border:1px solid var(--border); border-left:4px solid var(--border); border-radius:6px;
+    padding:5px 8px; margin-bottom:6px; font-size:0.82rem;
   }
-  .chip button{background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.9rem; line-height:1;}
+  .chip-name{font-weight:600; flex:1; min-width:0; overflow-wrap:anywhere;}
+  .chip-remove{background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.95rem; line-height:1; padding:2px 4px;}
+  .chip-remove:hover, .chip-remove:focus-visible{color:var(--accent); outline:none;}
+  .ratio-ctrl{display:inline-flex; align-items:center; gap:2px; background:#1a1612; border:1px solid var(--border); border-radius:4px; padding:1px 3px;}
+  .ratio-btn{background:none; border:none; color:var(--muted); cursor:pointer; font-weight:700; font-size:0.95rem; line-height:1; padding:2px 6px; font-family:inherit;}
+  .ratio-btn:hover, .ratio-btn:focus-visible{color:var(--accent); outline:none;}
+  .ratio-val{font-size:0.72rem; color:var(--text); font-weight:600; min-width:84px; text-align:center; white-space:nowrap;}
+  .radar-legend{display:flex; justify-content:center; gap:14px; flex-wrap:wrap; margin:8px 0 4px; font-size:0.78rem; color:var(--muted);}
+  .radar-legend-item{display:inline-flex; align-items:center; gap:6px;}
+  .legend-swatch{width:12px; height:12px; border-radius:3px; display:inline-block; flex:none;}
+  .legend-swatch.blend{background:rgba(255,255,255,0.18); border:2px dashed #fff; box-sizing:border-box;}
+  .blend-col{background:rgba(230,168,23,0.08); font-weight:600;}
+  th.blend-col{color:var(--accent);}
+  .pill-row{display:flex; gap:4px; flex-wrap:wrap; align-items:center; margin-bottom:8px;}
+  .pill-label{font-size:0.72rem; color:var(--muted); margin-right:2px;}
+  .pill-btn{
+    background:#14110e; border:1px solid var(--border); color:var(--muted); font-size:0.72rem;
+    padding:3px 9px; border-radius:12px; cursor:pointer; font-family:inherit;
+  }
+  .pill-btn:hover{border-color:var(--accent); color:var(--text);}
+  .pill-btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .pill-btn.active{background:var(--accent); color:#1a1400; border-color:var(--accent); font-weight:600;}
+  td.wrap{white-space:normal; font-size:0.78rem; color:var(--muted);}
   select, input[type=text], input[type=number], textarea{
     width:100%; padding:8px; background:#241f1a; border:1px solid var(--border); color:var(--text);
     border-radius:6px; font-size:0.86rem; margin-bottom:10px; font-family:inherit;
@@ -141,6 +165,19 @@
       <input type="checkbox" id="verifiedOnly" style="width:auto; margin:0 6px 0 0; vertical-align:-1px;">
       Verified entries only
     </label>
+    <div class="pill-row" id="seriesPills" role="group" aria-label="Tested in">
+      <span class="pill-label">Tested in</span>
+      <button type="button" class="pill-btn active" data-series="all" aria-pressed="true">All</button>
+      <button type="button" class="pill-btn" data-series="Pale Ale" aria-pressed="false">Pale Ale</button>
+      <button type="button" class="pill-btn" data-series="Pale Lager" aria-pressed="false">Pale Lager</button>
+    </div>
+    <div class="pill-row" id="sourcePills" role="group" aria-label="Profile source">
+      <span class="pill-label">Source</span>
+      <button type="button" class="pill-btn active" data-source="all" aria-pressed="true">All</button>
+      <button type="button" class="pill-btn" data-source="chronicle" aria-pressed="false">From post</button>
+      <button type="button" class="pill-btn" data-source="curated" aria-pressed="false">Composite</button>
+      <button type="button" class="pill-btn" data-source="manual" aria-pressed="false">Yours</button>
+    </div>
     <div class="hop-list" id="hopList"></div>
     <div id="libraryCounts" class="note" style="margin-top:8px;"></div>
     <div style="margin-top:12px;">
@@ -153,7 +190,8 @@
     <div class="tabpanel active" id="tab-compare">
       <div class="panel">
         <h2>Flavor / Aroma Radar</h2>
-        <canvas id="radar" width="480" height="480"></canvas>
+        <canvas id="radar" width="480" height="480" role="img" aria-label="Flavour and aroma radar for the selected hops; the table below holds the same numbers"></canvas>
+        <div id="radarLegend" class="radar-legend"></div>
         <div class="table-scroll"><table id="compareTable"></table></div>
         <div id="blendNote" class="note"></div>
       </div>
@@ -494,7 +532,26 @@ let HOPS = loadLibrary();
 // repeats on every load until the reader happens to save something.
 if(upgradeNote) saveLibrary();
 let selected = [];
+/** Parts by weight for each selected hop; 1 unless the reader changes it. */
+let hopParts = {};
+let activeSeries = "all";
+let activeSource = "all";
 let editingName = null;
+
+const partsOf = (name) => Math.max(1, Math.min(20, Number(hopParts[name]) || 1));
+function adjustParts(name, delta){
+  hopParts[name] = Math.max(1, Math.min(20, partsOf(name) + delta));
+  renderAll();
+}
+/** Which Source pill an entry belongs under: first-hand, composite, or the reader's own. */
+const sourceGroup = (h) => h.src === "chronicle" ? "chronicle" : h.src === "curated" ? "curated" : "manual";
+function setPill(groupId, attr, value){
+  document.querySelectorAll(`#${groupId} .pill-btn`).forEach(b => {
+    const on = b.dataset[attr] === value;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
 
 const scored = (name) => Array.isArray(HOPS[name] && HOPS[name].d);
 const verified = (name) => Boolean(HOPS[name] && HOPS[name].verified);
@@ -528,6 +585,10 @@ function renderHopList(filter=""){
     .filter(n => n.toLowerCase().includes(filter.toLowerCase()))
     .filter(n => !onlyScored || scored(n))
     .filter(n => !onlyVerified || verified(n))
+    // The series is the beer the hop was tested in, not a style the hop suits,
+    // so it is a filter on the article rather than a tag on the hop.
+    .filter(n => activeSeries === "all" || (HOPS[n].chron && HOPS[n].chron.series === activeSeries))
+    .filter(n => activeSource === "all" || sourceGroup(HOPS[n]) === activeSource)
     .sort();
 
   names.forEach(name => {
@@ -566,6 +627,7 @@ function renderHopList(filter=""){
 function toggleHop(name){
   if(selected.includes(name)){
     selected = selected.filter(n => n !== name);
+    delete hopParts[name];
   } else {
     if(!scored(name)){
       alert(`"${name}" has no descriptor profile yet.\n\nOpen the Hop Chronicles tab, paste its post URL, and fill in the ratings — or score it by hand under Manage Hops.`);
@@ -573,23 +635,96 @@ function toggleHop(name){
     }
     if(selected.length >= 5){ alert("Max 5 hops for comparison."); return; }
     selected.push(name);
+    hopParts[name] = 1;
   }
   renderAll();
+}
+
+/**
+ * The blend of everything selected and scored, weighted by parts.
+ * @returns {{usable: string[], total: number, vals: number[]}|null} null below two hops.
+ */
+function blendProfile(){
+  const usable = selected.filter(scored);
+  if(usable.length < 2) return null;
+  const total = usable.reduce((s, n) => s + partsOf(n), 0);
+  const vals = DESCRIPTORS.map((_, i) => usable.reduce((s, n) => s + HOPS[n].d[i] * partsOf(n), 0) / total);
+  return {usable, total, vals};
+}
+
+/**
+ * A parts-weighted mean of one printed chemistry figure across the blend.
+ * A hop with no figure is left out of numerator AND denominator -- counting
+ * it as zero would quietly halve a two-hop blend's alpha. Cohumulone is a
+ * share of alpha, so it is weighted by each hop's alpha contribution when
+ * the alphas are known.
+ * @returns {{mid: number, n: number, of: number}|null}
+ */
+function blendFigure(usable, field){
+  const rows = usable.map(n => {
+    const h = HOPS[n], v = parseNumericRange(h[field]);
+    let w = partsOf(n);
+    if(field === "coh"){ const a = parseNumericRange(h.aa); if(a) w *= a.mid; }
+    return {v, w};
+  }).filter(r => r.v && r.w > 0);
+  if(!rows.length) return null;
+  const w = rows.reduce((s, r) => s + r.w, 0);
+  return {mid: rows.reduce((s, r) => s + r.v.mid * r.w, 0) / w, n: rows.length, of: usable.length};
 }
 
 function renderChips(){
   const box = document.getElementById("selectedChips");
   box.innerHTML = "";
-  selected.forEach(name => {
-    const chip = el("span", null, "chip");
-    chip.appendChild(el("span", name));
-    const x = el("button", "✕");
+  const blend = blendProfile();
+  selected.forEach((name, i) => {
+    const card = el("div", null, "chip-card");
+    card.style.borderLeftColor = colors[i];
+    card.appendChild(el("span", name, "chip-name"));
+    if(blend && scored(name)){
+      const pts = partsOf(name);
+      const ctrl = el("span", null, "ratio-ctrl");
+      const minus = el("button", "−", "ratio-btn");
+      minus.type = "button";
+      minus.setAttribute("aria-label", `Fewer parts of ${name}`);
+      minus.disabled = pts <= 1;
+      minus.onclick = () => adjustParts(name, -1);
+      const val = el("span", `${pts} part${pts === 1 ? "" : "s"} · ${Math.round(pts / blend.total * 100)}%`, "ratio-val");
+      const plus = el("button", "+", "ratio-btn");
+      plus.type = "button";
+      plus.setAttribute("aria-label", `More parts of ${name}`);
+      plus.disabled = pts >= 20;
+      plus.onclick = () => adjustParts(name, 1);
+      ctrl.appendChild(minus); ctrl.appendChild(val); ctrl.appendChild(plus);
+      card.appendChild(ctrl);
+    }
+    const x = el("button", "✕", "chip-remove");
     x.type = "button";
     x.setAttribute("aria-label", "Remove " + name);
     x.onclick = () => toggleHop(name);
-    chip.appendChild(x);
-    box.appendChild(chip);
+    card.appendChild(x);
+    box.appendChild(card);
   });
+}
+
+/** Colour key for the radar, in the DOM so it does not depend on a canvas context. */
+function renderLegend(){
+  const box = document.getElementById("radarLegend");
+  box.innerHTML = "";
+  const blend = blendProfile();
+  selected.forEach((name, i) => {
+    const item = el("span", null, "radar-legend-item");
+    const sw = el("span", null, "legend-swatch");
+    sw.style.backgroundColor = colors[i];
+    item.appendChild(sw);
+    item.appendChild(el("span", blend && scored(name) ? `${name} (${partsOf(name)})` : name));
+    box.appendChild(item);
+  });
+  if(blend){
+    const item = el("span", null, "radar-legend-item");
+    item.appendChild(el("span", null, "legend-swatch blend"));
+    item.appendChild(el("span", "Weighted blend"));
+    box.appendChild(item);
+  }
 }
 
 function drawRadar(){
@@ -640,6 +775,37 @@ function drawRadar(){
     ctx.fill();
     ctx.lineWidth = 1;
   });
+
+  // The weighted blend, dashed in white so it reads as a derived line, not a sixth hop.
+  const blend = blendProfile();
+  if(blend){
+    ctx.save();
+    ctx.beginPath();
+    for(let i=0;i<=n;i++){
+      const ii = i%n;
+      const ang = (Math.PI*2*ii/n) - Math.PI/2;
+      const rr = r*blend.vals[ii]/10;
+      const x = cx+rr*Math.cos(ang), y = cy+rr*Math.sin(ang);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.12)";
+    ctx.fill();
+    ctx.setLineDash([]);
+    for(let i=0;i<n;i++){
+      const ang = (Math.PI*2*i/n) - Math.PI/2;
+      const rr = r*blend.vals[i]/10;
+      ctx.beginPath();
+      ctx.arc(cx+rr*Math.cos(ang), cy+rr*Math.sin(ang), 3.5, 0, Math.PI*2);
+      ctx.fillStyle = "#ffd166";
+      ctx.fill();
+    }
+    ctx.restore();
+  }
 }
 
 function renderTable(){
@@ -647,8 +813,19 @@ function renderTable(){
   table.innerHTML = "";
   if(selected.length === 0) return;
 
+  const blend = blendProfile();
+  // One cell in the Blend column; a row with nothing to average gets a dash.
+  const blendCell = (text) => el("td", text == null ? "\u2014" : text, "blend-col");
+  // "~12.5%" or "~12.5% (2 of 3)" when a hop in the blend has no figure.
+  const fig = (field, unit, digits) => {
+    const f = blend ? blendFigure(blend.usable, field) : null;
+    if(!f) return null;
+    return `~${f.mid.toFixed(digits)}${unit}` + (f.n < f.of ? ` (${f.n} of ${f.of})` : "");
+  };
+
   const head = document.createElement("tr");
   head.appendChild(el("th", "Descriptor"));
+  if(blend) head.appendChild(el("th", "Blend", "blend-col"));
   selected.forEach((n,i) => {
     const th = el("th", n);
     th.style.color = colors[i];
@@ -659,6 +836,7 @@ function renderTable(){
   DESCRIPTORS.forEach((desc,i) => {
     const tr = document.createElement("tr");
     tr.appendChild(el("td", desc));
+    if(blend) tr.appendChild(blendCell(`${blend.vals[i].toFixed(1)}/10`));
     selected.forEach(n => {
       tr.appendChild(el("td", scored(n) ? `${HOPS[n].d[i]}/10` : "—"));
     });
@@ -667,6 +845,10 @@ function renderTable(){
 
   const acidRow = document.createElement("tr");
   acidRow.appendChild(el("td", "Alpha / Beta"));
+  if(blend){
+    const a = fig("aa", "%", 1), b = fig("beta", "%", 1);
+    acidRow.appendChild(blendCell(a || b ? `${a || "\u2014"} / ${b || "\u2014"}` : null));
+  }
   selected.forEach(n => {
     const h = HOPS[n] || {};
     acidRow.appendChild(el("td", `${h.aa || "n/a"}${h.beta ? " / " + h.beta : ""}`));
@@ -675,6 +857,10 @@ function renderTable(){
 
   const chemRow = document.createElement("tr");
   chemRow.appendChild(el("td", "Cohumulone / Oil"));
+  if(blend){
+    const c = fig("coh", "%", 0), o = fig("oil", " mL/100g", 1);
+    chemRow.appendChild(blendCell(c || o ? `${c || "\u2014"} / ${o || "\u2014"}` : null));
+  }
   selected.forEach(n => {
     const h = HOPS[n] || {};
     const bits = [h.coh, h.oil].filter(Boolean);
@@ -682,8 +868,18 @@ function renderTable(){
   });
   table.appendChild(chemRow);
 
+  const oilsRow = document.createElement("tr");
+  oilsRow.appendChild(el("td", "Oil breakdown"));
+  if(blend) oilsRow.appendChild(blendCell(null));
+  selected.forEach(n => {
+    const h = HOPS[n] || {};
+    oilsRow.appendChild(el("td", h.oils || "\u2014", h.oils ? "wrap" : ""));
+  });
+  table.appendChild(oilsRow);
+
   const xcRow = document.createElement("tr");
   xcRow.appendChild(el("td", "Cross-checked"));
+  if(blend) xcRow.appendChild(blendCell(null));
   selected.forEach(n => {
     const td = document.createElement("td");
     const x = (HOPS[n] || {}).xcheck;
@@ -694,6 +890,7 @@ function renderTable(){
 
   const verRow = document.createElement("tr");
   verRow.appendChild(el("td", "Verified"));
+  if(blend) verRow.appendChild(blendCell(null));
   selected.forEach(n => {
     const td = document.createElement("td");
     const v = (HOPS[n] || {}).verified;
@@ -708,6 +905,7 @@ function renderTable(){
 
   const srcRow = document.createElement("tr");
   srcRow.appendChild(el("td", "Profile source"));
+  if(blend) srcRow.appendChild(blendCell(null));
   selected.forEach(n => {
     const td = document.createElement("td");
     const h = HOPS[n] || {};
@@ -727,18 +925,27 @@ function renderTable(){
 function renderBlend(){
   const box = document.getElementById("blendNote");
   box.innerHTML = "";
-  const usable = selected.filter(scored);
-  if(usable.length < 2) return;
+  const blend = blendProfile();
+  if(!blend) return;
+  const {usable, total, vals} = blend;
 
-  const avg = DESCRIPTORS.map((_,i) => usable.reduce((s,n) => s + HOPS[n].d[i], 0) / usable.length);
-  const ranked = DESCRIPTORS.map((d,i) => ({d, v:avg[i]})).sort((a,b) => b.v - a.v).slice(0,3);
+  const ranked = DESCRIPTORS.map((d,i) => ({d, v:vals[i]})).sort((a,b) => b.v - a.v).slice(0,3);
+  const recipe = usable.map(n => `${partsOf(n)} part${partsOf(n) === 1 ? "" : "s"} ${n} (${Math.round(partsOf(n) / total * 100)}%)`).join(" + ");
 
-  const strong = el("strong", `Predicted blend character (${usable.join(" + ")}): `);
-  box.appendChild(strong);
+  box.appendChild(el("strong", `Predicted blend character (${recipe}): `));
   box.appendChild(document.createTextNode(
     "leans toward " + ranked.map(r => `${r.d.toLowerCase()} (${r.v.toFixed(1)}/10)`).join(", ") +
-    ". This is a simple average of individual profiles — real blends can shift due to oil interaction, so treat as a starting hypothesis, not a guarantee."
+    ". Parts are by weight of the addition, so 3 parts to 1 is a 3:1 blend; the result is a weighted average of the individual profiles — real blends shift with oil interaction, so treat it as a starting hypothesis, not a guarantee."
   ));
+
+  // Styles the selected hops are tagged with in common. The series an entry
+  // was tested in is left out: it is the test beer, not a recommendation.
+  const tagSets = usable.map(n => new Set((HOPS[n].styles || []).filter(st => st !== "Uncategorized" && !(HOPS[n].chron && HOPS[n].chron.series === st))));
+  const shared = [...tagSets[0]].filter(st => tagSets.every(set => set.has(st)));
+  if(shared.length){
+    box.appendChild(document.createElement("br"));
+    box.appendChild(document.createTextNode(`Styles every hop here is tagged for: ${shared.join(", ")}.`));
+  }
 
   const kinds = [...new Set(usable.map(n => SRC_LABEL[HOPS[n].src] || "yours"))];
   if(kinds.length > 1){
@@ -927,8 +1134,10 @@ function saveHopFromForm(){
     // A shipped hop that is renamed must stay gone under its old name, or the
     // merge on the next load puts the original straight back beside the copy.
     if(!deletedNames.includes(editingName)) deletedNames.push(editingName);
-    // Keep a renamed hop selected instead of leaving a dangling reference.
+    // Keep a renamed hop selected instead of leaving a dangling reference,
+    // and its share of the blend with it.
     selected = selected.map(n => n === editingName ? name : n);
+    if(hopParts[editingName] !== undefined){ hopParts[name] = hopParts[editingName]; delete hopParts[editingName]; }
   }
   // Saving under a name the reader once deleted means they want it back.
   deletedNames = deletedNames.filter(n => n !== name);
@@ -954,7 +1163,7 @@ function saveHopFromForm(){
           ? prev.verified.at : new Date().toISOString().slice(0, 10)}
       : null
   };
-  if(unscored) selected = selected.filter(n => n !== name);
+  if(unscored){ selected = selected.filter(n => n !== name); delete hopParts[name]; }
 
   saveLibrary();
   editingName = null;
@@ -968,6 +1177,7 @@ function deleteHop(name){
   delete HOPS[name];
   if(!deletedNames.includes(name)) deletedNames.push(name);
   selected = selected.filter(n => n !== name);
+  delete hopParts[name];
   if(editingName === name) editingName = null;
   saveLibrary();
   renderAll();
@@ -1043,6 +1253,7 @@ function importLibrary(file){
       saveLibrary();
       upgradeNote = null;
       selected = [];
+      hopParts = {};
       editingName = null;
       renderAll();
       setStatus("importStatus", `Imported ${names.length} entries.`, "ok");
@@ -1061,6 +1272,7 @@ function resetLibrary(){
   saveLibrary();
   upgradeNote = null;
   selected = [];
+  hopParts = {};
   editingName = null;
   renderAll();
   setStatus("importStatus", "Library reset to defaults.", "ok");
@@ -1280,6 +1492,14 @@ async function fetchChronicle(){
 document.getElementById("hopSearch").addEventListener("input", e => renderHopList(e.target.value));
 document.getElementById("scoredOnly").addEventListener("change", () => renderHopList(document.getElementById("hopSearch").value));
 document.getElementById("verifiedOnly").addEventListener("change", () => renderHopList(document.getElementById("hopSearch").value));
+document.querySelectorAll("#seriesPills .pill-btn").forEach(b => b.addEventListener("click", () => {
+  activeSeries = b.dataset.series; setPill("seriesPills", "series", activeSeries);
+  renderHopList(document.getElementById("hopSearch").value);
+}));
+document.querySelectorAll("#sourcePills .pill-btn").forEach(b => b.addEventListener("click", () => {
+  activeSource = b.dataset.source; setPill("sourcePills", "source", activeSource);
+  renderHopList(document.getElementById("hopSearch").value);
+}));
 document.getElementById("saveHopBtn").onclick = saveHopFromForm;
 document.getElementById("clearFormBtn").onclick = clearForm;
 document.getElementById("exportBtn").onclick = exportLibrary;
@@ -1313,6 +1533,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 function renderAll(){
   renderHopList(document.getElementById("hopSearch").value);
   renderChips();
+  renderLegend();
   drawRadar();
   renderTable();
   renderBlend();
