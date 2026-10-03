@@ -22,6 +22,17 @@ jobs:
       - name: Hop library and Chronicles parsers
         run: node tests/hop-calculus.test.mjs
 
+      # The browser-level tests drive the built page in jsdom. The repo stays
+      # dependency-free: jsdom goes into the runner's temp dir, never into the
+      # checkout, and the test skips itself when JSDOM_PATH is unset.
+      - name: Install jsdom outside the checkout
+        run: npm install --no-audit --no-fund --loglevel=error --prefix "$RUNNER_TEMP/jsdom" jsdom
+
+      - name: Hop Calculus page in a headless browser
+        run: node tests/hop-calculus.browser.test.mjs
+        env:
+          JSDOM_PATH: ${{ runner.temp }}/jsdom/node_modules/jsdom
+
       # hops/hop-calculus.html is generated from the CSVs. Editing the page by
       # hand, or changing a CSV without rebuilding, leaves the two out of step
       # and the next rebuild silently discards one of them. The build is

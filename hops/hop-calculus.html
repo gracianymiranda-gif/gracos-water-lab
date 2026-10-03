@@ -58,7 +58,9 @@
     border:1px solid var(--border); cursor:pointer; font-size:0.8rem; background:#241f1a; color:var(--muted);
   }
   .desc-toggle.active{background:var(--accent2); color:#0e1406; border-color:var(--accent2);}
-  canvas{background:#1c1815; border-radius:8px; max-width:100%;}
+  /* height:auto with max-width, or a phone squashes the 480px square into an oval. */
+  canvas{background:#1c1815; border-radius:8px; max-width:100%; height:auto; display:block;}
+  .table-scroll{overflow-x:auto;}
   table{width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:10px;}
   th, td{text-align:left; padding:6px 8px; border-bottom:1px solid var(--border);}
   th{color:var(--muted); font-weight:600;}
@@ -147,7 +149,7 @@
       <div class="panel">
         <h2>Flavor / Aroma Radar</h2>
         <canvas id="radar" width="480" height="480"></canvas>
-        <table id="compareTable"></table>
+        <div class="table-scroll"><table id="compareTable"></table></div>
         <div id="blendNote" class="note"></div>
       </div>
     </div>
@@ -165,7 +167,7 @@
       <div class="panel">
         <h2>Pick Descriptors You Want</h2>
         <div id="descToggles"></div>
-        <div id="targetResults" style="margin-top:14px;"></div>
+        <div id="targetResults" class="table-scroll" style="margin-top:14px;"></div>
         <p class="note">Only scored entries can be ranked. Unscored Hop Chronicles entries are excluded until you fill them in from the Hop Chronicles tab.</p>
       </div>
     </div>
@@ -221,6 +223,26 @@
             <input type="text" id="mAA" placeholder="e.g. 12-15%">
           </div>
         </div>
+        <div class="field-row">
+          <div>
+            <label>Beta acid % (optional)</label>
+            <input type="text" id="mBeta" placeholder="e.g. 3.5-4.5%">
+          </div>
+          <div>
+            <label>Cohumulone, % of alpha (optional)</label>
+            <input type="text" id="mCoh" placeholder="e.g. 22-24%">
+          </div>
+        </div>
+        <div class="field-row">
+          <div>
+            <label>Total oil, mL/100g (optional)</label>
+            <input type="text" id="mOil" placeholder="e.g. 1.5-2.5 mL/100g">
+          </div>
+          <div>
+            <label>Oil breakdown (optional)</label>
+            <input type="text" id="mOils" placeholder="e.g. myrcene 60%; humulene 12%">
+          </div>
+        </div>
         <label>Typical styles (comma-separated)</label>
         <input type="text" id="mStyles" placeholder="e.g. Hazy IPA, American IPA">
         <label>Source URL (optional)</label>
@@ -253,7 +275,7 @@
         <input type="file" id="importFile" accept=".json" class="hidden">
         <button class="btn danger" id="resetBtn">Reset to defaults</button>
         <div id="importStatus" class="status"></div>
-        <p class="note">Export saves your current library (defaults + your edits) to a JSON file you can back up or share. Import replaces the working library with a JSON file in the same format, and rejects a file whose entries are malformed rather than half-loading it.</p>
+        <p class="note">Export saves your current library (defaults + your edits, and which shipped hops you deleted) to a JSON file you can back up or share. Import replaces the working library with that file, and rejects one whose entries are malformed rather than half-loading it. Shipped hops the file does not contain stay deleted; hops a later data update adds still arrive.</p>
       </div>
     </div>
   </div>
@@ -5297,7 +5319,11 @@ function loadLibrary(){
     // must never overwrite it.
     if(entry.touched || entry.verified || !defaults[name]){ merged[name] = entry; kept++; }
   }
-  for(const name of deleted) delete merged[name];
+  // Tombstones are state too. Applying them here without keeping them meant
+  // the next save wrote an empty list, and every deleted shipped hop was back
+  // on the reload after that.
+  deletedNames = deleted.filter(n => typeof n === "string");
+  for(const name of deletedNames) delete merged[name];
 
   if(storedVersion !== DATA_VERSION){
     const gained = Object.keys(merged).filter(n => Array.isArray(merged[n].d)).length
@@ -5694,7 +5720,8 @@ function getSliderValues(){
 
 function clearForm(){
   editingName = null;
-  ["mName","mAA","mStyles","mUrl"].forEach(id => { document.getElementById(id).value = ""; });
+  ["mName","mAA","mBeta","mCoh","mOil","mOils","mStyles","mUrl"].forEach(id => { document.getElementById(id).value = ""; });
+  pendingSeed = null;
   document.getElementById("mUnscored").checked = false;
   document.getElementById("mVerified").checked = false;
   document.getElementById("mVerifiedSrc").value = "";
@@ -5707,6 +5734,10 @@ function loadFormForEdit(name){
   const h = HOPS[name];
   document.getElementById("mName").value = name;
   document.getElementById("mAA").value = h.aa;
+  document.getElementById("mBeta").value = h.beta || "";
+  document.getElementById("mCoh").value = h.coh || "";
+  document.getElementById("mOil").value = h.oil || "";
+  document.getElementById("mOils").value = h.oils || "";
   document.getElementById("mStyles").value = (h.styles || []).join(", ");
   document.getElementById("mUrl").value = h.url || "";
   document.getElementById("mUnscored").checked = !Array.isArray(h.d);
@@ -5722,12 +5753,16 @@ function saveHopFromForm(){
   const name = document.getElementById("mName").value.trim();
   if(!name){ alert("Enter a hop name."); return; }
   const aa = document.getElementById("mAA").value.trim() || "n/a";
-  const url = document.getElementById("mUrl").value.trim();
+  const field = (id) => document.getElementById(id).value.trim();
+  const url = field("mUrl");
   const styles = document.getElementById("mStyles").value.split(",").map(s => s.trim()).filter(Boolean);
   const unscored = document.getElementById("mUnscored").checked;
   const wantVerified = document.getElementById("mVerified").checked;
   const verifiedSrc = document.getElementById("mVerifiedSrc").value.trim();
-  const prev = HOPS[editingName] || HOPS[name] || {};
+  // A hop sent over from the Hop Chronicles tab is not in the library until
+  // this save; its provenance waits in pendingSeed rather than in HOPS.
+  const seed = pendingSeed && pendingSeed.key === name ? pendingSeed : null;
+  const prev = HOPS[editingName] || HOPS[name] || (seed ? seed.entry : {});
 
   // A claim of verification has to name what it was checked against, or it is
   // just a tick box and the library learns nothing.
@@ -5738,21 +5773,29 @@ function saveHopFromForm(){
   }
 
   if(editingName && editingName !== name){
+    if(HOPS[name] && !confirm(`"${name}" already exists. Replace it with this entry?`)) return;
     delete HOPS[editingName];
+    // A shipped hop that is renamed must stay gone under its old name, or the
+    // merge on the next load puts the original straight back beside the copy.
+    if(!deletedNames.includes(editingName)) deletedNames.push(editingName);
     // Keep a renamed hop selected instead of leaving a dangling reference.
     selected = selected.map(n => n === editingName ? name : n);
   }
+  // Saving under a name the reader once deleted means they want it back.
+  deletedNames = deletedNames.filter(n => n !== name);
 
   HOPS[name] = {
     aa,
-    beta: prev.beta || "",
-    coh: prev.coh || "",
-    oil: prev.oil || "",
-    oils: prev.oils || "",
+    beta: field("mBeta"),
+    coh: field("mCoh"),
+    oil: field("mOil"),
+    oils: field("mOils"),
     xcheck: prev.xcheck || "",
     d: unscored ? null : getSliderValues(),
     styles: styles.length ? styles : ["Uncategorized"],
-    src: (prev.src === "chronicle" || prev.src === "reported") ? prev.src
+    // A profile read off the post itself outranks whatever was there before.
+    src: (seed && seed.fromPost) ? "chronicle"
+       : (prev.src === "chronicle" || prev.src === "reported") ? prev.src
        : (editingName || HOPS[name] ? (prev.src || "manual") : "manual"),
     url: url || undefined,
     chron: prev.chron,
@@ -5766,6 +5809,7 @@ function saveHopFromForm(){
 
   saveLibrary();
   editingName = null;
+  pendingSeed = null;
   setStatus("mgmtNote", `Saved "${name}".`, "ok");
   renderAll();
 }
@@ -5813,7 +5857,10 @@ function renderMgmtList(){
 }
 
 function exportLibrary(){
-  const blob = new Blob([JSON.stringify(HOPS, null, 2)], {type:"application/json"});
+  // The same envelope localStorage holds, so a backup carries the deletions
+  // too and importing it reproduces this library exactly.
+  const payload = {version: DATA_VERSION, exported: new Date().toISOString().slice(0, 10), hops: HOPS, deleted: deletedNames};
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = "hop_library.json";
@@ -5827,15 +5874,23 @@ function importLibrary(file){
     try{
       const data = JSON.parse(String(e.target.result));
       if(!data || typeof data !== "object" || Array.isArray(data)) throw new Error("file must contain an object of hop entries");
-      const names = Object.keys(data);
+      // Either the export envelope {version, hops, deleted} or a bare map of entries.
+      const isEnvelope = data.hops && typeof data.hops === "object" && !Array.isArray(data.hops);
+      const entries = isEnvelope ? data.hops : data;
+      const names = Object.keys(entries);
       if(!names.length) throw new Error("file contains no entries");
       // Validate everything before touching the working library.
       for(const name of names){
-        const problem = isValidEntry(data[name]);
+        const problem = isValidEntry(entries[name]);
         if(problem) throw new Error(`"${name}": ${problem}`);
       }
       HOPS = {};
-      for(const name of names) HOPS[name] = normalizeEntry(data[name]);
+      for(const name of names) HOPS[name] = normalizeEntry(entries[name]);
+      // The file is the whole library. A shipped hop it does not list stays
+      // gone across reloads instead of coming back on the next one; a hop the
+      // next data update adds is new and still arrives.
+      const fileDeleted = isEnvelope && Array.isArray(data.deleted) ? data.deleted.filter(n => typeof n === "string") : [];
+      deletedNames = [...new Set(fileDeleted.concat(Object.keys(buildDefaults()).filter(n => !(n in HOPS))))];
       saveLibrary();
       selected = [];
       editingName = null;
@@ -5863,6 +5918,8 @@ function resetLibrary(){
 /* ---------- Hop Chronicles lookup ---------- */
 
 let pendingChronicle = null;
+/** Provenance for a hop sent to the form but not yet saved: {key, entry, fromPost}. */
+let pendingSeed = null;
 
 /** Find an indexed post by exact URL, then by variety/year/series from the slug. */
 function findChronicle(url){
@@ -5937,6 +5994,14 @@ function sendChronicleToForm(parsed){
   document.getElementById("mStyles").value = entry.series || "";
   document.getElementById("mUrl").value = entry.url;
   document.getElementById("mAA").value = (parsed && parsed.aa) || (existing && existing.aa !== "n/a" ? existing.aa : "");
+  // The post's own Hop Stats, when they were parsed; otherwise what the entry already had.
+  const st = (parsed && parsed.stats) || {};
+  const oilBits = [["myrcene", st.myrcene], ["humulene", st.humulene], ["caryophyllene", st.caryophyllene], ["farnesene", st.farnesene]]
+    .filter(([, v]) => v).map(([k, v]) => `${k} ${v}`);
+  document.getElementById("mBeta").value = st.beta || (existing && existing.beta) || "";
+  document.getElementById("mCoh").value = st.cohumulone || (existing && existing.coh) || "";
+  document.getElementById("mOil").value = st.totalOil || (existing && existing.oil) || "";
+  document.getElementById("mOils").value = oilBits.length ? oilBits.join("; ") : (existing && existing.oils) || "";
 
   // Fall back to the profile already on the entry: opening a scored hop must
   // not arrive with "save as unscored" ticked, which would wipe it on save.
@@ -5944,11 +6009,14 @@ function sendChronicleToForm(parsed){
   document.getElementById("mUnscored").checked = !scores;
   renderSliders(scores);
 
-  // Preserve chronicle provenance through the save.
-  HOPS[key] = HOPS[key] || {aa:"n/a", d:null, styles:[entry.series || "Uncategorized"], src:"chronicle", url:entry.url,
-    chron:{cropYear:entry.cropYear, origin:entry.origin, series:entry.series, published:entry.published, notes:entry.notes}};
-  // A profile read off the post itself outranks an estimate, so badge it.
-  if(parsed && parsed.scores) HOPS[key].src = "chronicle";
+  // Chronicle provenance rides along to the save. Nothing enters the library
+  // until the reader presses Save -- the tab promises exactly that.
+  pendingSeed = {
+    key,
+    fromPost: Boolean(parsed && parsed.scores),
+    entry: existing || {aa:"n/a", d:null, styles:[entry.series || "Uncategorized"], src:"chronicle", url:entry.url,
+      chron:{cropYear:entry.cropYear, origin:entry.origin, series:entry.series, published:entry.published, notes:entry.notes}}
+  };
 
   setStatus("mgmtNote", scores
     ? `Parsed from the post. Check every slider against the article's chart before saving — these are ranks translated to a scale.`
@@ -6001,7 +6069,7 @@ function applyParsedText(text, statusId){
   else if(aa) bits.push(`Alpha acid: ${aa}.`);
   setStatus(statusId, bits.join(" ") + " Review before saving.", "ok");
 
-  sendChronicleToForm({scores, aa});
+  sendChronicleToForm({scores, aa, stats});
   return scores;
 }
 

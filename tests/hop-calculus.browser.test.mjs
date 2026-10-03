@@ -1,0 +1,195 @@
+// Drives the built Hop Calculus page in a headless DOM.
+//
+// Run:  JSDOM_PATH=/path/to/node_modules/jsdom node tests/hop-calculus.browser.test.mjs
+//
+// jsdom is not a dependency of this repo (nothing is). The test looks for it at
+// $JSDOM_PATH -- CI installs one into a temp dir -- and skips cleanly when it is
+// not there, so `node tests/hop-calculus.browser.test.mjs` alone never fails for
+// want of a package. Everything in here is a behaviour the pure-node tests could
+// not see: four persistence bugs shipped before this file existed.
+
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const require = createRequire(import.meta.url);
+let JSDOM, VirtualConsole;
+try {
+  ({ JSDOM, VirtualConsole } = require(process.env.JSDOM_PATH || "jsdom"));
+} catch {
+  console.log("skipped: jsdom not available -- set JSDOM_PATH to a jsdom install to run the browser tests");
+  process.exit(0);
+}
+
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const html = readFileSync(join(root, "hops", "hop-calculus.html"), "utf8");
+
+let pass = 0, fail = 0;
+const ok = (name, cond, detail = "") => {
+  if (cond) pass++;
+  else { fail++; console.error(`FAIL ${name}${detail ? ": " + detail : ""}`); }
+};
+const eq = (name, got, want) => ok(name, got === want, `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
+const tick = (ms = 30) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * One "browser": a store that survives across boots stands in for the
+ * reader's localStorage, so a reload is boot() again on the same store.
+ */
+function browser() {
+  let store = {};
+  const errors = [];
+  const boot = () => {
+    const vc = new VirtualConsole();
+    vc.on("jsdomError", (e) => { if (!/scrollTo/.test(e.message)) errors.push(e.message); });
+    const dom = new JSDOM(html, {
+      runScripts: "dangerously", pretendToBeVisual: true, virtualConsole: vc,
+      url: "http://localhost/hops/hop-calculus.html",
+      beforeParse(win) {
+        win.HTMLCanvasElement.prototype.getContext = () => null;   // no canvas package; the page guards on null
+        win.alert = (m) => { win.__alerts.push(String(m)); };
+        win.__alerts = [];
+        win.confirm = () => true;
+        for (const [k, v] of Object.entries(store)) win.localStorage.setItem(k, v);
+      },
+    });
+    const win = dom.window;
+    const page = {
+      win, doc: win.document,
+      ev: (src) => win.eval(src),                       // top-level let/const are not window properties
+      $: (sel) => win.document.querySelector(sel),
+      set: (id, v) => { win.document.getElementById(id).value = v; },
+      persist() { store = {}; for (let i = 0; i < win.localStorage.length; i++) { const k = win.localStorage.key(i); store[k] = win.localStorage.getItem(k); } },
+      stored: () => JSON.parse(store.hopCalculusLibrary_v2 || "null"),
+      async importText(text) {
+        win.__file = new win.File([text], "lib.json", { type: "application/json" });
+        win.eval("importLibrary(window.__file)");
+        await tick();
+        this.persist();
+      },
+    };
+    return page;
+  };
+  return { boot, errors, setStore: (s) => { store = s; } };
+}
+
+// ---- Set A: boots and renders ----
+{
+  const b = browser();
+  const p = b.boot();
+  eq("boot: library has every shipped entry", p.ev("Object.keys(HOPS).length"), 158);
+  eq("boot: list shows every entry", p.doc.querySelectorAll("#hopList .hop-item").length, 158);
+  ok("boot: counts line is right", /158 entries — 158 scored, 0 awaiting a profile/.test(p.$("#libraryCounts").textContent));
+  p.ev('toggleHop("Citra"); toggleHop("Mosaic")');
+  eq("compare: two selected", p.ev("selected.length"), 2);
+  eq("compare: one column per hop plus the label column", p.doc.querySelectorAll("#compareTable tr:first-child th").length, 3);
+  ok("compare: blend note names both hops", /Citra/.test(p.$("#blendNote").textContent) && /Mosaic/.test(p.$("#blendNote").textContent));
+  p.ev('toggleHop("Citra"); toggleHop("Mosaic")');
+  for (let i = 0; i < 6; i++) p.ev(`toggleHop(Object.keys(HOPS).filter(scored)[${i}])`);
+  eq("compare: a sixth selection is refused", p.ev("selected.length"), 5);
+  ok("compare: and says so", p.win.__alerts.some((a) => /Max 5/.test(a)));
+  eq("boot: no page errors", b.errors.length, 0);
+}
+
+// ---- Set B: deleting a shipped hop sticks ----
+{
+  const b = browser();
+  let p = b.boot();
+  p.ev('deleteHop("Citra")'); p.persist();
+  p = b.boot();
+  eq("delete: gone after reload", p.ev('Boolean(HOPS["Citra"])'), false);
+  eq("delete: tombstone restored into memory", p.ev("deletedNames.includes('Citra')"), true);
+  p.set("mName", "Any Other Hop"); p.ev("saveHopFromForm()"); p.persist();
+  ok("delete: an unrelated save keeps the tombstone", p.stored().deleted.includes("Citra"));
+  p = b.boot();
+  eq("delete: still gone after a save and another reload", p.ev('Boolean(HOPS["Citra"])'), false);
+  p.set("mName", "Citra"); p.ev("saveHopFromForm()"); p.persist();
+  p = b.boot();
+  eq("delete: re-adding under the same name clears the tombstone", p.ev('Boolean(HOPS["Citra"])'), true);
+}
+
+// ---- Set C: renaming a shipped hop sticks ----
+{
+  const b = browser();
+  let p = b.boot();
+  p.ev('loadFormForEdit("Mosaic")'); p.set("mName", "Mosaic (my lot)"); p.ev("saveHopFromForm()"); p.persist();
+  p = b.boot();
+  eq("rename: old name does not come back", p.ev('Boolean(HOPS["Mosaic"])'), false);
+  eq("rename: new name is there", p.ev('Boolean(HOPS["Mosaic (my lot)"])'), true);
+  eq("rename: profile travelled with it", p.ev('HOPS["Mosaic (my lot)"].d.join()'), "6,8,6,7,4,6,3,2,1,2");
+}
+
+// ---- Set D: import replaces the library, durably ----
+{
+  const b = browser();
+  let p = b.boot();
+  await p.importText(JSON.stringify({ "Only One": { aa: "5%", d: [1, 2, 3, 4, 5, 6, 7, 8, 9, 1], styles: ["Lager"] } }));
+  ok("import: status reports the count", /Imported 1 entries/.test(p.$("#importStatus").textContent));
+  eq("import: library is the file", p.ev("Object.keys(HOPS).length"), 1);
+  p = b.boot();
+  eq("import: and still is after a reload", p.ev("Object.keys(HOPS).length"), 1);
+
+  // The export envelope round-trips, deletions included.
+  const envelope = { version: "whatever", hops: { "Citra": { aa: "12%", d: [9, 9, 4, 3, 4, 5, 2, 1, 1, 1], styles: ["IPA"], touched: true } }, deleted: ["Mosaic"] };
+  await p.importText(JSON.stringify(envelope));
+  p = b.boot();
+  eq("import envelope: entry present", p.ev('HOPS["Citra"] && HOPS["Citra"].aa'), "12%");
+  eq("import envelope: a shipped hop the file omits stays gone", p.ev('Boolean(HOPS["Simcoe"])'), false);
+
+  // A bad file leaves everything alone.
+  const before = p.ev("Object.keys(HOPS).length");
+  await p.importText(JSON.stringify({ "Broken": { d: [1, 2, 3] } }));
+  ok("import: malformed file is refused with a reason", /Import failed.*descriptor array/.test(p.$("#importStatus").textContent));
+  eq("import: and the library is untouched", p.ev("Object.keys(HOPS).length"), before);
+}
+
+// ---- Set E: a pasted article carries its stats to the saved entry ----
+{
+  const b = browser();
+  const p = b.boot();
+  const sizeBefore = p.ev("Object.keys(HOPS).length");
+  p.set("chronUrl", "https://brulosophy.com/2030/01/01/the-hop-chronicles-fakehop-2029-pale-ale/");
+  p.ev("lookupChronicle()");
+  p.ev(`applyParsedText("Hop Stats Alpha: 10 - 12% Beta: 4 - 5% Cohumulone: 25 - 28% Total Oil: 1.5 - 2 mL/100g Myrcene: 50 - 60% " +
+    "The most prominent aroma and flavor characteristics noted by blind tasters were citrus, pine, and tropical fruit.", "pasteStatus")`);
+  eq("paste: nothing enters the library before Save", p.ev("Object.keys(HOPS).length"), sizeBefore);
+  eq("paste: alpha lands in the form", p.$("#mAA").value, "10 - 12%");
+  eq("paste: beta lands in the form", p.$("#mBeta").value, "4 - 5%");
+  eq("paste: oil breakdown lands in the form", p.$("#mOils").value, "myrcene 50 - 60%");
+  p.ev("saveHopFromForm()");
+  const saved = p.ev('JSON.stringify(HOPS["Fakehop (2029 PA)"])');
+  const h = JSON.parse(saved);
+  eq("paste: cohumulone saved", h.coh, "25 - 28%");
+  eq("paste: total oil saved", h.oil, "1.5 - 2 mL/100g");
+  eq("paste: badged first-hand", h.src, "chronicle");
+  eq("paste: ranked scores saved", h.d.join(), "9,7,2,2,8,2,2,2,2,2");
+  eq("paste: library grew by exactly one", p.ev("Object.keys(HOPS).length"), sizeBefore + 1);
+}
+
+// ---- Set F: a data update keeps the reader's work ----
+{
+  const b = browser();
+  const stale = {
+    version: "older-build",
+    hops: {
+      "Citra": { aa: "99%", d: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1], styles: ["X"], touched: true },          // edited -> kept
+      "Mosaic": { aa: "99%", d: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1], styles: ["X"] },                         // untouched -> refreshed
+      "Simcoe": { aa: "99%", d: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1], styles: ["X"], verified: { source: "my COA" } }, // verified -> kept
+      "Home Grown": { aa: "7%", d: null, styles: ["Mine"] },                                                // reader's own -> kept
+    },
+    deleted: ["Galaxy"],
+  };
+  b.setStore({ hopCalculusLibrary_v2: JSON.stringify(stale) });
+  const p = b.boot();
+  eq("upgrade: edited entry kept", p.ev('HOPS["Citra"].aa'), "99%");
+  eq("upgrade: untouched entry refreshed from the shipped data", p.ev('HOPS["Mosaic"].aa'), "11-14%");
+  eq("upgrade: verified entry kept", p.ev('HOPS["Simcoe"].verified.source'), "my COA");
+  eq("upgrade: reader's own entry kept", p.ev('Boolean(HOPS["Home Grown"])'), true);
+  eq("upgrade: deletion honoured", p.ev('Boolean(HOPS["Galaxy"])'), false);
+  ok("upgrade: reader is told", /Library updated/.test(p.$("#libraryCounts").textContent));
+  ok("upgrade: verified count shown", /1 verified against a real source/.test(p.$("#libraryCounts").textContent));
+}
+
+console.log(`\n${pass} passed, ${fail} failed (${pass + fail} total)`);
+process.exit(fail ? 1 : 0);
