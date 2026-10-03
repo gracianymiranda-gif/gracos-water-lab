@@ -56,7 +56,9 @@
   .desc-toggle{
     display:inline-block; padding:5px 10px; margin:3px 4px 3px 0; border-radius:999px;
     border:1px solid var(--border); cursor:pointer; font-size:0.8rem; background:#241f1a; color:var(--muted);
+    font-family:inherit; line-height:normal;
   }
+  .desc-toggle:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
   .desc-toggle.active{background:var(--accent2); color:#0e1406; border-color:var(--accent2);}
   /* height:auto with max-width, or a phone squashes the 480px square into an oval. */
   canvas{background:#1c1815; border-radius:8px; max-width:100%; height:auto; display:block;}
@@ -5242,7 +5244,7 @@ function isValidEntry(h){
   if(!h || typeof h !== "object" || Array.isArray(h)) return "not an object";
   if(h.d !== null && h.d !== undefined){
     if(!Array.isArray(h.d) || h.d.length !== DESCRIPTORS.length) return `descriptor array must be null or ${DESCRIPTORS.length} numbers`;
-    if(h.d.some(v => typeof v !== "number" || !isFinite(v))) return "descriptor values must be numbers";
+    if(h.d.some(v => typeof v !== "number" || !isFinite(v) || v < 0 || v > 10)) return "descriptor values must be numbers from 0 to 10";
   }
   if(h.styles !== undefined && !Array.isArray(h.styles)) return "styles must be an array";
   if(h.aa !== undefined && typeof h.aa !== "string") return "alpha acid must be a string";
@@ -5347,6 +5349,9 @@ function saveLibrary(){
 let upgradeNote = null;
 let deletedNames = [];
 let HOPS = loadLibrary();
+// Store the merge under the new version now, or the "Library updated" line
+// repeats on every load until the reader happens to save something.
+if(upgradeNote) saveLibrary();
 let selected = [];
 let editingName = null;
 
@@ -5594,10 +5599,10 @@ function renderBlend(){
     ". This is a simple average of individual profiles — real blends can shift due to oil interaction, so treat as a starting hypothesis, not a guarantee."
   ));
 
-  const mixed = new Set(usable.map(n => HOPS[n].src));
-  if(mixed.size > 1){
+  const kinds = [...new Set(usable.map(n => SRC_LABEL[HOPS[n].src] || "yours"))];
+  if(kinds.length > 1){
     box.appendChild(document.createElement("br"));
-    box.appendChild(el("em", "Note: this blend mixes composite profiles with Hop Chronicles rankings. The two are built on different scales, so the average is rougher than it looks."));
+    box.appendChild(el("em", `Note: this blend mixes ${kinds.join(" and ")} profiles. They are not built on one scale, so the average is rougher than it looks.`));
   }
 }
 
@@ -5646,7 +5651,9 @@ function renderDescToggles(){
   const box = document.getElementById("descToggles");
   box.innerHTML = "";
   DESCRIPTORS.forEach(d => {
-    const btn = el("span", d, "desc-toggle" + (activeDescs.has(d) ? " active" : ""));
+    const btn = el("button", d, "desc-toggle" + (activeDescs.has(d) ? " active" : ""));
+    btn.type = "button";
+    btn.setAttribute("aria-pressed", activeDescs.has(d) ? "true" : "false");
     btn.onclick = () => {
       activeDescs.has(d) ? activeDescs.delete(d) : activeDescs.add(d);
       renderDescToggles();
@@ -5772,6 +5779,7 @@ function saveHopFromForm(){
     return;
   }
 
+  if(!editingName && HOPS[name] && !confirm(`"${name}" is already in your library. Replace it?`)) return;
   if(editingName && editingName !== name){
     if(HOPS[name] && !confirm(`"${name}" already exists. Replace it with this entry?`)) return;
     delete HOPS[editingName];
@@ -5892,6 +5900,7 @@ function importLibrary(file){
       const fileDeleted = isEnvelope && Array.isArray(data.deleted) ? data.deleted.filter(n => typeof n === "string") : [];
       deletedNames = [...new Set(fileDeleted.concat(Object.keys(buildDefaults()).filter(n => !(n in HOPS))))];
       saveLibrary();
+      upgradeNote = null;
       selected = [];
       editingName = null;
       renderAll();
@@ -5909,6 +5918,7 @@ function resetLibrary(){
   deletedNames = [];
   HOPS = buildDefaults();
   saveLibrary();
+  upgradeNote = null;
   selected = [];
   editingName = null;
   renderAll();
@@ -5991,8 +6001,15 @@ function sendChronicleToForm(parsed){
 
   editingName = existing ? key : null;
   document.getElementById("mName").value = key;
-  document.getElementById("mStyles").value = entry.series || "";
+  // Keep the entry's own style tags; the series is one of them, not a replacement.
+  const existingStyles = existing && Array.isArray(existing.styles) ? existing.styles : [];
+  document.getElementById("mStyles").value = [...new Set(existingStyles.concat(entry.series ? [entry.series] : []))]
+    .filter(st => st !== "Uncategorized").join(", ");
   document.getElementById("mUrl").value = entry.url;
+  // The verified controls follow the entry, or whatever the form last held
+  // would be saved onto this hop -- another hop's attestation, or none.
+  document.getElementById("mVerified").checked = Boolean(existing && existing.verified);
+  document.getElementById("mVerifiedSrc").value = existing && existing.verified ? existing.verified.source : "";
   document.getElementById("mAA").value = (parsed && parsed.aa) || (existing && existing.aa !== "n/a" ? existing.aa : "");
   // The post's own Hop Stats, when they were parsed; otherwise what the entry already had.
   const st = (parsed && parsed.stats) || {};
@@ -6038,10 +6055,14 @@ function lookupChronicle(){
     return null;
   }
   showChronicleResult(found);
+  // Pasting is the path that always works, so it is offered on every lookup
+  // rather than only after a fetch has failed.
+  document.getElementById("pasteBlock").className = "";
   setStatus("chronStatus",
-    found.how === "url" ? "Matched in the built-in index — no network needed."
+    (found.how === "url" ? "Matched in the built-in index — no network needed."
     : found.how === "slug" ? "Matched by variety and crop year from the URL."
-    : "Not in the built-in index (it may be newer than this file). Read what I could from the URL itself.",
+    : "Not in the built-in index (it may be newer than this file). Read what I could from the URL itself.")
+    + " For the ratings, open the post, copy its text and paste it below.",
     found.how === "slug-only" ? "" : "ok");
   return found;
 }

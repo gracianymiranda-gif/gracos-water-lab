@@ -50,7 +50,8 @@ function browser() {
         win.HTMLCanvasElement.prototype.getContext = () => null;   // no canvas package; the page guards on null
         win.alert = (m) => { win.__alerts.push(String(m)); };
         win.__alerts = [];
-        win.confirm = () => true;
+        win.confirm = (m) => { win.__confirms.push(String(m)); return true; };
+        win.__confirms = [];
         for (const [k, v] of Object.entries(store)) win.localStorage.setItem(k, v);
       },
     });
@@ -189,6 +190,57 @@ function browser() {
   eq("upgrade: deletion honoured", p.ev('Boolean(HOPS["Galaxy"])'), false);
   ok("upgrade: reader is told", /Library updated/.test(p.$("#libraryCounts").textContent));
   ok("upgrade: verified count shown", /1 verified against a real source/.test(p.$("#libraryCounts").textContent));
+}
+
+// ---- Set G: the form never carries one hop's state onto another ----
+{
+  const b = browser();
+  let p = b.boot();
+  p.ev('loadFormForEdit("Citra")'); p.$("#mVerified").checked = true; p.set("mVerifiedSrc", "YCH spec sheet"); p.ev("saveHopFromForm()");
+  eq("form: Citra verified", p.ev('HOPS["Citra"].verified.source'), "YCH spec sheet");
+  const key = p.ev('Object.keys(HOPS).find(k => HOPS[k].src === "chronicle" && HOPS[k].styles.length > 2)');
+  p.set("chronUrl", p.ev(`HOPS[${JSON.stringify(key)}].url`)); p.ev("lookupChronicle()");
+  ok("lookup: paste box offered without a failed fetch first", !p.$("#pasteBlock").classList.contains("hidden"));
+  p.ev("sendChronicleToForm(null)");
+  eq("send to form: verified tick does not leak from the previous hop", p.$("#mVerified").checked, false);
+  eq("send to form: verified source field cleared", p.$("#mVerifiedSrc").value, "");
+  eq("send to form: style tags kept, not collapsed to the series", p.$("#mStyles").value, p.ev(`HOPS[${JSON.stringify(key)}].styles.join(", ")`));
+  p.ev("saveHopFromForm()");
+  eq("send to form: saved hop is not verified", p.ev(`HOPS[${JSON.stringify(key)}].verified`), null);
+  eq("send to form: Citra still is", p.ev('HOPS["Citra"].verified.source'), "YCH spec sheet");
+  p.ev("clearForm()"); p.set("mName", "Citra"); p.ev("saveHopFromForm()");
+  ok("add: a name already in the library asks before replacing", p.win.__confirms.some((m) => /already in your library/.test(m)));
+}
+
+// ---- Set H: the update banner shows once ----
+{
+  const b = browser();
+  b.setStore({ hopCalculusLibrary_v2: JSON.stringify({ version: "older-build", hops: { "Mine": { aa: "7%", d: null, styles: ["X"] } }, deleted: ["Galaxy"] }) });
+  let p = b.boot();
+  ok("upgrade: banner on the first load", /Library updated/.test(p.$("#libraryCounts").textContent));
+  p.persist();
+  eq("upgrade: tombstone survived the version bump", p.stored().deleted.join(), "Galaxy");
+  p = b.boot();
+  ok("upgrade: banner gone on the next load", !/Library updated/.test(p.$("#libraryCounts").textContent));
+  eq("upgrade: reader's entry still there", p.ev('Boolean(HOPS["Mine"])'), true);
+}
+
+// ---- Set I: import validation and the blend note ----
+{
+  const b = browser();
+  const p = b.boot();
+  const before = p.ev("Object.keys(HOPS).length");
+  await p.importText(JSON.stringify({ "Weird": { d: [99, -5, 3, 3, 3, 3, 3, 3, 3, 3] } }));
+  ok("import: scores outside 0-10 are refused", /0 to 10/.test(p.$("#importStatus").textContent));
+  eq("import: library untouched by the refusal", p.ev("Object.keys(HOPS).length"), before);
+  const chron = p.ev('Object.keys(HOPS).find(k => HOPS[k].src === "chronicle")');
+  p.ev(`toggleHop("Citra"); toggleHop(${JSON.stringify(chron)})`);
+  ok("blend: the mixed-sources note names what it mixes", /mixes (composite and from post|from post and composite) profiles/.test(p.$("#blendNote").textContent));
+  const toggle = p.$("#descToggles .desc-toggle");
+  eq("search: descriptor toggles are real buttons", toggle.tagName, "BUTTON");
+  toggle.click();
+  eq("search: toggle reports its state", p.$("#descToggles .desc-toggle").getAttribute("aria-pressed"), "true");
+  ok("search: results appear", p.doc.querySelectorAll("#targetResults tr").length > 1);
 }
 
 console.log(`\n${pass} passed, ${fail} failed (${pass + fail} total)`);
